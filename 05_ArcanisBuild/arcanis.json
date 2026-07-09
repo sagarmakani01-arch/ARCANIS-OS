@@ -1,0 +1,38 @@
+{
+  "project_name": "arcanis-build",
+  "version": "0.1.0",
+  "compiler": "arcanisc",
+  "build_dir": "build",
+  "cache_dir": ".arcanis-cache",
+  "parallel_jobs": 0,
+  "verbose": false,
+  "targets": [
+    {
+      "name": "arcanis-build-core",
+      "type": "library",
+      "sources": ["src/arcanis_build/**/*.py"],
+      "dependencies": [],
+      "compiler_flags": []
+    },
+    {
+      "name": "arcanis-build-cli",
+      "type": "executable",
+      "sources": ["src/arcanis_build/cli.py", "src/arcanis_build/__main__.py"],
+      "dependencies": ["arcanis-build-core"],
+      "compiler_flags": []
+    }
+  ],
+  "test": {
+    "enabled": true,
+    "framework": "unittest",
+    "source_dir": "tests",
+    "pattern": "test_*.py",
+    "timeout": 60
+  },
+  "docs": {
+    "enabled": true,
+    "output_dir": "docs/build",
+    "format": "markdown",
+    "source_dir": "src"
+  }
+}

@@ -1,0 +1,3 @@
+{
+  "tests/test_comprehensive.py::TestPermissionSystem::test_revoke_permission": true
+}

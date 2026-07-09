@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: arcanis-vision
+Version: 0.1.0
+Summary: Computer vision system for image processing, object detection, and screen understanding
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.21
+Requires-Dist: Pillow>=9.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0; extra == "dev"

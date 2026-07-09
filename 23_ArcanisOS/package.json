@@ -1,0 +1,35 @@
+{
+  "name": "arcanis-os",
+  "version": "1.0.0-alpha",
+  "description": "AI-native operating system combining all Arcanis components",
+  "main": "kernel/index.js",
+  "scripts": {
+    "build": "npm run build:kernel && npm run build:ai && npm run build:interface && npm run build:dev",
+    "build:kernel": "tsc -p kernel/tsconfig.json",
+    "build:ai": "tsc -p ai/tsconfig.json",
+    "build:interface": "tsc -p interface/tsconfig.json",
+    "build:dev": "tsc -p development/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "start": "node kernel/index.js",
+    "lint": "eslint src/ --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "install:os": "node installer/index.js"
+  },
+  "keywords": ["ai", "operating-system", "arcanis", "ai-native"],
+  "license": "MIT",
+  "dependencies": {
+    "rxjs": "^7.8.1",
+    "uuid": "^9.0.0",
+    "eventemitter3": "^5.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0",
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4"
+  }
+}

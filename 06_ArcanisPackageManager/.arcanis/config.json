@@ -1,0 +1,23 @@
+{
+  "registry": {
+    "default": "https://registry.arcanis.dev/v1",
+    "fallback": ["https://registry-backup.arcanis.dev/v1"]
+  },
+  "trustedSources": [
+    "https://registry.arcanis.dev",
+    "https://packages.arcanis.org"
+  ],
+  "permissions": {
+    "defaultPolicy": "ask",
+    "allowedScopes": ["@arcanis", "@arcanis-labs"]
+  },
+  "cache": {
+    "directory": ".arcanis/cache",
+    "maxAge": 86400000
+  },
+  "security": {
+    "verifySignatures": true,
+    "scanOnInstall": true,
+    "strictMode": false
+  }
+}

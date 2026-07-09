@@ -1,0 +1,9 @@
+{
+  "name": "to-remove",
+  "version": "1.0.0",
+  "description": "to-remove package",
+  "author": "ArcanisOS",
+  "dependencies": {},
+  "entry": "index.js",
+  "type": "app"
+}

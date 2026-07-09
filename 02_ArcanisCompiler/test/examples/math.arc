@@ -1,0 +1,6 @@
+// Math test
+fun main(): Int {
+  let x: Int = 10;
+  let y: Int = 20;
+  return x + y;
+}

@@ -1,0 +1,19 @@
+# Build outputs
+out/
+dist/
+*.o
+*.obj
+*.exe
+arcanisvm
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+.DS_Store

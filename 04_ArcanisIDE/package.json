@@ -1,0 +1,32 @@
+{
+  "name": "arcanis-ide",
+  "version": "0.1.0",
+  "description": "The official development environment for the Arcanis ecosystem — optimized for ArcanisLang and AI-assisted development.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "jest --config jest.config.js",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ --ext .ts",
+    "docs": "typedoc --out docs/api src/api/types.ts"
+  },
+  "keywords": ["arcanis", "ide", "editor", "ai", "plugin"],
+  "author": "Arcanis Labs",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typedoc": "^0.25.7",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {}
+}

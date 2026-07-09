@@ -1,0 +1,42 @@
+{
+  "name": "@arcanis/ui",
+  "version": "1.0.0",
+  "description": "ArcanisUI - Lightweight, modular, cross-platform interface framework",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./components": {
+      "import": "./dist/components/index.mjs",
+      "require": "./dist/components/index.js",
+      "types": "./dist/components/index.d.ts"
+    },
+    "./themes": {
+      "import": "./dist/themes/index.mjs",
+      "require": "./dist/themes/index.js",
+      "types": "./dist/themes/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && node build.mjs",
+    "dev": "tsc --watch",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": ["ui", "framework", "arcanis", "components", "accessibility"],
+  "author": "Arcanis Lab",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  },
+  "files": ["dist"],
+  "sideEffects": false
+}

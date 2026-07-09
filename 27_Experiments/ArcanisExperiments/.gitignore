@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Build artifacts
+build/
+dist/
+*.o
+*.exe
+
+# Large / external artifacts
+*.bin
+*.img
+*.weights
+datasets/
+
+# Editor / OS
+.DS_Store
+*.swp

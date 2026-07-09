@@ -1,0 +1,15 @@
+[package]
+name = "arcanis-lang"
+version = "0.1.0"
+edition = "2021"
+description = "ArcanisLang - AI-native programming language"
+
+[dependencies]
+
+[lib]
+name = "arcanis_lang"
+path = "src/lib.rs"
+
+[[bin]]
+name = "arcanis"
+path = "src/main.rs"

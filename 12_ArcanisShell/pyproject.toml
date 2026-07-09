@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arcanis-shell"
+version = "0.1.0"
+description = "Next-generation shell combining traditional command execution with natural-language AI control."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "All rights reserved" }
+authors = [{ name = "ArcanisLabs", email = "sagar.makani@arcanis.dev" }]
+keywords = ["shell", "ai", "natural-language", "automation", "arcanis"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: System :: Shells",
+]
+dependencies = [
+    "rich>=13.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-benchmark>=4.0", "hypothesis>=6.0", "mypy>=1.0", "black>=23.0", "ruff>=0.1"]
+
+[project.scripts]
+arcanisshell = "arcanis_shell.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["arcanis_shell*"]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
+[tool.mypy]
+strict = true
+python_version = "3.10"

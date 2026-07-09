@@ -1,0 +1,11 @@
+numpy>=1.20.0
+
+[encryption]
+cryptography>=3.4.0
+
+[full]
+cryptography>=3.4.0
+flask>=2.0.0
+
+[rest]
+flask>=2.0.0

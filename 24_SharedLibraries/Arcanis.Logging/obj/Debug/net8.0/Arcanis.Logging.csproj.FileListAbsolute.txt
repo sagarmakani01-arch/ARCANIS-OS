@@ -1,0 +1,13 @@
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\bin\Debug\net8.0\Arcanis.Logging.deps.json
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\bin\Debug\net8.0\Arcanis.Logging.dll
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\bin\Debug\net8.0\Arcanis.Logging.pdb
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\bin\Debug\net8.0\Arcanis.Logging.xml
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.AssemblyInfoInputs.cache
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.AssemblyInfo.cs
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.csproj.CoreCompileInputs.cache
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.dll
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\refint\Arcanis.Logging.dll
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.xml
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\Arcanis.Logging.pdb
+C:\Users\Sagar Makani\OneDrive\ARCANIS LAB\24_SharedLibraries\Arcanis.Logging\obj\Debug\net8.0\ref\Arcanis.Logging.dll

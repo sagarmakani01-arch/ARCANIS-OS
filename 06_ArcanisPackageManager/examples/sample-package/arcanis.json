@@ -1,0 +1,19 @@
+{
+  "name": "@arcanis-labs/sample-utils",
+  "version": "1.0.0",
+  "description": "Sample utility package for Arcanis Package Manager",
+  "main": "index.js",
+  "type": "commonjs",
+  "author": "Arcanis Labs",
+  "license": "MIT",
+  "dependencies": {},
+  "scripts": {
+    "test": "echo 'Running tests...'",
+    "build": "echo 'Building package...'"
+  },
+  "keywords": ["arcanis", "sample", "utilities"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arcanis/sample-utils"
+  }
+}

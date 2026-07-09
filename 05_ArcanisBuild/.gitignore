@@ -1,0 +1,25 @@
+# ArcanisBuild
+build/
+.arcanis-cache/
+*.pyc
+__pycache__/
+*.pyo
+*.arcanisbc
+
+# Python
+*.egg-info/
+dist/
+*.egg
+.env
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

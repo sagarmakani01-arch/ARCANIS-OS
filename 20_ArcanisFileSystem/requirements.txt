@@ -1,0 +1,2 @@
+# ArcanisFileSystem
+# No external dependencies required - pure Python implementation

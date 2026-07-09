@@ -1,0 +1,59 @@
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Build outputs
+**/target/
+**/build/
+**/dist/
+**/out/
+**/bin/
+**/obj/
+
+# Dependencies
+**/node_modules/
+**/vendor/
+**/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+**/logs/
+
+# Test artifacts
+**/.pytest_cache/
+**/.coverage
+**/coverage/
+
+# OS-specific
+*.o
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Package manager
+**/Cargo.lock
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# Temporary files
+**/temp/
+**/tmp/
+*~

@@ -1,0 +1,334 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Arcanis.Logging</name>
+    </assembly>
+    <members>
+        <member name="T:Arcanis.Logging.LogLevel">
+            <summary>
+            Represents the severity level of a log message.
+            </summary>
+        </member>
+        <member name="F:Arcanis.Logging.LogLevel.Debug">
+            <summary>Detailed debug information.</summary>
+        </member>
+        <member name="F:Arcanis.Logging.LogLevel.Information">
+            <summary>General informational messages.</summary>
+        </member>
+        <member name="F:Arcanis.Logging.LogLevel.Warning">
+            <summary>Potential issues that don't prevent execution.</summary>
+        </member>
+        <member name="F:Arcanis.Logging.LogLevel.Error">
+            <summary>Errors that affect execution.</summary>
+        </member>
+        <member name="F:Arcanis.Logging.LogLevel.Critical">
+            <summary>Critical failures requiring immediate attention.</summary>
+        </member>
+        <member name="F:Arcanis.Logging.LogLevel.None">
+            <summary>No logging.</summary>
+        </member>
+        <member name="T:Arcanis.Logging.LogEntry">
+            <summary>
+            Represents a structured log entry with metadata.
+            </summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Id">
+            <summary>The unique log entry identifier.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Timestamp">
+            <summary>When the log was created.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Level">
+            <summary>The log level.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Message">
+            <summary>The log message.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Category">
+            <summary>The source category/logger name.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Exception">
+            <summary>The exception information (if any).</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.Properties">
+            <summary>Additional properties.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.ThreadId">
+            <summary>The thread ID.</summary>
+        </member>
+        <member name="P:Arcanis.Logging.LogEntry.MachineName">
+            <summary>The machine name.</summary>
+        </member>
+        <member name="M:Arcanis.Logging.LogEntry.#ctor">
+            <summary>
+            Creates a new log entry.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.LogEntry.#ctor(Arcanis.Logging.LogLevel,System.String,System.String)">
+            <summary>
+            Creates a new log entry with level and message.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.LogEntry.WithProperty(System.String,System.Object)">
+            <summary>
+            Adds a property to the log entry.
+            </summary>
+            <param name="key">The property key.</param>
+            <param name="value">The property value.</param>
+            <returns>This log entry for chaining.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.LogEntry.ToString">
+            <summary>
+            Returns a formatted string representation.
+            </summary>
+        </member>
+        <member name="T:Arcanis.Logging.ILogSink">
+            <summary>
+            Interface for log sinks that output log entries to various destinations.
+            </summary>
+        </member>
+        <member name="P:Arcanis.Logging.ILogSink.MinimumLevel">
+            <summary>Gets the minimum log level for this sink.</summary>
+        </member>
+        <member name="M:Arcanis.Logging.ILogSink.Write(Arcanis.Logging.LogEntry)">
+            <summary>Writes a log entry.</summary>
+            <param name="entry">The log entry to write.</param>
+        </member>
+        <member name="M:Arcanis.Logging.ILogSink.FlushAsync">
+            <summary>Flushes any buffered log entries.</summary>
+        </member>
+        <member name="T:Arcanis.Logging.ILogFilter">
+            <summary>
+            Interface for log filters that determine which entries are logged.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.ILogFilter.ShouldLog(Arcanis.Logging.LogEntry)">
+            <summary>Determines if a log entry should be logged.</summary>
+            <param name="entry">The log entry.</param>
+            <returns>True if the entry should be logged; otherwise, false.</returns>
+        </member>
+        <member name="T:Arcanis.Logging.Logger">
+            <summary>
+            High-performance logger with multiple sinks, filtering, and structured logging.
+            Thread-safe implementation using lock-free operations where possible.
+            </summary>
+        </member>
+        <member name="P:Arcanis.Logging.Logger.Category">
+            <summary>
+            Gets the category name for this logger.
+            </summary>
+        </member>
+        <member name="E:Arcanis.Logging.Logger.EntryWritten">
+            <summary>Event fired when a log entry is written.</summary>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.#ctor(System.String)">
+            <summary>
+            Initializes a new Logger.
+            </summary>
+            <param name="category">The logger category name.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.#ctor(System.String,Arcanis.Logging.ILogSink[])">
+            <summary>
+            Initializes a new Logger with sinks.
+            </summary>
+            <param name="category">The logger category name.</param>
+            <param name="sinks">The log sinks.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.AddSink(Arcanis.Logging.ILogSink)">
+            <summary>
+            Adds a log sink.
+            </summary>
+            <param name="sink">The sink to add.</param>
+            <returns>This logger for chaining.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.RemoveSink(Arcanis.Logging.ILogSink)">
+            <summary>
+            Removes a log sink.
+            </summary>
+            <param name="sink">The sink to remove.</param>
+            <returns>This logger for chaining.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.AddFilter(Arcanis.Logging.ILogFilter)">
+            <summary>
+            Adds a log filter.
+            </summary>
+            <param name="filter">The filter to add.</param>
+            <returns>This logger for chaining.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Debug(System.String)">
+            <summary>
+            Writes a debug log entry.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Information(System.String)">
+            <summary>
+            Writes an informational log entry.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Warning(System.String)">
+            <summary>
+            Writes a warning log entry.
+            </summary>
+            <param name="message">The log message.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Error(System.String,System.Exception)">
+            <summary>
+            Writes an error log entry.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="exception">Optional exception.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Critical(System.String,System.Exception)">
+            <summary>
+            Writes a critical log entry.
+            </summary>
+            <param name="message">The log message.</param>
+            <param name="exception">Optional exception.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Log(Arcanis.Logging.LogLevel,System.String,System.Exception,System.Collections.Generic.Dictionary{System.String,System.Object})">
+            <summary>
+            Writes a log entry.
+            </summary>
+            <param name="level">The log level.</param>
+            <param name="message">The log message.</param>
+            <param name="exception">Optional exception.</param>
+            <param name="properties">Optional properties.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.WriteEntry(Arcanis.Logging.LogEntry)">
+            <summary>
+            Writes a log entry with the specified level.
+            </summary>
+            <param name="entry">The log entry.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.FlushAsync">
+            <summary>
+            Flushes all sinks asynchronously.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.Logger.Dispose">
+            <summary>
+            Disposes of the logger and all its sinks.
+            </summary>
+        </member>
+        <member name="T:Arcanis.Logging.Sinks.ConsoleSink">
+            <summary>
+            Log sink that writes to the console with color coding.
+            </summary>
+        </member>
+        <member name="P:Arcanis.Logging.Sinks.ConsoleSink.MinimumLevel">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.ConsoleSink.#ctor(Arcanis.Logging.LogLevel,System.Boolean,System.Boolean)">
+            <summary>
+            Initializes a new ConsoleSink.
+            </summary>
+            <param name="minimumLevel">Minimum log level to output.</param>
+            <param name="useColors">Whether to use color coding.</param>
+            <param name="useTimestamps">Whether to include timestamps.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.ConsoleSink.Write(Arcanis.Logging.LogEntry)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.ConsoleSink.FlushAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.ConsoleSink.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:Arcanis.Logging.Sinks.FileSink">
+            <summary>
+            Log sink that writes to files with automatic rotation.
+            </summary>
+        </member>
+        <member name="P:Arcanis.Logging.Sinks.FileSink.MinimumLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Arcanis.Logging.Sinks.FileSink.MaxFileSize">
+            <summary>
+            Gets or sets the maximum file size in bytes before rotation.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.FileSink.#ctor(System.String,System.String,Arcanis.Logging.LogLevel,System.Int64,System.Boolean)">
+            <summary>
+            Initializes a new FileSink.
+            </summary>
+            <param name="directory">The log directory.</param>
+            <param name="filePrefix">The log file prefix.</param>
+            <param name="minimumLevel">Minimum log level to write.</param>
+            <param name="maxFileSize">Maximum file size before rotation.</param>
+            <param name="appendMode">Whether to append to existing files.</param>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.FileSink.Write(Arcanis.Logging.LogEntry)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.FileSink.FlushAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.FileSink.Dispose">
+            <inheritdoc/>
+        </member>
+        <member name="T:Arcanis.Logging.Sinks.MemorySink">
+            <summary>
+            Log sink that stores entries in memory. Useful for testing and debugging.
+            </summary>
+        </member>
+        <member name="P:Arcanis.Logging.Sinks.MemorySink.MinimumLevel">
+            <inheritdoc/>
+        </member>
+        <member name="P:Arcanis.Logging.Sinks.MemorySink.EntryCount">
+            <summary>
+            Gets the number of stored entries.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.#ctor(Arcanis.Logging.LogLevel,System.Int32)">
+            <summary>
+            Initializes a new MemorySink.
+            </summary>
+            <param name="minimumLevel">Minimum log level to store.</param>
+            <param name="maxEntries">Maximum entries to keep (0 for unlimited).</param>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.Write(Arcanis.Logging.LogEntry)">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.FlushAsync">
+            <inheritdoc/>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.GetAllEntries">
+            <summary>
+            Gets all stored log entries.
+            </summary>
+            <returns>A list of log entries.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.GetEntriesByLevel(Arcanis.Logging.LogLevel)">
+            <summary>
+            Gets entries filtered by level.
+            </summary>
+            <param name="level">The minimum log level.</param>
+            <returns>Filtered entries.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.GetEntriesByCategory(System.String)">
+            <summary>
+            Gets entries filtered by category.
+            </summary>
+            <param name="category">The category name.</param>
+            <returns>Filtered entries.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.Search(System.String)">
+            <summary>
+            Searches entries by message content.
+            </summary>
+            <param name="searchText">The text to search for.</param>
+            <returns>Matching entries.</returns>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.Clear">
+            <summary>
+            Clears all stored entries.
+            </summary>
+        </member>
+        <member name="M:Arcanis.Logging.Sinks.MemorySink.Dispose">
+            <inheritdoc/>
+        </member>
+    </members>
+</doc>

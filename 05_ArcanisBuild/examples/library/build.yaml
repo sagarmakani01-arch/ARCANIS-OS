@@ -1,0 +1,30 @@
+project_name: arcanis-utils
+version: "0.2.0"
+compiler: arcanisc
+build_dir: build
+targets:
+  - name: arcanis-utils-core
+    type: library
+    sources:
+      - src/core/*.arc
+    includes:
+      - include
+    compiler_flags:
+      - -O2
+  - name: arcanis-utils-cli
+    type: executable
+    sources:
+      - src/cli/main.arc
+    dependencies:
+      - arcanis-utils-core
+    compiler_flags:
+      - -O2
+test:
+  enabled: true
+  source_dir: tests
+  pattern: "test_*.arc"
+  timeout: 60
+docs:
+  enabled: true
+  output_dir: docs/api
+  format: markdown

@@ -1,0 +1,11 @@
+[project]
+name = "arcanis_research"
+version = "0.1.0"
+description = "Research database for technical knowledge management"
+
+authors = [{"name" = "Your Name"}]
+license = "MIT"
+readme = "README/README.md"
+
+[tool.setuptools]
+packages = ["database"]

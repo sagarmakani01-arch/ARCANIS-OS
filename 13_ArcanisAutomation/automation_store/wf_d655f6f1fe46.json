@@ -1,0 +1,32 @@
+{
+  "id": "wf_d655f6f1fe46",
+  "name": "cli_create",
+  "description": "",
+  "status": "draft",
+  "triggers": [],
+  "steps": [
+    {
+      "id": "s1",
+      "name": "",
+      "action": {
+        "action": "notify",
+        "params": {
+          "message": "hi"
+        },
+        "timeout": 30.0,
+        "retries": 0
+      },
+      "run_after": [],
+      "on_failure": "stop",
+      "condition": null,
+      "captures": {}
+    }
+  ],
+  "schedule": null,
+  "permissions": [],
+  "owner": "system",
+  "tags": [],
+  "metadata": {},
+  "created_at": 1783582431.8316457,
+  "updated_at": 1783582431.8316472
+}

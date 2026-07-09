@@ -1,0 +1,37 @@
+{
+  "id": "wf_ai_27762652",
+  "name": "Generated: notify me when done",
+  "description": "notify me when done",
+  "status": "draft",
+  "triggers": [
+    {
+      "type": "manual",
+      "spec": {}
+    }
+  ],
+  "steps": [
+    {
+      "id": "s0",
+      "name": "Notify",
+      "action": {
+        "action": "notify",
+        "params": {
+          "message": "Workflow complete"
+        },
+        "timeout": 30.0,
+        "retries": 0
+      },
+      "run_after": [],
+      "on_failure": "stop",
+      "condition": null,
+      "captures": {}
+    }
+  ],
+  "schedule": null,
+  "permissions": [],
+  "owner": "ai",
+  "tags": [],
+  "metadata": {},
+  "created_at": 1783582451.4690068,
+  "updated_at": 1783582451.4690185
+}

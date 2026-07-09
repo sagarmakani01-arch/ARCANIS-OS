@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Arcanis.Examples</RootNamespace>
+    <AssemblyName>Arcanis.Examples</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Arcanis.DataStructures\Arcanis.DataStructures.csproj" />
+    <ProjectReference Include="..\Arcanis.Networking\Arcanis.Networking.csproj" />
+    <ProjectReference Include="..\Arcanis.Security\Arcanis.Security.csproj" />
+    <ProjectReference Include="..\Arcanis.AI\Arcanis.AI.csproj" />
+    <ProjectReference Include="..\Arcanis.FileSystem\Arcanis.FileSystem.csproj" />
+    <ProjectReference Include="..\Arcanis.Mathematics\Arcanis.Mathematics.csproj" />
+    <ProjectReference Include="..\Arcanis.Logging\Arcanis.Logging.csproj" />
+  </ItemGroup>
+</Project>

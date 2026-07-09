@@ -1,0 +1,33 @@
+{
+  "project_name": "test-project",
+  "version": "0.1.0",
+  "compiler": "arcanisc",
+  "build_dir": "build",
+  "cache_dir": ".arcanis-cache",
+  "parallel_jobs": 0,
+  "verbose": false,
+  "targets": [
+    {
+      "name": "main",
+      "type": "executable",
+      "sources": [
+        "src/**/*.arc"
+      ],
+      "dependencies": [],
+      "compiler_flags": []
+    }
+  ],
+  "test": {
+    "enabled": true,
+    "framework": "arcanist",
+    "source_dir": "tests",
+    "pattern": "test_*.arc",
+    "timeout": 30
+  },
+  "docs": {
+    "enabled": true,
+    "output_dir": "docs/build",
+    "format": "markdown",
+    "source_dir": "src"
+  }
+}

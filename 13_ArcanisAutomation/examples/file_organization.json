@@ -1,0 +1,22 @@
+{
+  "name": "Daily Downloads Organizer",
+  "description": "Organize the downloads folder by file type, then notify the user.",
+  "owner": "alice",
+  "tags": ["files", "maintenance"],
+  "triggers": [{ "type": "schedule" }],
+  "schedule": { "cron": "0 2 * * *", "timezone": "UTC" },
+  "permissions": [{ "level": "execute", "scope": "file.*" }],
+  "steps": [
+    {
+      "id": "organize",
+      "name": "Organize downloads",
+      "action": { "action": "file.organize", "params": { "source": "~/Downloads", "by_extension": true } }
+    },
+    {
+      "id": "notify",
+      "name": "Notify user",
+      "action": { "action": "notify", "params": { "message": "Downloads organized." } },
+      "run_after": ["organize"]
+    }
+  ]
+}

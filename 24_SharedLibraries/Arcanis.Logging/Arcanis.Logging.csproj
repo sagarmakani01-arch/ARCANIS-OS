@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Arcanis.Logging</RootNamespace>
+    <AssemblyName>Arcanis.Logging</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Arcanis Lab</Authors>
+    <Description>Logging utilities for Arcanis projects</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+</Project>

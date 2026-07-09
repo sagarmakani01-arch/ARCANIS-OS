@@ -1,0 +1,33 @@
+{
+  "name": "@arcanis/network",
+  "version": "1.0.0-alpha",
+  "description": "ArcanisNetwork - AI-native networking foundation for ArcanisOS",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src/ --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "networking",
+    "tcp-ip",
+    "arcanis",
+    "ai-native",
+    "operating-system"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "uuid": "^14.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}

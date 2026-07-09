@@ -1,0 +1,81 @@
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-tertiary: #1a1a2e;
+  --bg-elevated: #16162a;
+  --bg-glass: rgba(18, 18, 26, 0.85);
+  --bg-glass-hover: rgba(26, 26, 46, 0.9);
+
+  --text-primary: #e8e8f0;
+  --text-secondary: #a0a0b8;
+  --text-muted: #6a6a80;
+
+  --accent-primary: #7c5cff;
+  --accent-secondary: #5c8cff;
+  --accent-gradient: linear-gradient(135deg, #7c5cff, #5c8cff);
+  --accent-glow: rgba(124, 92, 255, 0.3);
+
+  --border-color: rgba(124, 92, 255, 0.15);
+  --border-active: rgba(124, 92, 255, 0.4);
+
+  --success: #4ecdc4;
+  --warning: #ffe66d;
+  --error: #ff6b6b;
+  --info: #74b9ff;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px var(--accent-glow);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --taskbar-height: 48px;
+  --window-titlebar-height: 36px;
+
+  --font-primary: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.4s ease;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f0f0f5;
+  --bg-secondary: #e8e8f0;
+  --bg-tertiary: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-glass-hover: rgba(240, 240, 245, 0.95);
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a60;
+  --text-muted: #8a8aa0;
+
+  --accent-primary: #6344e0;
+  --accent-secondary: #4466e0;
+  --accent-glow: rgba(99, 68, 224, 0.2);
+
+  --border-color: rgba(99, 68, 224, 0.12);
+  --border-active: rgba(99, 68, 224, 0.3);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme="midnight"] {
+  --bg-primary: #000000;
+  --bg-secondary: #0a0a12;
+  --bg-tertiary: #111118;
+  --bg-elevated: #0d0d16;
+  --bg-glass: rgba(10, 10, 18, 0.92);
+
+  --accent-primary: #9d6fff;
+  --accent-secondary: #6f9dff;
+  --accent-glow: rgba(157, 111, 255, 0.35);
+}

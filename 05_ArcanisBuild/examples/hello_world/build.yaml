@@ -1,0 +1,15 @@
+project_name: hello-world
+version: "0.1.0"
+compiler: arcanisc
+build_dir: build
+targets:
+  - name: hello
+    type: executable
+    sources:
+      - src/main.arc
+    dependencies:
+      - stdlib
+test:
+  enabled: true
+  source_dir: tests
+  pattern: "test_*.arc"

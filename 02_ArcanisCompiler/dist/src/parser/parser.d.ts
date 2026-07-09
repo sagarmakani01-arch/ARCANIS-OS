@@ -1,0 +1,46 @@
+import { Token } from '../lexer/token';
+import { Program } from './ast';
+import { ErrorReporter } from '../error';
+export declare class Parser {
+    private tokens;
+    private current;
+    private errors;
+    private sourceId;
+    constructor(tokens: Token[], sourceId: string, errors: ErrorReporter);
+    parse(): Program;
+    private parseFunctionDecl;
+    private parseParamDecl;
+    private parseStmt;
+    private parseVarDecl;
+    private parseBlockStmt;
+    private parseIfStmt;
+    private parseWhileStmt;
+    private parseReturnStmt;
+    private parseExprStmt;
+    private parseExpr;
+    private parseAssignment;
+    private parseLogicalOr;
+    private parseLogicalAnd;
+    private parseEquality;
+    private parseComparison;
+    private parseTerm;
+    private parseFactor;
+    private parseUnary;
+    private parseCall;
+    private finishCall;
+    private parsePrimary;
+    private parseType;
+    private match;
+    private matchOperator;
+    private matchKeyword;
+    private check;
+    private checkKeyword;
+    private advance;
+    private consume;
+    private consumeKeyword;
+    private isAtEnd;
+    private peek;
+    private previous;
+    private mergeRange;
+}
+//# sourceMappingURL=parser.d.ts.map

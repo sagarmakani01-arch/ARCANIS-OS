@@ -1,0 +1,27 @@
+{
+  "name": "Morning Research Brief",
+  "description": "Launch a news app, run a research query, and aggregate the results.",
+  "owner": "alice",
+  "tags": ["research", "morning"],
+  "triggers": [{ "type": "manual" }, { "type": "event", "spec": { "name": "morning.start" } }],
+  "schedule": { "interval_seconds": 86400 },
+  "steps": [
+    {
+      "id": "research",
+      "name": "Research AI automation news",
+      "action": { "action": "research.query", "params": { "query": "workflow automation 2026", "depth": 2 } }
+    },
+    {
+      "id": "aggregate",
+      "name": "Summarize findings",
+      "action": { "action": "data.transform", "params": { "operation": "to_json", "source": "{{research_output}}" } },
+      "run_after": ["research"]
+    },
+    {
+      "id": "notify",
+      "name": "Send brief",
+      "action": { "action": "notify", "params": { "message": "Morning brief ready." } },
+      "run_after": ["aggregate"]
+    }
+  ]
+}

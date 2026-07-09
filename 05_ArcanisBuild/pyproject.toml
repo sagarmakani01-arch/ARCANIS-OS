@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arcanis-build"
+version = "0.1.0"
+description = "Modern build automation system for Arcanis projects"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Arcanis Labs"},
+]
+
+[project.scripts]
+arcanis-build = "arcanis_build.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,10 @@
+{
+  "name": "hello-arcanis",
+  "version": "1.0.0",
+  "description": "Example ArcanisOS application",
+  "author": "Arcanis Labs",
+  "entry": "index.js",
+  "type": "app",
+  "permissions": ["read", "write"],
+  "dependencies": {}
+}

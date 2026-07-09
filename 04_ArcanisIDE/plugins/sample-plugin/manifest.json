@@ -1,0 +1,44 @@
+{
+  "name": "sample-plugin",
+  "version": "0.1.0",
+  "description": "A sample plugin demonstrating the ArcanisIDE plugin API",
+  "author": "Arcanis Labs",
+  "license": "MIT",
+  "main": "index.js",
+  "contributes": {
+    "commands": [
+      {
+        "id": "sample.helloWorld",
+        "title": "Hello World",
+        "category": "Sample"
+      },
+      {
+        "id": "sample.showTime",
+        "title": "Show Current Time",
+        "category": "Sample"
+      },
+      {
+        "id": "sample.countLines",
+        "title": "Count Lines in Active Document",
+        "category": "Sample"
+      }
+    ],
+    "menuItems": [
+      {
+        "id": "sample.helloMenu",
+        "label": "Say Hello",
+        "command": "sample.helloWorld",
+        "group": "navigation",
+        "order": 1
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "sample.helloWorld",
+        "key": "ctrl+alt+h"
+      }
+    ]
+  },
+  "activationEvents": ["onCommand:sample.helloWorld"],
+  "dependencies": []
+}

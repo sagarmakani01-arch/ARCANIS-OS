@@ -1,0 +1,2 @@
+# ArcanisLang - No external dependencies required
+# Built entirely with Python standard library

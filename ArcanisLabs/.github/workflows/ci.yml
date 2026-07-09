@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check file structure
+        run: |
+          echo "=== Verifying project structure ==="
+          for i in $(seq -w 0 30); do
+            dir=$(ls -d ${i}_* 2>/dev/null || true)
+            if [ -n "$dir" ]; then
+              if [ -f "$dir/README.md" ]; then
+                echo "OK: $dir/README.md exists"
+              else
+                echo "MISSING: $dir/README.md"
+              fi
+            fi
+          done
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify documentation files
+        run: |
+          required_docs=(
+            "00_Documentation/README.md"
+            "00_Documentation/Vision/Vision.md"
+            "00_Documentation/Architecture/Architecture.md"
+            "00_Documentation/Architecture/Dependencies.md"
+            "00_Documentation/Roadmaps/Roadmap.md"
+            "00_Documentation/Standards/DevelopmentStandards.md"
+          )
+          for doc in "${required_docs[@]}"; do
+            if [ -f "$doc" ]; then
+              echo "OK: $doc"
+            else
+              echo "MISSING: $doc"
+              exit 1
+            fi
+          done

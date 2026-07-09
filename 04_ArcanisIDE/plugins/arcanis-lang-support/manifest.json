@@ -1,0 +1,37 @@
+{
+  "name": "arcanis-lang-support",
+  "version": "0.1.0",
+  "description": "Advanced ArcanisLang language support with enhanced completions, refactoring, and diagnostics",
+  "author": "Arcanis Labs",
+  "license": "MIT",
+  "main": "index.js",
+  "contributes": {
+    "commands": [
+      {
+        "id": "arcanisLang.defineSnippet",
+        "title": "Insert ArcanisLang Snippet",
+        "category": "ArcanisLang"
+      },
+      {
+        "id": "arcanisLang.formatDocument",
+        "title": "Format ArcanisLang Document",
+        "category": "ArcanisLang"
+      },
+      {
+        "id": "arcanisLang.runArcanisFile",
+        "title": "Run ArcanisLang File",
+        "category": "ArcanisLang"
+      }
+    ],
+    "languages": [
+      {
+        "id": "arcanis",
+        "extensions": [".arc", ".arcanis"],
+        "aliases": ["Arcanis", "arcanis"],
+        "filenamePatterns": ["*.arc", "*.arcanis"]
+      }
+    ]
+  },
+  "activationEvents": ["onLanguage:arcanis"],
+  "dependencies": []
+}

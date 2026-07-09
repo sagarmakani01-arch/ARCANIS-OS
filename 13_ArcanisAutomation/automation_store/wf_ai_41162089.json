@@ -1,0 +1,55 @@
+{
+  "id": "wf_ai_41162089",
+  "name": "Generated: launch notepad and notify me",
+  "description": "launch notepad and notify me",
+  "status": "draft",
+  "triggers": [
+    {
+      "type": "manual",
+      "spec": {}
+    }
+  ],
+  "steps": [
+    {
+      "id": "s0",
+      "name": "Launch application",
+      "action": {
+        "action": "app.launch",
+        "params": {
+          "command": "notepad"
+        },
+        "timeout": 30.0,
+        "retries": 0
+      },
+      "run_after": [],
+      "on_failure": "stop",
+      "condition": null,
+      "captures": {}
+    },
+    {
+      "id": "s1",
+      "name": "Notify",
+      "action": {
+        "action": "notify",
+        "params": {
+          "message": "Workflow complete"
+        },
+        "timeout": 30.0,
+        "retries": 0
+      },
+      "run_after": [
+        "s0"
+      ],
+      "on_failure": "stop",
+      "condition": null,
+      "captures": {}
+    }
+  ],
+  "schedule": null,
+  "permissions": [],
+  "owner": "ai",
+  "tags": [],
+  "metadata": {},
+  "created_at": 1783500862.1577713,
+  "updated_at": 1783500862.1578374
+}

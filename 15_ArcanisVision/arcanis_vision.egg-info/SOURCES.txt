@@ -1,0 +1,13 @@
+pyproject.toml
+arcanis_vision/__init__.py
+arcanis_vision/config.py
+arcanis_vision/detector.py
+arcanis_vision/image.py
+arcanis_vision/screen.py
+arcanis_vision/utils.py
+arcanis_vision.egg-info/PKG-INFO
+arcanis_vision.egg-info/SOURCES.txt
+arcanis_vision.egg-info/dependency_links.txt
+arcanis_vision.egg-info/requires.txt
+arcanis_vision.egg-info/top_level.txt
+tests/test_vision.py

@@ -1,0 +1,67 @@
+{
+  "name": "arcanis-testing",
+  "version": "1.0.0",
+  "description": "ArcanisTesting - Complete Testing Ecosystem with AI-Powered Features",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "arcanis": "./dist/cli.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "arcanis run --all",
+    "test:unit": "arcanis run --type unit",
+    "test:integration": "arcanis run --type integration",
+    "test:system": "arcanis run --type system",
+    "test:performance": "arcanis run --type performance",
+    "test:report": "arcanis report",
+    "test:discover": "arcanis discover",
+    "test:analyze": "arcanis analyze",
+    "test:generate": "arcanis generate",
+    "test:predict": "arcanis predict",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "clean": "rimraf dist",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "testing",
+    "framework",
+    "unit-testing",
+    "integration-testing",
+    "performance-testing",
+    "ai-testing",
+    "test-automation",
+    "test-runner",
+    "assertions",
+    "mocking",
+    "test-discovery",
+    "test-reports",
+    "bug-prediction",
+    "test-generation",
+    "failure-analysis"
+  ],
+  "author": "Arcanis Lab",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "uuid": "^9.0.0"
+  }
+}

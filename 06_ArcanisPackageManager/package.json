@@ -1,0 +1,19 @@
+{
+  "name": "arcanis-package-manager",
+  "version": "1.0.0",
+  "description": "Arcanis Package Manager - Manage libraries, applications, AI skills, and system modules",
+  "main": "src/index.js",
+  "bin": {
+    "arcanis": "src/cli/arcanis.js"
+  },
+  "scripts": {
+    "test": "jest --coverage",
+    "test:unit": "jest --testPathPattern=tests/",
+    "lint": "echo 'No linter configured'"
+  },
+  "keywords": ["package-manager", "arcanis", "dependency-management"],
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

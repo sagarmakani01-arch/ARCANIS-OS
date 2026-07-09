@@ -1,0 +1,74 @@
+{
+  "framework": {
+    "name": "ArcanisTesting",
+    "version": "1.0.0",
+    "defaultTimeout": 5000,
+    "parallel": false,
+    "maxWorkers": 4
+  },
+  "testing": {
+    "unit": {
+      "enabled": true,
+      "timeout": 10000,
+      "coverageThreshold": 80
+    },
+    "integration": {
+      "enabled": true,
+      "timeout": 30000,
+      "retryCount": 3
+    },
+    "system": {
+      "enabled": true,
+      "timeout": 60000,
+      "screenshotOnFailure": true
+    },
+    "performance": {
+      "enabled": true,
+      "thresholds": {
+        "responseTime": 200,
+        "throughput": 1000,
+        "errorRate": 0.01,
+        "cpuUsage": 80,
+        "memoryUsage": 80
+      }
+    }
+  },
+  "reports": {
+    "formats": ["console", "json", "html"],
+    "outputDir": "./reports",
+    "generateOnFailure": true,
+    "includeScreenshots": true
+  },
+  "ai": {
+    "enabled": true,
+    "bugPrediction": {
+      "enabled": true,
+      "model": "local",
+      "threshold": 0.7
+    },
+    "testGeneration": {
+      "enabled": true,
+      "autoGenerate": true,
+      "coverageTarget": 85
+    },
+    "failureAnalysis": {
+      "enabled": true,
+      "rootCauseAnalysis": true,
+      "suggestionGeneration": true
+    }
+  },
+  "automation": {
+    "discovery": {
+      "enabled": true,
+      "patterns": ["**/*.test.ts", "**/*.spec.ts", "**/*.integration.ts", "**/*.system.ts"],
+      "exclude": ["node_modules", "dist", "reports"]
+    },
+    "continuousTesting": {
+      "enabled": true,
+      "watchMode": false,
+      "onCommit": true,
+      "onPush": true,
+      "onPR": true
+    }
+  }
+}

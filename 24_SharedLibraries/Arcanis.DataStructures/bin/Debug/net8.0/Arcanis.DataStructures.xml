@@ -1,0 +1,310 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Arcanis.DataStructures</name>
+    </assembly>
+    <members>
+        <member name="T:Arcanis.DataStructures.Collections.FixedSizeQueue`1">
+            <summary>
+            A fixed-size circular queue that overwrites old elements when capacity is reached.
+            Optimized for high-throughput scenarios with minimal allocations.
+            </summary>
+            <typeparam name="T">The type of elements in the queue.</typeparam>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.FixedSizeQueue`1.#ctor(System.Int32)">
+            <summary>
+            Initializes a new instance of the FixedSizeQueue class.
+            </summary>
+            <param name="capacity">Maximum number of elements the queue can hold.</param>
+        </member>
+        <member name="P:Arcanis.DataStructures.Collections.FixedSizeQueue`1.Capacity">
+            <summary>
+            Gets the maximum capacity of the queue.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Collections.FixedSizeQueue`1.Count">
+            <summary>
+            Gets the current number of elements in the queue.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Collections.FixedSizeQueue`1.IsFull">
+            <summary>
+            Gets whether the queue is full.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Collections.FixedSizeQueue`1.IsEmpty">
+            <summary>
+            Gets whether the queue is empty.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Collections.FixedSizeQueue`1.Peek">
+            <summary>
+            Gets the element at the front of the queue without removing it.
+            </summary>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.FixedSizeQueue`1.Enqueue(`0)">
+            <summary>
+            Enqueues an item. If the queue is full, overwrites the oldest element.
+            </summary>
+            <param name="item">The item to add to the queue.</param>
+            <returns>True if an element was overwritten; otherwise, false.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.FixedSizeQueue`1.Dequeue">
+            <summary>
+            Dequeues an item from the front of the queue.
+            </summary>
+            <returns>The removed item.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.FixedSizeQueue`1.Clear">
+            <summary>
+            Clears all elements from the queue.
+            </summary>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.FixedSizeQueue`1.ToArray">
+            <summary>
+            Copies elements to an array.
+            </summary>
+            <returns>An array containing all elements in the queue.</returns>
+        </member>
+        <member name="T:Arcanis.DataStructures.Collections.ObjectPool`1">
+            <summary>
+            A high-performance object pool that reduces garbage collection pressure by reusing objects.
+            Thread-safe implementation using lock-free operations where possible.
+            </summary>
+            <typeparam name="T">The type of objects in the pool.</typeparam>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.ObjectPool`1.#ctor(System.Func{`0},System.Action{`0},System.Int32,System.Int32)">
+            <summary>
+            Initializes a new instance of the ObjectPool class.
+            </summary>
+            <param name="factory">Factory function to create new objects when pool is empty.</param>
+            <param name="reset">Optional reset function to clean objects before returning to pool.</param>
+            <param name="initialSize">Initial number of objects to create in the pool.</param>
+            <param name="maxSize">Maximum number of objects the pool can hold.</param>
+        </member>
+        <member name="P:Arcanis.DataStructures.Collections.ObjectPool`1.AvailableCount">
+            <summary>
+            Gets the number of available objects in the pool.
+            </summary>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.ObjectPool`1.Rent">
+            <summary>
+            Rents an object from the pool. Creates a new one if pool is empty.
+            </summary>
+            <returns>A pooled object instance.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.ObjectPool`1.Return(`0)">
+            <summary>
+            Returns an object to the pool for reuse.
+            </summary>
+            <param name="item">The object to return to the pool.</param>
+        </member>
+        <member name="M:Arcanis.DataStructures.Collections.ObjectPool`1.Clear">
+            <summary>
+            Clears all objects from the pool.
+            </summary>
+        </member>
+        <member name="T:Arcanis.DataStructures.Graphs.GraphType">
+            <summary>
+            Represents the type of graph (directed or undirected).
+            </summary>
+        </member>
+        <member name="F:Arcanis.DataStructures.Graphs.GraphType.Directed">
+            <summary>Directed graph where edges have direction.</summary>
+        </member>
+        <member name="F:Arcanis.DataStructures.Graphs.GraphType.Undirected">
+            <summary>Undirected graph where edges are bidirectional.</summary>
+        </member>
+        <member name="T:Arcanis.DataStructures.Graphs.Graph`1">
+            <summary>
+            A generic graph implementation supporting both directed and undirected graphs.
+            Uses adjacency list representation for efficient memory usage.
+            </summary>
+            <typeparam name="T">The type of vertex labels.</typeparam>
+        </member>
+        <member name="P:Arcanis.DataStructures.Graphs.Graph`1.VertexCount">
+            <summary>
+            Gets the number of vertices in the graph.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Graphs.Graph`1.EdgeCount">
+            <summary>
+            Gets the total number of edges in the graph.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Graphs.Graph`1.Vertices">
+            <summary>
+            Gets all vertices in the graph.
+            </summary>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.#ctor(Arcanis.DataStructures.Graphs.GraphType)">
+            <summary>
+            Initializes a new instance of the Graph class.
+            </summary>
+            <param name="graphType">The type of graph (directed or undirected).</param>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.AddVertex(`0)">
+            <summary>
+            Adds a vertex to the graph.
+            </summary>
+            <param name="vertex">The vertex to add.</param>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.AddEdge(`0,`0,System.Double)">
+            <summary>
+            Adds an edge between two vertices.
+            </summary>
+            <param name="from">The source vertex.</param>
+            <param name="to">The destination vertex.</param>
+            <param name="weight">The edge weight (default: 1.0).</param>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.RemoveVertex(`0)">
+            <summary>
+            Removes a vertex and all its edges from the graph.
+            </summary>
+            <param name="vertex">The vertex to remove.</param>
+            <returns>True if the vertex was found and removed; otherwise, false.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.GetNeighbors(`0)">
+            <summary>
+            Gets the neighbors of a vertex.
+            </summary>
+            <param name="vertex">The vertex to get neighbors for.</param>
+            <returns>An enumerable of neighboring vertices with their edge weights.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.GetEdgeWeight(`0,`0)">
+            <summary>
+            Gets the edge weight between two vertices.
+            </summary>
+            <param name="from">The source vertex.</param>
+            <param name="to">The destination vertex.</param>
+            <returns>The edge weight if the edge exists; otherwise, null.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.ContainsVertex(`0)">
+            <summary>
+            Checks if the graph contains a vertex.
+            </summary>
+            <param name="vertex">The vertex to check.</param>
+            <returns>True if the vertex exists; otherwise, false.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.HasEdge(`0,`0)">
+            <summary>
+            Checks if an edge exists between two vertices.
+            </summary>
+            <param name="from">The source vertex.</param>
+            <param name="to">The destination vertex.</param>
+            <returns>True if the edge exists; otherwise, false.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.BFS(`0)">
+            <summary>
+            Performs a breadth-first search starting from a vertex.
+            </summary>
+            <param name="startVertex">The starting vertex.</param>
+            <returns>An enumerable of vertices in BFS order.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Graphs.Graph`1.DFS(`0)">
+            <summary>
+            Performs a depth-first search starting from a vertex.
+            </summary>
+            <param name="startVertex">The starting vertex.</param>
+            <returns>An enumerable of vertices in DFS order.</returns>
+        </member>
+        <member name="T:Arcanis.DataStructures.Trees.BinarySearchTree`1">
+            <summary>
+            A generic binary search tree implementation with O(log n) average operations.
+            Supports insertion, deletion, searching, and various traversal methods.
+            </summary>
+            <typeparam name="T">The type of elements. Must implement IComparable.</typeparam>
+        </member>
+        <member name="P:Arcanis.DataStructures.Trees.BinarySearchTree`1.Count">
+            <summary>
+            Gets the number of elements in the tree.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Trees.BinarySearchTree`1.IsEmpty">
+            <summary>
+            Gets whether the tree is empty.
+            </summary>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.Insert(`0)">
+            <summary>
+            Inserts a new value into the tree.
+            </summary>
+            <param name="value">The value to insert.</param>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.Remove(`0)">
+            <summary>
+            Removes a value from the tree.
+            </summary>
+            <param name="value">The value to remove.</param>
+            <returns>True if the value was found and removed; otherwise, false.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.Search(`0)">
+            <summary>
+            Searches for a value in the tree.
+            </summary>
+            <param name="value">The value to search for.</param>
+            <returns>True if the value exists; otherwise, false.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.InOrderTraversal">
+            <summary>
+            Performs an in-order traversal (sorted order).
+            </summary>
+            <returns>An enumerable of values in sorted order.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.PreOrderTraversal">
+            <summary>
+            Performs a pre-order traversal.
+            </summary>
+            <returns>An enumerable of values in pre-order.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.PostOrderTraversal">
+            <summary>
+            Performs a post-order traversal.
+            </summary>
+            <returns>An enumerable of values in post-order.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.GetMin">
+            <summary>
+            Gets the minimum value in the tree.
+            </summary>
+            <returns>The minimum value.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.GetMax">
+            <summary>
+            Gets the maximum value in the tree.
+            </summary>
+            <returns>The maximum value.</returns>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTree`1.Clear">
+            <summary>
+            Clears all elements from the tree.
+            </summary>
+        </member>
+        <member name="T:Arcanis.DataStructures.Trees.BinarySearchTreeNode`1">
+            <summary>
+            Represents a node in the binary search tree.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Trees.BinarySearchTreeNode`1.Value">
+            <summary>
+            Gets or sets the value stored in the node.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Trees.BinarySearchTreeNode`1.Left">
+            <summary>
+            Gets or sets the left child node.
+            </summary>
+        </member>
+        <member name="P:Arcanis.DataStructures.Trees.BinarySearchTreeNode`1.Right">
+            <summary>
+            Gets or sets the right child node.
+            </summary>
+        </member>
+        <member name="M:Arcanis.DataStructures.Trees.BinarySearchTreeNode`1.#ctor(`0)">
+            <summary>
+            Initializes a new instance of the BinarySearchTreeNode class.
+            </summary>
+            <param name="value">The value to store in the node.</param>
+        </member>
+    </members>
+</doc>

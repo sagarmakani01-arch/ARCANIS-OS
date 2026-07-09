@@ -1,0 +1,60 @@
+# ArcanisVoice configuration
+# All settings are privacy-focused defaults: offline-first, no telemetry.
+
+audio:
+  sample_rate: 16000          # Hz, required for most offline models
+  channels: 1
+  device_input: null          # null = system default
+  device_output: null
+  frame_ms: 30                # processing frame length
+  chunk: 1024                 # low-level read chunk
+
+noise_filter:
+  enabled: true
+  method: webrtc              # webrtc | spectral | rnnoise
+  aggressiveness: 2           # webrtc 0..3
+  spectral_floor_db: -50      # used by spectral method
+  highpass_hz: 80             # remove low-frequency rumble
+
+wake_word:
+  enabled: true
+  model: builtin              # builtin | porcupine | vosk
+  keyword: "arcanis"          # used by builtin detector
+  sensitivity: 0.6            # porcupine sensitivity 0..1
+  porcupine_keyword: "hey google"   # porcupine builtin keyword name
+  porcupine_access_key: ""    # leave empty to use builtin detector
+
+asr:
+  engine: vosk                # vosk | whisper | online
+  offline_model: "vosk-model-small-en-us-0.15"
+  online_endpoint: ""         # https://your-asr/api
+  online_api_key: ""
+  fallback_to_online: true
+
+tts:
+  engine: pyttsx3             # pyttsx3 | piper | online
+  voice_profile: "en-US"      # voice id / language
+  rate: 175                   # words per minute
+  pitch: 0                    # -10..10 (engine dependent)
+  volume: 0.9
+  online_endpoint: ""
+  online_api_key: ""
+
+brain:
+  endpoint: "http://localhost:8001/v1/chat"   # ArcanisBrain API
+  api_key: ""
+  model: "arcanis-brain"
+  timeout_s: 8
+  max_context_turns: 12
+  offline_mode: false
+
+pipeline:
+  low_latency: true
+  barge_in: true              # interrupt TTS when user speaks
+  vad_silence_ms: 700         # end-of-utterance silence
+  max_utterance_ms: 15000
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  enable_websocket: true

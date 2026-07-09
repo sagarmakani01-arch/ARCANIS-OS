@@ -1,0 +1,118 @@
+.window {
+  position: absolute;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  min-height: 200px;
+  overflow: hidden;
+  transition: box-shadow var(--transition-fast);
+}
+
+.window.focused {
+  box-shadow: var(--shadow-lg), 0 0 0 1px var(--border-active);
+  z-index: 100;
+}
+
+.window.maximized {
+  border-radius: 0;
+  border: none;
+}
+
+.window.minimized {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8) translateY(100px);
+  transition: all var(--transition-normal);
+}
+
+.window-titlebar {
+  height: var(--window-titlebar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 12px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-color);
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.window-titlebar-icon {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.window-title {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.window.focused .window-title {
+  color: var(--text-primary);
+}
+
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.window-control-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 14px;
+}
+
+.window-control-btn:hover {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+
+.window-control-btn.close:hover {
+  background: var(--error);
+  color: white;
+}
+
+.window-body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+/* Resize handles */
+.resize-handle {
+  position: absolute;
+  z-index: 10;
+}
+
+.resize-handle.n { top: -3px; left: 8px; right: 8px; height: 6px; cursor: n-resize; }
+.resize-handle.s { bottom: -3px; left: 8px; right: 8px; height: 6px; cursor: s-resize; }
+.resize-handle.e { right: -3px; top: 8px; bottom: 8px; width: 6px; cursor: e-resize; }
+.resize-handle.w { left: -3px; top: 8px; bottom: 8px; width: 6px; cursor: w-resize; }
+.resize-handle.ne { top: -3px; right: -3px; width: 12px; height: 12px; cursor: ne-resize; }
+.resize-handle.nw { top: -3px; left: -3px; width: 12px; height: 12px; cursor: nw-resize; }
+.resize-handle.se { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: se-resize; }
+.resize-handle.sw { bottom: -3px; left: -3px; width: 12px; height: 12px; cursor: sw-resize; }

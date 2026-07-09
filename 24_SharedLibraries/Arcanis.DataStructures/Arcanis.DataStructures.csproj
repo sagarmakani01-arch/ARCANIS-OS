@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Arcanis.DataStructures</RootNamespace>
+    <AssemblyName>Arcanis.DataStructures</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Arcanis Lab</Authors>
+    <Description>High-performance data structures for Arcanis projects</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+</Project>

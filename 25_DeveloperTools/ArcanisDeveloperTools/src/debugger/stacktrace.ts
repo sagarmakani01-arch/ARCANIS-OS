@@ -1,0 +1,36 @@
+import { StackFrame } from './types.js';
+
+export class StackTraceParser {
+  parse(errorStack: string): StackFrame[] {
+    const lines = errorStack.split('\n').filter(l => l.includes('at '));
+    return lines.map(line => {
+      const match = line.match(/at\s+(?:(.+?)\s+\()?(?:(.+?):(\d+):(\d+)\)?)/);
+      if (match) {
+        return {
+          functionName: match[1] || '<anonymous>',
+          file: match[2],
+          line: parseInt(match[3], 10),
+          column: parseInt(match[4], 10),
+          locals: {},
+        };
+      }
+      return {
+        functionName: '<unknown>',
+        file: '<unknown>',
+        line: 0,
+        column: 0,
+        locals: {},
+      };
+    });
+  }
+
+  format(stack: StackFrame[]): string {
+    return stack
+      .map(f => `  at ${f.functionName} (${f.file}:${f.line}:${f.column})`)
+      .join('\n');
+  }
+
+  async capture(): Promise<StackFrame[]> {
+    return this.parse(new Error().stack || '');
+  }
+}
