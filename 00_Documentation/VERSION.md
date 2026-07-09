@@ -1,5 +1,38 @@
 # Version History
 
+## 1.2.0 — Networking + Multi-User + Services (2026-07-09)
+
+### TCP/IP Network Stack
+- `net_stack.h` / `net_stack.c` — Ethernet, ARP, IP, TCP, UDP layers
+- ARP table with resolution, IP checksum, packet handling
+- Socket API: create, connect, send, recv, close, listen, accept
+- Network interface configuration (MAC, IP, gateway, subnet)
+
+### Multi-User Authentication
+- `user.h` / `user.c` — User database with SHA-256 password hashing
+- Create/delete users, authenticate, set passwords
+- User flags: admin, system, locked
+- Default users: root (uid=0), user (uid=1000)
+
+### Init System / Service Manager
+- `init.h` / `init_system.c` — Service registration, start, stop, restart
+- Boot-time service auto-start, on-demand services
+- Service state machine: stopped, starting, running, stopping, failed
+- Boot ordering, shutdown in reverse order
+
+### Package Manager
+- `pkg_mgr.h` / `pkg_mgr.c` — Package database, install, remove, search
+- Package status tracking: available, installed, upgradable
+- Repository URL configuration
+
+### Shell Commands (+6 new)
+- `svc [start|stop|restart|list]` — service management
+- `user [list|add|delete|passwd]` — user management
+- `login <user> <pass>` — authentication
+- `pkg [install|remove|search|list|update]` — package management
+- `net [ifconfig|route|arp|stat]` — network information
+- `ping <host>` — network connectivity test
+
 ## 1.1.0 — Complete Kernel Subsystems (2026-07-08)
 
 ### Simple Filesystem

@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj",
+      "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj",
       "projectName": "Arcanis.AI",
-      "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj",
+      "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj",
       "packagesPath": "C:\\Users\\Sagar Makani\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.AI\\obj\\",
+      "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.AI\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Sagar Makani\\AppData\\Roaming\\NuGet\\NuGet.Config"

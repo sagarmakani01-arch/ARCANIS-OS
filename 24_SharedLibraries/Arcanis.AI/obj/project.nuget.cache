@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "W8ahDrTrmFc=",
+  "dgSpecHash": "CF2BGC/CXH4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj",
+  "projectFilePath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Sagar Makani\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.28\\microsoft.netcore.app.ref.8.0.28.nupkg.sha512",
     "C:\\Users\\Sagar Makani\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.28\\microsoft.windowsdesktop.app.ref.8.0.28.nupkg.sha512",

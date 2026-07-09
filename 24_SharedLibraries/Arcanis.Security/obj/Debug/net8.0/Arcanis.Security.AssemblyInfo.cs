@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("Security utilities for Arcanis projects")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+625e0c8bd2a27bbab7158c2d716724441fba4edf")]
 [assembly: System.Reflection.AssemblyProductAttribute("Arcanis.Security")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Arcanis.Security")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

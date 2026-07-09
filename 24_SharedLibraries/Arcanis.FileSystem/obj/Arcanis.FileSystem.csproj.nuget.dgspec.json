@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj": {}
+    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj": {
+    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj",
+        "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj",
         "projectName": "Arcanis.FileSystem",
-        "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj",
+        "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj",
         "packagesPath": "C:\\Users\\Sagar Makani\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\obj\\",
+        "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Sagar Makani\\AppData\\Roaming\\NuGet\\NuGet.Config"

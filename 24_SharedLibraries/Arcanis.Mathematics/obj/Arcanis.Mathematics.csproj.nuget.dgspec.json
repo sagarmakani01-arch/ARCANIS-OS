@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj": {}
+    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj": {
+    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj",
+        "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj",
         "projectName": "Arcanis.Mathematics",
-        "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj",
+        "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj",
         "packagesPath": "C:\\Users\\Sagar Makani\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\obj\\",
+        "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Sagar Makani\\AppData\\Roaming\\NuGet\\NuGet.Config"

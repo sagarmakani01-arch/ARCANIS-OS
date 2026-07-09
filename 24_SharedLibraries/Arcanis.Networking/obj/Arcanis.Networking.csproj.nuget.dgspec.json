@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj": {}
+    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj": {
+    "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj",
+        "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj",
         "projectName": "Arcanis.Networking",
-        "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj",
+        "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj",
         "packagesPath": "C:\\Users\\Sagar Makani\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\obj\\",
+        "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Sagar Makani\\AppData\\Roaming\\NuGet\\NuGet.Config"

@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj",
+      "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj",
       "projectName": "Arcanis.Logging",
-      "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj",
+      "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj",
       "packagesPath": "C:\\Users\\Sagar Makani\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Logging\\obj\\",
+      "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Logging\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Sagar Makani\\AppData\\Roaming\\NuGet\\NuGet.Config"

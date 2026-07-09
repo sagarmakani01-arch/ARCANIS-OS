@@ -328,6 +328,12 @@ class Shell:
             "log": self.cmd_log,
             "inference": self.cmd_inference,
             "help-text": self.cmd_help_text,
+            "svc": self.cmd_svc,
+            "user": self.cmd_user,
+            "login": self.cmd_login,
+            "pkg": self.cmd_pkg,
+            "net": self.cmd_net,
+            "ping": self.cmd_ping,
         }
 
         handler = dispatch.get(command)
@@ -521,6 +527,9 @@ class Shell:
         print(f"║  Memory   : 256MB detected               ║")
         print(f"║  CPU      : x86 (i686)                   ║")
         print(f"║  Disk     : ATA PIO (8GB)                ║")
+        print(f"║  Network  : TCP/IP stack loaded           ║")
+        print(f"║  Users    : 2 registered                 ║")
+        print(f"║  Services : 5 managed                    ║")
         print(f"║  Shell    : arcanis-sh                   ║")
         print(f"║  Inference: Built-in                     ║")
         print("╚══════════════════════════════════════════╝\033[0m")
@@ -593,6 +602,151 @@ class Shell:
         print(f"\033[36m  Intent: {intent}\033[0m")
         print(f"\033[36m  Confidence: 0.95\033[0m")
         print(f"\033[36m  Response: I understand you want to {intent.replace('_', ' ')}.\033[0m")
+
+    # ---- Services ----
+    def cmd_svc(self, args):
+        if not args:
+            print("\033[31msvc: usage: svc [start|stop|restart|list] [service]\033[0m")
+            return
+        action = args[0]
+        if action == "list":
+            services = [
+                ("kernel-scheduler", "Process scheduler", "running"),
+                ("vfs", "Virtual filesystem", "running"),
+                ("shell", "Interactive shell", "running"),
+                ("network", "TCP/IP stack", "running"),
+                ("inference", "AI inference engine", "stopped"),
+            ]
+            print(f"{'SERVICE':<20}  {'STATE':<10}  {'DESCRIPTION'}")
+            print("-" * 60)
+            for name, desc, state in services:
+                color = "\033[32m" if state == "running" else "\033[31m"
+                print(f"{name:<20}  {color}{state:<10}\033[0m  {desc}")
+        elif action == "start" and len(args) > 1:
+            print(f"\033[32mService '{args[1]}' started\033[0m")
+        elif action == "stop" and len(args) > 1:
+            print(f"\033[31mService '{args[1]}' stopped\033[0m")
+        elif action == "restart" and len(args) > 1:
+            print(f"\033[33mService '{args[1]}' restarted\033[0m")
+        else:
+            print("\033[31msvc: invalid usage\033[0m")
+
+    # ---- Users ----
+    def cmd_user(self, args):
+        if not args:
+            print("\033[31muser: usage: user [list|add|delete|passwd] [name]\033[0m")
+            return
+        action = args[0]
+        users = [
+            ("root", 0, "admin,system"),
+            ("user", 1000, "admin"),
+            ("guest", 1001, ""),
+        ]
+        if action == "list":
+            print(f"{'USER':<12}  {'UID':<8}  {'FLAGS'}")
+            print("-" * 40)
+            for name, uid, flags in users:
+                print(f"{name:<12}  {uid:<8}  {flags}")
+        elif action == "add" and len(args) > 1:
+            print(f"\033[32mUser '{args[1]}' created (uid=1002)\033[0m")
+        elif action == "delete" and len(args) > 1:
+            print(f"\033[31mUser '{args[1]}' deleted\033[0m")
+        elif action == "passwd" and len(args) > 1:
+            print(f"\033[32mPassword changed for '{args[1]}'\033[0m")
+        else:
+            print("\033[31muser: invalid usage\033[0m")
+
+    def cmd_login(self, args):
+        if len(args) < 2:
+            print("\033[31mlogin: usage: login <username> <password>\033[0m")
+            return
+        username, password = args[0], args[1]
+        # Simulated auth
+        if username in ["root", "user"] and password in ["toor", "user"]:
+            print(f"\033[32mWelcome, {username}!\033[0m")
+            self.env["USER"] = username
+        else:
+            print(f"\033[31mLogin failed for {username}\033[0m")
+
+    # ---- Packages ----
+    def cmd_pkg(self, args):
+        if not args:
+            print("\033[31mpkg: usage: pkg [install|remove|search|list|update] [package]\033[0m")
+            return
+        action = args[0]
+        packages = [
+            ("arcanis-core", "1.1.0", "Core system", "installed"),
+            ("arcanis-shell", "1.0.0", "Interactive shell", "installed"),
+            ("arcanis-kernel", "1.1.0", "Kernel modules", "installed"),
+            ("arcanis-net", "0.1.0", "Network utilities", "available"),
+            ("arcanis-dev", "0.1.0", "Development tools", "available"),
+            ("arcanis-gui", "0.0.1", "Graphical interface", "available"),
+            ("vim-arcanis", "0.1.0", "Text editor", "available"),
+            ("gcc-arcanis", "0.1.0", "C compiler", "available"),
+        ]
+        if action == "list":
+            print(f"{'PACKAGE':<20}  {'VERSION':<10}  {'STATUS':<12}  {'DESCRIPTION'}")
+            print("-" * 70)
+            for name, ver, desc, status in packages:
+                color = "\033[32m" if status == "installed" else "\033[90m"
+                print(f"{name:<20}  {ver:<10}  {color}{status:<12}\033[0m  {desc}")
+        elif action == "search" and len(args) > 1:
+            query = args[1]
+            found = [(n,v,d,s) for n,v,d,s in packages if query in n or query in d]
+            for name, ver, desc, _ in found:
+                print(f"  {name} ({ver}) - {desc}")
+            if not found:
+                print(f"  No packages matching '{query}'")
+        elif action == "install" and len(args) > 1:
+            print(f"\033[32mPackage '{args[1]}' installed successfully\033[0m")
+        elif action == "remove" and len(args) > 1:
+            print(f"\033[31mPackage '{args[1]}' removed\033[0m")
+        elif action == "update":
+            print("\033[33mUpdating package database...\033[0m")
+            print("\033[32mDatabase updated\033[0m")
+        else:
+            print("\033[31mpkg: invalid usage\033[0m")
+
+    # ---- Network ----
+    def cmd_net(self, args):
+        if not args:
+            print("\033[31mnet: usage: net [ifconfig|route|arp|stat]\033[0m")
+            return
+        action = args[0]
+        if action == "ifconfig":
+            print("\033[1;36mNetwork Interfaces:\033[0m")
+            print(f"  eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>")
+            print(f"        inet 192.168.1.100  netmask 255.255.255.0")
+            print(f"        ether 02:42:ac:11:00:02")
+            print(f"        RX packets 1234  TX packets 5678")
+        elif action == "route":
+            print("\033[1;36mRouting Table:\033[0m")
+            print(f"  {'DESTINATION':<20}  {'GATEWAY':<16}  {'METRIC'}")
+            print(f"  {'0.0.0.0/0':<20}  {'192.168.1.1':<16}  {'100'}")
+            print(f"  {'192.168.1.0/24':<20}  {'0.0.0.0':<16}  {'0'}")
+        elif action == "arp":
+            print("\033[1;36mARP Table:\033[0m")
+            print(f"  {'IP ADDRESS':<16}  {'MAC ADDRESS':<20}  {'AGE'}")
+            print(f"  {'192.168.1.1':<16}  {'aa:bb:cc:dd:ee:ff':<20}  {'0s'}")
+        elif action == "stat":
+            print("\033[1;36mNetwork Statistics:\033[0m")
+            print(f"  RX packets: 1234  TX packets: 5678")
+            print(f"  RX bytes: 1.2MB   TX bytes: 567KB")
+            print(f"  Errors: 0  Dropped: 0")
+        else:
+            print("\033[31mnet: invalid usage\033[0m")
+
+    def cmd_ping(self, args):
+        if not args:
+            print("\033[31mping: usage: ping <host>\033[0m")
+            return
+        host = args[0]
+        print(f"PING {host} ({host}) 56(84) bytes of data.")
+        for i in range(4):
+            time_ms = 0.5 + (i * 0.1)
+            print(f"64 bytes from {host}: icmp_seq={i+1} ttl=64 time={time_ms:.1f} ms")
+        print(f"\n--- {host} ping statistics ---")
+        print(f"4 packets transmitted, 4 received, 0% packet loss")
 
     # ---- Misc ----
     def cmd_history(self, _):

@@ -325,11 +325,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Examples\\Arcanis.Examples.csproj",
+      "projectUniqueName": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Examples\\Arcanis.Examples.csproj",
       "projectName": "Arcanis.Examples",
-      "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Examples\\Arcanis.Examples.csproj",
+      "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Examples\\Arcanis.Examples.csproj",
       "packagesPath": "C:\\Users\\Sagar Makani\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Examples\\obj\\",
+      "outputPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Examples\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Sagar Makani\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -345,26 +345,26 @@
           "framework": "net8.0",
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.AI\\Arcanis.AI.csproj"
             },
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.DataStructures\\Arcanis.DataStructures.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.DataStructures\\Arcanis.DataStructures.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.DataStructures\\Arcanis.DataStructures.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.DataStructures\\Arcanis.DataStructures.csproj"
             },
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.FileSystem\\Arcanis.FileSystem.csproj"
             },
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Logging\\Arcanis.Logging.csproj"
             },
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Mathematics\\Arcanis.Mathematics.csproj"
             },
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Networking\\Arcanis.Networking.csproj"
             },
-            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Security\\Arcanis.Security.csproj": {
-              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LAB\\24_SharedLibraries\\Arcanis.Security\\Arcanis.Security.csproj"
+            "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Security\\Arcanis.Security.csproj": {
+              "projectPath": "C:\\Users\\Sagar Makani\\OneDrive\\ARCANIS LABS\\24_SharedLibraries\\Arcanis.Security\\Arcanis.Security.csproj"
             }
           }
         }
