@@ -3,7 +3,7 @@
 
 #include <arcanis/types.h>
 
-#define SYSCALL_COUNT 32
+#define SYSCALL_COUNT 38
 
 enum syscall_num {
     SYS_EXIT     = 0,
@@ -38,6 +38,12 @@ enum syscall_num {
     SYS_GETUID   = 29,
     SYS_SETUID   = 30,
     SYS_YIELD    = 31,
+    SYS_MSYNC    = 32,
+    SYS_MPROTECT = 33,
+    SYS_LOGIN    = 34,
+    SYS_SVC      = 35,
+    SYS_PKG      = 36,
+    SYS_NET      = 37,
 };
 
 typedef struct {

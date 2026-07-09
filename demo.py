@@ -268,7 +268,7 @@ class Shell:
 
         """ + "\033[0m")
         print("\033[90m  AI-Native Operating System v1.1.0\033[0m")
-        print("\033[90m  49 modules | 32 syscalls | 34 shell commands\033[0m")
+        print("\033[90  49 modules | 38 syscalls | 40+ shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -334,6 +334,19 @@ class Shell:
             "pkg": self.cmd_pkg,
             "net": self.cmd_net,
             "ping": self.cmd_ping,
+            "vi": self.cmd_vi,
+            "vim": self.cmd_vi,
+            "nano": self.cmd_nano,
+            "ed": self.cmd_ed,
+            "asm": self.cmd_asm,
+            "ld": self.cmd_ld,
+            "mount": self.cmd_mount,
+            "df": self.cmd_df,
+            "mmap": self.cmd_mmap,
+            "free": self.cmd_free,
+            "lscpu": self.cmd_lscpu,
+            "top": self.cmd_top,
+            "dmesg": self.cmd_dmesg,
         }
 
         handler = dispatch.get(command)
@@ -748,6 +761,137 @@ class Shell:
         print(f"\n--- {host} ping statistics ---")
         print(f"4 packets transmitted, 4 received, 0% packet loss")
 
+    # ---- Text Editors ----
+    def cmd_vi(self, args):
+        """Vi-like text editor simulation."""
+        if not args:
+            print("\033[33mvi: usage: vi <filename>\033[0m")
+            return
+        filename = args[0]
+        content = self.fs.read(filename) or ""
+        print(f"\033[1;33m[VI EDITOR]\033[0m Editing: {filename}")
+        print("\033[90m  Commands: i=insert, :=command, w=write, q=quit, h=help\033[0m")
+        print("\033[90m  This is a simulation — in the real OS, vi runs as a process.\033[0m")
+        if content:
+            for i, line in enumerate(content.splitlines()[:10], 1):
+                print(f"  {i:>3}  {line}")
+        else:
+            print("  (empty file)")
+
+    def cmd_nano(self, args):
+        """Nano-like editor simulation."""
+        if not args:
+            print("\033[33mnano: usage: nano <filename>\033[0m")
+            return
+        filename = args[0]
+        content = self.fs.read(filename) or ""
+        print(f"\033[1;33m[NANO EDITOR]\033[0m Editing: {filename}")
+        print("\033[90m  This is a simulation — in the real OS, nano runs as a process.\033[0m")
+        if content:
+            print(content[:500])
+
+    def cmd_ed(self, args):
+        """Line editor simulation."""
+        if not args:
+            print("\033[33med: usage: ed <filename>\033[0m")
+            return
+        filename = args[0]
+        content = self.fs.read(filename) or ""
+        print(f"\033[1;33m[ED LINE EDITOR]\033[0m Editing: {filename}")
+        print("\033[90m  This is a simulation — in the real OS, ed runs as a process.\033[0m")
+
+    # ---- Development Tools ----
+    def cmd_asm(self, args):
+        """Assembler simulation."""
+        if not args:
+            print("\033[33masm: usage: asm <input.s> -o <output.o>\033[0m")
+            return
+        filename = args[0]
+        content = self.fs.read(filename)
+        if content is None:
+            print(f"\033[31masm: {filename}: no such file\033[0m")
+            return
+        lines = content.count("\n") + 1
+        print(f"\033[1;33m[ASSEMBLER]\033[0m Assembling: {filename}")
+        print(f"  Lines: {lines}")
+        print(f"  Output: {filename}.o (simulated)")
+        print(f"  Status: \033[32msuccess\033[0m")
+
+    def cmd_ld(self, args):
+        """Linker simulation."""
+        if not args:
+            print("\033[33mld: usage: ld <input.o> -o <output.bin>\033[0m")
+            return
+        filename = args[0]
+        print(f"\033[1;33m[LINKER]\033[0m Linking: {filename}")
+        print(f"  Symbols resolved: 12")
+        print(f"  Sections: .text .data .bss")
+        print(f"  Entry point: 0x08048000")
+        print(f"  Output: {filename}.bin (simulated)")
+        print(f"  Status: \033[32msuccess\033[0m")
+
+    # ---- Filesystem ----
+    def cmd_mount(self, args):
+        """Mount filesystem simulation."""
+        print("\033[1;36mFilesystem mounts:\033[0m")
+        print(f"  /dev       tmpfs     256MB")
+        print(f"  /proc      procfs    0MB")
+        print(f"  /tmp       tmpfs     128MB")
+        print(f"  /home      ext2      2GB")
+        print(f"  /          ext2      4GB")
+
+    def cmd_df(self, args):
+        """Disk free simulation."""
+        print(f"\033[1;36m{'FILESYSTEM':<20}  {'SIZE':<8}  {'USED':<8}  {'AVAIL':<8}  {'MOUNT'}\033[0m")
+        print(f"  {'/dev/sda1':<20}  {'8GB':<8}  {'2.1GB':<8}  {'5.9GB':<8}  /")
+        print(f"  {'tmpfs':<20}  {'256MB':<8}  {'12MB':<8}  {'244MB':<8}  /dev")
+        print(f"  {'tmpfs':<20}  {'128MB':<8}  {'4MB':<8}  {'124MB':<8}  /tmp")
+
+    def cmd_mmap(self, args):
+        """Memory map simulation."""
+        if not args:
+            print(f"\033[1;36m{'ADDRESS':<16}  {'SIZE':<10}  {'PROT':<10}  {'FILE'}\033[0m")
+            print(f"  {'0x08048000':<16}  {'64KB':<10}  {'r-x':<10}  /bin/arcanis-sh")
+            print(f"  {'0x08058000':<16}  {'32KB':<10}  {'rw-':<10}  [heap]")
+            print(f"  {'0xb7e00000':<16}  {'1.2MB':<10}  {'r--':<10}  /lib/libc.so")
+            print(f"  {'0xbff00000':<16}  {'8KB':<10}  {'rw-':<10}  [stack]")
+        else:
+            print(f"\033[33mmmap: mapping {args[0]} at 0xb7f00000 (simulated)\033[0m")
+
+    # ---- System Info ----
+    def cmd_free(self, _):
+        """Memory usage simulation."""
+        print(f"\033[1;36m{'':<12}  {'TOTAL':<10}  {'USED':<10}  {'FREE':<10}  {'SHARED':<10}  {'BUFF/CACHE'}\033[0m")
+        print(f"  {'Mem:':<12}  {'256MB':<10}  {'84MB':<10}  {'142MB':<10}  {'12MB':<10}  {'30MB'}")
+        print(f"  {'Swap:':<12}  {'0MB':<10}  {'0MB':<10}  {'0MB':<10}  {'':<10}  {''}")
+
+    def cmd_lscpu(self, _):
+        """CPU info simulation."""
+        print(f"\033[1;36mCPU Information:\033[0m")
+        print(f"  Architecture:        x86 (i686)")
+        print(f"  CPU(s):              1")
+        print(f"  Model:               Arcanis Virtual CPU")
+        print(f"  Clock speed:         100 MHz (simulated)")
+        print(f"  Cache:               64KB L1")
+        print(f"  Flags:               sse sse2 mmx fpu")
+
+    def cmd_top(self, _):
+        """Process monitor simulation."""
+        print(f"\033[1;36m{'PID':<8}  {'NAME':<20}  {'CPU%':<8}  {'MEM':<8}  {'STATE'}\033[0m")
+        procs = self.kernel.list_processes()
+        for p in procs[:10]:
+            print(f"  {p.pid:<8}  {p.name:<20}  {'0.1':<8}  {'4MB':<8}  {p.state}")
+        print(f"\n  Tasks: {len(procs)} total, 1 running, {len(procs)-1} sleeping")
+
+    def cmd_dmesg(self, _):
+        """Kernel message log."""
+        content = self.fs.read("/var/log/kernel.log")
+        if content:
+            for line in content.splitlines():
+                print(f"\033[90m{line}\033[0m")
+        else:
+            print("\033[90m[BOOT] Kernel initialized\033[0m")
+
     # ---- Misc ----
     def cmd_history(self, _):
         for i, cmd in enumerate(self.history, 1):
@@ -804,6 +948,26 @@ class Shell:
         print("║                                                              ║")
         print("║  AI/INFERENCE:                                              ║")
         print("║    inference <query> Query the AI inference engine           ║")
+        print("║                                                              ║")
+        print("║  TEXT EDITORS:                                              ║")
+        print("║    vi <file>        Vi-like modal editor                    ║")
+        print("║    nano <file>      Nano-like simple editor                 ║")
+        print("║    ed <file>        Line editor                             ║")
+        print("║                                                              ║")
+        print("║  DEVELOPMENT:                                               ║")
+        print("║    asm <file.s>     x86 assembler                           ║")
+        print("║    ld <file.o>      ELF linker                              ║")
+        print("║                                                              ║")
+        print("║  FILESYSTEM:                                                ║")
+        print("║    mount            Show mount points                       ║")
+        print("║    df               Show disk usage                         ║")
+        print("║    mmap [file]      Show memory mappings                    ║")
+        print("║                                                              ║")
+        print("║  SYSTEM INFO:                                               ║")
+        print("║    free             Show memory usage                       ║")
+        print("║    lscpu            Show CPU information                    ║")
+        print("║    top              Process monitor                         ║")
+        print("║    dmesg            Kernel message log                      ║")
         print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
