@@ -1,0 +1,9 @@
+{
+  "name": "arcanis-api",
+  "version": "0.1.0",
+  "description": "Unified API Gateway for ArcanisOS",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": { "test": "vitest run" },
+  "devDependencies": { "typescript": "^5.4.0", "vitest": "^1.6.0" }
+}

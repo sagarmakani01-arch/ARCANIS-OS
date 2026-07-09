@@ -1,0 +1,17 @@
+{
+  "name": "arcanis-cloud",
+  "version": "0.1.0",
+  "description": "Cloud computing platform for ArcanisOS - cluster management, scheduling, load balancing, and auto-scaling",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.1"
+  }
+}

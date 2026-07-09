@@ -20,7 +20,9 @@ class ShellConfig:
     log_file: Optional[Path] = field(
         default_factory=lambda: Path.home() / ".arcanis_shell_activity.log"
     )
-    ai_backend: str = "arcanis_brain"
+    ai_backend: str = "arcanis_inference"
+    model_path: Optional[str] = None
+    inference_backend: str = "llamacpp"
     prompt: str = "arcanis ❯"
     auto_approve_ai: bool = False
     allow_sandbox_writes: bool = True
@@ -41,6 +43,8 @@ class ShellConfig:
         if "log_file" in data and data["log_file"]:
             cfg.log_file = Path(data["log_file"]).expanduser()
         cfg.ai_backend = data.get("ai_backend", cfg.ai_backend)
+        cfg.model_path = data.get("model_path", cfg.model_path)
+        cfg.inference_backend = data.get("inference_backend", cfg.inference_backend)
         cfg.prompt = data.get("prompt", cfg.prompt)
         cfg.auto_approve_ai = data.get("auto_approve_ai", cfg.auto_approve_ai)
         cfg.allow_sandbox_writes = data.get("allow_sandbox_writes", cfg.allow_sandbox_writes)

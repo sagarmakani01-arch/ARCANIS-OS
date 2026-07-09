@@ -256,7 +256,16 @@ export class FailureAnalyzer extends EventEmitter {
     }
 
     // Remove duplicates
-    return [...new Set(suggestions)];
+    const unique = [...new Set(suggestions)];
+    
+    // Always provide at least one suggestion
+    if (unique.length === 0) {
+      unique.push('Review the error message and stack trace');
+      unique.push('Check the relevant code section');
+      unique.push('Add debugging logs');
+    }
+
+    return unique;
   }
 
   private async findRelatedFailures(testResult: TestResult): Promise<string[]> {

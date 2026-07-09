@@ -2,6 +2,7 @@
 #include <arcanis/process.h>
 #include <arcanis/types.h>
 #include <arcanis/string.h>
+#include <arcanis/timer.h>
 
 static process_t* scheduler_queue = NULL;
 static process_t* scheduler_current = NULL;
@@ -42,6 +43,17 @@ void scheduler_yield(void) {
 }
 
 void scheduler_tick(void) {
+    process_t* proc = scheduler_queue;
+    uint32_t now = timer_get_ticks();
+
+    while (proc) {
+        if (proc->state == PROCESS_BLOCKED && proc->sleep_until > 0 && now >= proc->sleep_until) {
+            proc->sleep_until = 0;
+            proc->state = PROCESS_READY;
+        }
+        proc = proc->next;
+    }
+
     process_t* current = process_get_current();
     if (!current) return;
 

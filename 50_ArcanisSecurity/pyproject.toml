@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "arcanis-security"
+version = "0.1.0"
+description = "Capability-based security framework for Arcanis"
+requires-python = ">=3.10"
+authors = [{name = "Sagar Makani"}]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.setuptools.packages.find]
+include = ["arcanis_security*"]

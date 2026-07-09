@@ -5,6 +5,7 @@
 #include <arcanis/defs.h>
 #include <arcanis/scheduler.h>
 #include <arcanis/io.h>
+#include <arcanis/timer.h>
 
 static process_t* process_list = NULL;
 static process_t* current_process = NULL;
@@ -35,6 +36,14 @@ process_t* process_create(const char* name, void* entry_point, uint32_t priority
 
     proc->kernel_stack = (uint32_t)kmalloc(STACK_SIZE) + STACK_SIZE;
     proc->user_stack = 0x7FF00000;
+    proc->parent_pid = 0;
+    string_copy(proc->cwd, "/");
+
+    /* Initialize file descriptor table */
+    fd_table_init(&proc->fd_table);
+
+    /* Initialize signal state */
+    signal_init(&proc->signal_state);
 
     vmm_map_page(proc->page_directory, proc->user_stack - PAGE_SIZE,
         (uint32_t)pmm_alloc_block(), VMM_USER | VMM_WRITE | VMM_PRESENT);
@@ -100,4 +109,68 @@ process_t* process_get_by_pid(pid_t pid) {
         proc = proc->next;
     }
     return NULL;
+}
+
+void process_sleep(uint32_t ms) {
+    process_t* current = process_get_current();
+    if (!current) return;
+
+    current->sleep_until = timer_get_ticks() + (ms * TIMER_HZ / 1000);
+    current->state = PROCESS_BLOCKED;
+    scheduler_yield();
+}
+
+void process_block(process_t* proc) {
+    if (!proc) return;
+    proc->state = PROCESS_BLOCKED;
+    if (proc == current_process) {
+        scheduler_yield();
+    }
+}
+
+void process_unblock(process_t* proc) {
+    if (!proc) return;
+    if (proc->state == PROCESS_BLOCKED) {
+        proc->state = PROCESS_READY;
+        scheduler_add_process(proc);
+    }
+}
+
+process_t* process_get_child(process_t* parent) {
+    if (!parent) return NULL;
+    process_t* proc = process_list;
+    while (proc) {
+        if (proc->parent_pid == parent->pid && proc->state != PROCESS_TERMINATED)
+            return proc;
+        proc = proc->next;
+    }
+    return NULL;
+}
+
+int process_wait(pid_t pid, int* status) {
+    process_t* parent = process_get_current();
+    if (!parent) return -1;
+
+    /* Wait for specific child or any child (pid=-1) */
+    while (1) {
+        process_t* child = process_list;
+        int found = 0;
+        while (child) {
+            if (child->parent_pid == parent->pid) {
+                if (pid == -1 || child->pid == pid) {
+                    if (child->state == PROCESS_ZOMBIE || child->state == PROCESS_TERMINATED) {
+                        if (status) *status = child->exit_code;
+                        pid_t child_pid = child->pid;
+                        process_destroy(child);
+                        return child_pid;
+                    }
+                    found = 1;
+                }
+            }
+            child = child->next;
+        }
+        if (!found) return -1; /* No such child */
+        /* Block until child exits */
+        process_block(parent);
+    }
 }

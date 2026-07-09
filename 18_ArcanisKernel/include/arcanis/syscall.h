@@ -20,7 +20,47 @@ enum syscall_num {
     SYS_CLS      = 11,
     SYS_INFO     = 12,
     SYS_EXEC_CMD = 13,
+    SYS_CHDIR    = 14,
+    SYS_GETCWD   = 15,
+    SYS_STAT     = 16,
+    SYS_MKDIR    = 17,
+    SYS_RMDIR    = 18,
+    SYS_UNLINK   = 19,
+    SYS_PIPE     = 20,
+    SYS_DUP      = 21,
+    SYS_TIME     = 22,
+    SYS_UNAME    = 23,
+    SYS_IOCTL    = 24,
+    SYS_MMAP     = 25,
+    SYS_MUNMAP   = 26,
+    SYS_WAIT     = 27,
+    SYS_KILL     = 28,
+    SYS_GETUID   = 29,
+    SYS_SETUID   = 30,
+    SYS_YIELD    = 31,
 };
+
+typedef struct {
+    uint32_t dev;
+    uint32_t ino;
+    uint32_t mode;
+    uint32_t nlink;
+    uint32_t uid;
+    uint32_t gid;
+    uint32_t rdev;
+    uint32_t size;
+    uint32_t atime;
+    uint32_t mtime;
+    uint32_t ctime;
+} stat_t;
+
+typedef struct {
+    char sysname[64];
+    char nodename[64];
+    char release[64];
+    char version[64];
+    char machine[64];
+} utsname_t;
 
 typedef int32_t (*syscall_handler_t)(registers_t*);
 

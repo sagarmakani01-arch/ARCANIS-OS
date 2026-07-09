@@ -3,6 +3,8 @@
 
 #include <arcanis/types.h>
 #include <arcanis/vmm.h>
+#include <arcanis/fd.h>
+#include <arcanis/signal.h>
 
 enum process_state {
     PROCESS_RUNNING,
@@ -35,6 +37,10 @@ typedef struct process {
     uid_t              uid;
     uint32_t           exit_code;
     uint32_t           sleep_until;
+    fd_table_t         fd_table;
+    signal_state_t     signal_state;
+    pid_t              parent_pid;
+    char               cwd[256];
 } process_t;
 
 void process_initialize(void);
@@ -43,5 +49,10 @@ void process_destroy(process_t* proc);
 void process_switch(process_t* next);
 process_t* process_get_current(void);
 process_t* process_get_by_pid(pid_t pid);
+void process_sleep(uint32_t ms);
+void process_unblock(process_t* proc);
+void process_block(process_t* proc);
+int  process_wait(pid_t pid, int* status);
+process_t* process_get_child(process_t* parent);
 
 #endif

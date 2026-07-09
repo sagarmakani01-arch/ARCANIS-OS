@@ -113,8 +113,22 @@ class LocalOSAdapter(OSAdapter):
         return None
 
 
-def load_brain(backend: str) -> BrainAdapter:
-    """Return a Brain adapter for the requested backend name."""
+def load_brain(backend: str, model_path: str | None = None) -> BrainAdapter:
+    """Return a Brain adapter for the requested backend name.
+
+    Resolution order:
+      1. "arcanis_inference" or "inference" -> InferenceAdapter (60_ArcanisInference)
+      2. "arcanis_brain" or "brain" -> Remote BrainClient (09_ArcanisBrain)
+      3. Anything else or import failure -> LocalBrainAdapter (offline heuristic)
+    """
+    if backend in ("arcanis_inference", "inference"):
+        try:
+            from .inference_adapter import InferenceAdapter
+
+            return InferenceAdapter(model_path=model_path)
+        except Exception:  # noqa: BLE001
+            return LocalBrainAdapter()
+
     if backend in ("arcanis_brain", "brain"):
         try:
             from arcanis_brain.api import BrainClient  # type: ignore
@@ -126,7 +140,15 @@ def load_brain(backend: str) -> BrainAdapter:
 
             return _Remote()
         except Exception:  # noqa: BLE001
-            return LocalBrainAdapter()
+            pass
+
+    # Fallback: try inference first, then brain, then local
+    try:
+        from .inference_adapter import InferenceAdapter
+        return InferenceAdapter(model_path=model_path)
+    except Exception:  # noqa: BLE001
+        pass
+
     return LocalBrainAdapter()
 
 

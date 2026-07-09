@@ -336,6 +336,9 @@ void kernel_main(void) {
     serial_puts("[ArcanisKernel] Initializing syscalls...\n");
     syscall_initialize();
 
+    serial_puts("[ArcanisKernel] Wiring scheduler to timer...\n");
+    timer_register_callback(scheduler_tick);
+
     vga_set_color(VGA_LIGHT_GREEN, VGA_BLACK);
     vga_puts("  [OK] All subsystems initialized\n\n");
     vga_set_color(VGA_LIGHT_GREY, VGA_BLACK);

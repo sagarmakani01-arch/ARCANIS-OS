@@ -1,0 +1,17 @@
+{
+  "name": "arcanis-container",
+  "version": "0.1.0",
+  "description": "Container runtime and orchestration system for ArcanisOS",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

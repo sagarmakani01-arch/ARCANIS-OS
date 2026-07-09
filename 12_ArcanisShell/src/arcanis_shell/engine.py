@@ -60,7 +60,7 @@ class ShellEngine:
         self._history: list[str] = []
 
     def _default_ai(self) -> AIInterface:
-        brain = load_brain(self.config.ai_backend)
+        brain = load_brain(self.config.ai_backend, model_path=self.config.model_path)
         agents = load_agents()
         os_adapter = load_os()
         return AIInterface(brain, agents, os_adapter, self.config.ai_backend)

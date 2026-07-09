@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "arcanis-inference"
+version = "0.1.0"
+description = "Lightweight on-device inference engine for the Arcanis ecosystem"
+readme = "README.md"
+license = {text = "All rights reserved"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Sagar Makani"}
+]
+dependencies = []
+
+[project.optional-dependencies]
+llamacpp = ["llama-cpp-python>=0.2.0"]
+dev = ["pytest>=7.0", "pytest-cov"]
+
+[project.scripts]
+arcanis-inference = "arcanis_inference.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["arcanis_inference*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -421,6 +421,147 @@ def build_registry() -> Registry:
             "run", cmd_run, "Execute an .arc script", "script", RiskLevel.MEDIUM, ["run deploy.arc"]
         )
     )
+
+    # ---- Core Utilities (from 25_DeveloperTools) ----
+    def cmd_grep(args, flags, ctx):
+        from arcanis_utils.coreutils import grep
+        pattern = args[0] if args else ""
+        paths = args[1:] if len(args) > 1 else None
+        result = grep(pattern, paths, ignore_case="i" in flags, invert="v" in flags,
+                      count="c" in flags, line_number="n" in flags)
+        return CommandResult(success=True, stdout=result)
+    reg.register(Command("grep", cmd_grep, "Search for pattern in files", "text", RiskLevel.SAFE,
+                         ["grep 'TODO' src/*.py", "grep -i error log.txt"]))
+
+    def cmd_sed(args, flags, ctx):
+        from arcanis_utils.coreutils import sed
+        expr = args[0] if args else ""
+        text = args[1] if len(args) > 1 else ""
+        return CommandResult(success=True, stdout=sed(expr, text))
+    reg.register(Command("sed", cmd_sed, "Stream editor (substitute)", "text", RiskLevel.SAFE,
+                         ["sed 's/foo/bar/g' input.txt"]))
+
+    def cmd_sort(args, flags, ctx):
+        from arcanis_utils.coreutils import sort_lines
+        text = args[0] if args else ""
+        result = sort_lines(text, numeric="n" in flags, reverse="r" in flags, unique="u" in flags)
+        return CommandResult(success=True, stdout=result)
+    reg.register(Command("sort", cmd_sort, "Sort lines of text", "text", RiskLevel.SAFE,
+                         ["sort names.txt", "sort -n -r scores.txt"]))
+
+    def cmd_wc(args, flags, ctx):
+        from arcanis_utils.coreutils import wc
+        text = args[0] if args else ""
+        return CommandResult(success=True, stdout=wc(text))
+    reg.register(Command("wc", cmd_wc, "Count lines, words, characters", "text", RiskLevel.SAFE,
+                         ["wc file.txt", "wc -l *.py"]))
+
+    def cmd_head(args, flags, ctx):
+        from arcanis_utils.coreutils import head
+        n = int(flags.get("n", "10"))
+        text = args[0] if args else ""
+        return CommandResult(success=True, stdout=head(text, n))
+    reg.register(Command("head", cmd_head, "Output first N lines", "text", RiskLevel.SAFE,
+                         ["head -n 5 file.txt"]))
+
+    def cmd_tail(args, flags, ctx):
+        from arcanis_utils.coreutils import tail
+        n = int(flags.get("n", "10"))
+        text = args[0] if args else ""
+        return CommandResult(success=True, stdout=tail(text, n))
+    reg.register(Command("tail", cmd_tail, "Output last N lines", "text", RiskLevel.SAFE,
+                         ["tail -n 20 log.txt"]))
+
+    def cmd_diff(args, flags, ctx):
+        from arcanis_utils.coreutils import diff
+        if len(args) < 2:
+            return CommandResult(success=False, stderr="diff: need two files", exit_code=1)
+        return CommandResult(success=True, stdout=diff(args[0], args[1]))
+    reg.register(Command("diff", cmd_diff, "Compare two files", "text", RiskLevel.SAFE,
+                         ["diff old.txt new.txt"]))
+
+    def cmd_touch_cmd(args, flags, ctx):
+        from arcanis_utils.coreutils import touch
+        for arg in args:
+            touch(arg)
+        return CommandResult(success=True, stdout="ok")
+    reg.register(Command("touch", cmd_touch_cmd, "Create file or update timestamp", "file", RiskLevel.LOW,
+                         ["touch newfile.txt"]))
+
+    def cmd_chmod_cmd(args, flags, ctx):
+        from arcanis_utils.coreutils import chmod
+        if len(args) < 2:
+            return CommandResult(success=False, stderr="chmod: need mode and file", exit_code=1)
+        return CommandResult(success=True, stdout=chmod(args[0], args[1]))
+    reg.register(Command("chmod", cmd_chmod_cmd, "Change file permissions", "file", RiskLevel.MEDIUM,
+                         ["chmod 755 script.sh"]))
+
+    def cmd_ln(args, flags, ctx):
+        from arcanis_utils.coreutils import ln
+        if len(args) < 2:
+            return CommandResult(success=False, stderr="ln: need target and link", exit_code=1)
+        ln(args[-2], args[-1], symbolic="s" in flags)
+        return CommandResult(success=True, stdout="ok")
+    reg.register(Command("ln", cmd_ln, "Create file link", "file", RiskLevel.LOW,
+                         ["ln -s /bin/sh /usr/bin/sh"]))
+
+    def cmd_uptime_cmd(args, flags, ctx):
+        from arcanis_utils.coreutils import uptime_str
+        return CommandResult(success=True, stdout=uptime_str())
+    reg.register(Command("uptime", cmd_uptime_cmd, "Show system uptime", "system", RiskLevel.SAFE,
+                         ["uptime"]))
+
+    def cmd_date_cmd(args, flags, ctx):
+        from arcanis_utils.coreutils import date_str
+        fmt = args[0] if args else ""
+        return CommandResult(success=True, stdout=date_str(fmt))
+    reg.register(Command("date", cmd_date_cmd, "Show current date/time", "system", RiskLevel.SAFE,
+                         ["date", "date '+%Y-%m-%d'"]))
+
+    def cmd_cut(args, flags, ctx):
+        from arcanis_utils.coreutils import cut
+        d = flags.get("d", "\t")
+        f = [int(x) for x in flags.get("f", "1").split(",")]
+        text = args[0] if args else ""
+        return CommandResult(success=True, stdout=cut(d, f, text))
+    reg.register(Command("cut", cmd_cut, "Cut fields from lines", "text", RiskLevel.SAFE,
+                         ["cut -d',' -f1,3 data.csv"]))
+
+    def cmd_tr_cmd(args, flags, ctx):
+        from arcanis_utils.coreutils import tr
+        if len(args) < 3:
+            return CommandResult(success=False, stderr="tr: need SET1 SET2 TEXT", exit_code=1)
+        return CommandResult(success=True, stdout=tr(args[0], args[1], " ".join(args[2:])))
+    reg.register(Command("tr", cmd_tr_cmd, "Translate characters", "text", RiskLevel.SAFE,
+                         ["tr 'a-z' 'A-Z' hello"]))
+
+    def cmd_rev(args, flags, ctx):
+        from arcanis_utils.coreutils import rev
+        text = args[0] if args else ""
+        return CommandResult(success=True, stdout=rev(text))
+    reg.register(Command("rev", cmd_rev, "Reverse text lines", "text", RiskLevel.SAFE,
+                         ["rev file.txt"]))
+
+    def cmd_seq(args, flags, ctx):
+        from arcanis_utils.coreutils import seq
+        nums = [int(x) for x in args]
+        if len(nums) == 1:
+            return CommandResult(success=True, stdout=seq(nums[0]))
+        elif len(nums) >= 2:
+            return CommandResult(success=True, stdout=seq(nums[0], nums[1], nums[2] if len(nums) > 2 else 1))
+        return CommandResult(success=False, stderr="seq: need at least one number", exit_code=1)
+    reg.register(Command("seq", cmd_seq, "Print number sequence", "text", RiskLevel.SAFE,
+                         ["seq 10", "seq 1 2 20"]))
+
+    def cmd_paste(args, flags, ctx):
+        from arcanis_utils.coreutils import paste
+        if len(args) < 2:
+            return CommandResult(success=False, stderr="paste: need two files", exit_code=1)
+        d = flags.get("d", "\t")
+        return CommandResult(success=True, stdout=paste(args[0], args[1], d))
+    reg.register(Command("paste", cmd_paste, "Merge files side by side", "text", RiskLevel.SAFE,
+                         ["paste file1.txt file2.txt"]))
+
     return reg
 
 
