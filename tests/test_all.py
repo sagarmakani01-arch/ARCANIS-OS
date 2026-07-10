@@ -1072,6 +1072,133 @@ def test_multicloud():
 
 
 # ============================================================
+# DEVOPS TESTS
+# ============================================================
+
+def test_devops():
+    suite = TestSuite("DevOps Tests")
+
+    pipelines = [
+        {"name": "main-build", "state": "success", "stages": 5},
+        {"name": "nightly-tests", "state": "running", "stages": 3},
+        {"name": "deploy-prod", "state": "idle", "stages": 4}
+    ]
+    suite.assert_equals(len(pipelines), 3, "devops_pipeline_count")
+    success_count = sum(1 for p in pipelines if p["state"] == "success")
+    suite.assert_equals(success_count, 1, "devops_success_count")
+
+    stages = [
+        {"type": "checkout", "exit": 0},
+        {"type": "build", "exit": 0},
+        {"type": "test", "exit": 0},
+        {"type": "package", "exit": 0},
+        {"type": "deploy", "exit": 0}
+    ]
+    all_passed = all(s["exit"] == 0 for s in stages)
+    suite.assert_true(all_passed, "devops_all_stages_pass")
+
+    artifacts = [
+        {"name": "app-binary", "version": "1.2.3", "size_mb": 45.2},
+        {"name": "test-results", "version": "latest", "size_mb": 2.1},
+        {"name": "docker-image", "version": "v3.2.0", "size_mb": 156}
+    ]
+    suite.assert_equals(len(artifacts), 3, "devops_artifact_count")
+
+    env_vars = {"CI": "true", "BUILD_NUMBER": "142", "GIT_BRANCH": "main"}
+    suite.assert_equals(env_vars["CI"], "true", "devops_ci_env")
+    suite.assert_equals(env_vars["GIT_BRANCH"], "main", "devops_branch_env")
+
+    total_mb = sum(a["size_mb"] for a in artifacts)
+    suite.assert_true(total_mb > 0, "devops_artifact_total_size")
+
+    return suite
+
+
+# ============================================================
+# POWER MANAGEMENT TESTS
+# ============================================================
+
+def test_power():
+    suite = TestSuite("Power Management Tests")
+
+    state = "ON"
+    suite.assert_equals(state, "ON", "power_state_on")
+
+    profiles = ["powersave", "balanced", "performance", "turbo"]
+    suite.assert_equals(len(profiles), 4, "power_profile_count")
+    suite.assert_in("balanced", profiles, "power_profile_balanced")
+
+    cores = [
+        {"freq": 2400, "min": 800, "max": 4200, "util": 52},
+        {"freq": 2400, "min": 800, "max": 4200, "util": 78},
+        {"freq": 2400, "min": 800, "max": 4200, "util": 23},
+        {"freq": 1200, "min": 800, "max": 4200, "util": 12}
+    ]
+    suite.assert_equals(len(cores), 4, "power_core_count")
+    freqs_ok = all(800 <= c["freq"] <= 4200 for c in cores)
+    suite.assert_true(freqs_ok, "power_freq_in_range")
+
+    zones = [
+        {"name": "CPU", "temp": 52.3, "power": 45.0},
+        {"name": "GPU", "temp": 48.7, "power": 120.0},
+        {"name": "Chipset", "temp": 38.2, "power": 8.5}
+    ]
+    suite.assert_equals(len(zones), 3, "power_zone_count")
+
+    battery = {"capacity": 56.0, "charge": 78.5, "cycles": 342, "plugged": True}
+    suite.assert_true(0 <= battery["charge"] <= 100, "power_battery_range")
+    suite.assert_true(battery["plugged"], "power_battery_plugged")
+    suite.assert_true(battery["cycles"] < 1000, "power_battery_cycles_ok")
+
+    total_power = sum(z["power"] for z in zones)
+    suite.assert_true(total_power > 0, "power_total_positive")
+
+    return suite
+
+
+# ============================================================
+# LOCALIZATION TESTS
+# ============================================================
+
+def test_locale():
+    suite = TestSuite("Localization Tests")
+
+    locales = [
+        {"code": "en-US", "name": "English (US)"},
+        {"code": "en-GB", "name": "English (UK)"},
+        {"code": "fr-FR", "name": "French"},
+        {"code": "de-DE", "name": "German"},
+        {"code": "es-ES", "name": "Spanish"},
+        {"code": "ja-JP", "name": "Japanese"},
+        {"code": "zh-CN", "name": "Chinese"},
+        {"code": "ko-KR", "name": "Korean"},
+        {"code": "ar-SA", "name": "Arabic"},
+        {"code": "hi-IN", "name": "Hindi"}
+    ]
+    suite.assert_equals(len(locales), 10, "locale_count")
+
+    codes = [l["code"] for l in locales]
+    suite.assert_in("en-US", codes, "locale_en_us_present")
+    suite.assert_in("fr-FR", codes, "locale_fr_present")
+
+    current = {"code": "en-US", "date_format": "MM/DD/YYYY", "currency": "$"}
+    suite.assert_equals(current["code"], "en-US", "locale_default")
+
+    # Test date formatting
+    suite.assert_equals(current["date_format"], "MM/DD/YYYY", "locale_date_format")
+
+    # Test translation lookup
+    translations = {"greeting": "Hello", "farewell": "Goodbye", "thanks": "Thank you"}
+    suite.assert_equals(len(translations), 3, "locale_translation_count")
+    suite.assert_equals(translations["greeting"], "Hello", "locale_tr_greeting")
+
+    # Test locale switching
+    suite.assert_equals("fr-FR" in codes, True, "locale_switch_exists")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -1115,7 +1242,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v3.1.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v3.2.0\033[0m")
     print()
 
     all_suites = []
@@ -1145,6 +1272,9 @@ def main():
         ("AR/VR", test_arvr),
         ("Zero Trust", test_zerotrust),
         ("Multi-Cloud", test_multicloud),
+        ("DevOps", test_devops),
+        ("Power Management", test_power),
+        ("Localization", test_locale),
         ("Performance", test_performance),
     ]
 

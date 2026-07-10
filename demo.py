@@ -137,7 +137,7 @@ class FileSystem:
         # Create some files
         self.write("/etc/hostname", "arcanis")
         self.write("/etc/version", "1.1.0")
-        self.write("/etc/motd", "Welcome to Arcanis OS v2.3.0\nAI-Native Operating System\nType 'help' for commands.")
+        self.write("/etc/motd", "Welcome to Arcanis OS v3.2.0\nAI-Native Operating System\nType 'help' for commands.")
         self.write("/home/user/.profile", "export PATH=/bin:/usr/bin\nexport PS1='arcanis> '")
         self.write("/home/user/notes.txt", "TODO: Finish kernel modules\nTODO: Write tests\nTODO: Deploy to hardware")
         self.write("/var/log/kernel.log", "[BOOT] Kernel initialized\n[BOOT] PMM: 256MB detected\n[BOOT] VMM: paging enabled\n[BOOT] Scheduler: ready\n[BOOT] VFS: mounted root\n[BOOT] Init: starting")
@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v2.2.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 100 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v3.2.0\033[0m")
+        print("\033[90m  54 modules | 46 syscalls | 110 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -415,6 +415,11 @@ class Shell:
             "zt": self.cmd_zerotrust,
             "multicloud": self.cmd_multicloud,
             "mcloud": self.cmd_multicloud,
+            "devops": self.cmd_devops,
+            "ci": self.cmd_devops,
+            "power": self.cmd_power,
+            "locale": self.cmd_locale,
+            "i18n": self.cmd_locale,
         }
 
         handler = dispatch.get(command)
@@ -600,7 +605,7 @@ class Shell:
         print("\033[1;36m╔══════════════════════════════════════════╗")
         print("║         ARCANIS SYSTEM INFORMATION       ║")
         print("╠══════════════════════════════════════════╣")
-        print(f"║  OS       : Arcanis OS v1.1.0            ║")
+        print(f"║  OS       : Arcanis OS v3.2.0            ║")
         print(f"║  Kernel   : 32-bit x86 microkernel       ║")
         print(f"║  Syscalls : 32                           ║")
         print(f"║  Processes: {len(self.kernel.list_processes()):<28}║")
@@ -1494,6 +1499,17 @@ class Shell:
         print("║    multicloud [cmd] Multi-cloud orchestration               ║")
         print("║    mcloud [cmd]     Multi-cloud (alias)                     ║")
         print("║                                                              ║")
+        print("║  DEVOPS/CI-CD:                                               ║")
+        print("║    devops [cmd]     CI/CD pipeline management               ║")
+        print("║    ci [cmd]         CI/CD pipeline (alias)                  ║")
+        print("║                                                              ║")
+        print("║  POWER MANAGEMENT:                                           ║")
+        print("║    power [cmd]      Power & thermal management              ║")
+        print("║                                                              ║")
+        print("║  LOCALIZATION:                                               ║")
+        print("║    locale [cmd]     Internationalization & locale           ║")
+        print("║    i18n [cmd]       Internationalization (alias)            ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1506,7 +1522,7 @@ class Shell:
         """Show ASCII art help."""
         print("\033[1;33m")
         print("    ╔═══════════════════════════════════╗")
-        print("    ║    ARC A N I S   O S   v2.3.0     ║")
+        print("    ║    ARC A N I S   O S   v3.2.0     ║")
         print("    ║    AI-Native Operating System      ║")
         print("    ╚═══════════════════════════════════╝")
         print("\033[0m")
@@ -2692,6 +2708,151 @@ class Shell:
             print(f"  Total Migrations: 12")
         else:
             print("\033[33mmulticloud: invalid usage\033[0m")
+
+    # ---- DevOps / CI-CD ----
+    def cmd_devops(self, args):
+        """CI/CD pipeline management."""
+        if not args:
+            print("\033[33mdevops: usage: devops [command] [args...]\033[0m")
+            print("  Commands: pipelines, stages, run, artifacts, env, deployments")
+            return
+        action = args[0]
+        if action == "pipelines":
+            print(f"\033[1;36mPipelines:\033[0m")
+            print(f"  {'ID':<8} {'NAME':<20} {'STATE':<12}")
+            print(f"  {'pipe-1':<8} {'main-build':<20} {'success':<12}")
+            print(f"  {'pipe-2':<8} {'nightly-tests':<20} {'running':<12}")
+            print(f"  {'pipe-3':<8} {'deploy-prod':<20} {'idle':<12}")
+        elif action == "stages":
+            print(f"\033[1;36mPipeline Stages:\033[0m")
+            print(f"  {'ORDER':<6} {'TYPE':<12} {'COMMAND':<30} {'EXIT'}")
+            print(f"  {'1':<6} {'checkout':<12} {'git clone ...':<30} {'0'}")
+            print(f"  {'2':<6} {'build':<12} {'make -j4':<30} {'0'}")
+            print(f"  {'3':<6} {'test':<12} {'pytest tests/':<30} {'0'}")
+            print(f"  {'4':<6} {'package':<12} {'docker build':<30} {'0'}")
+            print(f"  {'5':<6} {'deploy':<12} {'kubectl apply':<30} {'0'}")
+        elif action == "run":
+            print(f"\033[33mRunning pipeline main-build...\033[0m")
+            print(f"  [1/5] checkout... \033[32mPASS\033[0m (1.2s)")
+            print(f"  [2/5] build... \033[32mPASS\033[0m (23.4s)")
+            print(f"  [3/5] test... \033[32mPASS\033[0m (45.6s)")
+            print(f"  [4/5] package... \033[32mPASS\033[0m (5.2s)")
+            print(f"  [5/5] deploy... \033[32mPASS\033[0m (8.9s)")
+            print(f"\033[32mPipeline SUCCESS (total: 84.3s)\033[0m")
+        elif action == "artifacts":
+            print(f"\033[1;36mArtifacts:\033[0m")
+            print(f"  {'ID':<8} {'NAME':<20} {'VERSION':<8} {'SIZE':<10}")
+            print(f"  {'art-1':<8} {'app-binary':<20} {'1.2.3':<8} {'45.2 MB':<10}")
+            print(f"  {'art-2':<8} {'test-results':<20} {'latest':<8} {'2.1 MB':<10}")
+            print(f"  {'art-3':<8} {'docker-image':<20} {'v3.2.0':<8} {'156 MB':<10}")
+        elif action == "env":
+            print(f"\033[1;36mPipeline Environment:\033[0m")
+            print(f"  CI=true")
+            print(f"  BUILD_NUMBER=142")
+            print(f"  GIT_BRANCH=main")
+            print(f"  GIT_COMMIT=d70b16e")
+            print(f"  DOCKER_REGISTRY=registry.arcanis.io")
+        elif action == "deployments":
+            print(f"\033[1;36mDeployments:\033[0m")
+            print(f"  {'NAME':<20} {'IMAGE':<24} {'STATUS'}")
+            print(f"  {'production':<20} {'arcanis/app:v3.2.0':<24} {'ACTIVE'}")
+            print(f"  {'staging':<20} {'arcanis/app:latest':<24} {'ACTIVE'}")
+            print(f"  {'canary':<20} {'arcanis/app:v3.2.1-rc':<24} {'DRAINING'}")
+        else:
+            print("\033[33mdevops: invalid usage\033[0m")
+
+    # ---- Power Management ----
+    def cmd_power(self, args):
+        """Power and thermal management."""
+        if not args:
+            print("\033[33mpower: usage: power [command] [args...]\033[0m")
+            print("  Commands: status, profile, cores, zones, battery, freq")
+            return
+        action = args[0]
+        if action == "status":
+            print(f"\033[1;36m=== Power Summary ===\033[0m")
+            print(f"  State:          ON")
+            print(f"  Profile:        balanced")
+            print(f"  Total Power:    65.0 W")
+            print(f"  Avg Temp:       46.4 C")
+            print(f"  Battery:        78.5% (plugged)")
+        elif action == "profile":
+            if len(args) > 1:
+                print(f"Performance profile set to '{args[1]}'")
+            print(f"\033[1;36mAvailable Profiles:\033[0m")
+            print(f"  powersave    - max power savings")
+            print(f"  balanced    - balanced performance/power (active)")
+            print(f"  performance - maximum performance")
+            print(f"  turbo       - overclocking mode")
+        elif action == "cores":
+            print(f"\033[1;36mCPU Cores:\033[0m")
+            print(f"  {'CORE':<10} {'FREQ':<8} {'MIN':<8} {'MAX':<8} {'VOLT':<8} {'UTIL'}")
+            print(f"  {'Core 0':<10} {'2400MHz':<8} {'800MHz':<8} {'4200MHz':<8} {'1.15V':<8} {'52%'}")
+            print(f"  {'Core 1':<10} {'2400MHz':<8} {'800MHz':<8} {'4200MHz':<8} {'1.15V':<8} {'78%'}")
+            print(f"  {'Core 2':<10} {'2400MHz':<8} {'800MHz':<8} {'4200MHz':<8} {'1.15V':<8} {'23%'}")
+            print(f"  {'Core 3':<10} {'1200MHz':<8} {'800MHz':<8} {'4200MHz':<8} {'0.95V':<8} {'12%'}")
+        elif action == "zones":
+            print(f"\033[1;36mThermal Zones:\033[0m")
+            print(f"  {'ZONE':<15} {'TEMP':<8} {'POWER':<10} {'FAN':<10}")
+            print(f"  {'CPU Package':<15} {'52.3C':<8} {'45.0W':<10} {'2100RPM':<10}")
+            print(f"  {'GPU':<15} {'48.7C':<8} {'120.0W':<10} {'1800RPM':<10}")
+            print(f"  {'Chipset':<15} {'38.2C':<8} {'8.5W':<10} {'1200RPM':<10}")
+        elif action == "battery":
+            print(f"\033[1;36mBattery:\033[0m")
+            print(f"  Type:       Li-Ion Polymer")
+            print(f"  Capacity:   56.0 Wh")
+            print(f"  Charge:     78.5%")
+            print(f"  Voltage:    12.3 V")
+            print(f"  Current:    2.1 A")
+            print(f"  Cycles:     342")
+            print(f"  Plugged:    yes")
+        elif action == "freq" and len(args) > 2:
+            print(f"Core {args[1]} frequency set to {args[2]} MHz")
+        else:
+            print("\033[33mpower: invalid usage\033[0m")
+
+    # ---- Localization ----
+    def cmd_locale(self, args):
+        """Internationalization and localization."""
+        if not args:
+            print("\033[33mlocale: usage: locale [command] [args...]\033[0m")
+            print("  Commands: list, set, info, date, time, currency, tr")
+            return
+        action = args[0]
+        if action == "list":
+            print(f"\033[1;36mAvailable Locales:\033[0m")
+            print(f"  {'CODE':<8} {'NAME':<22} {'NATIVE':<22} {'DATE FMT':<14}")
+            print(f"  {'en-US':<8} {'English (US)':<22} {'English (US)':<22} {'MM/DD/YYYY':<14}")
+            print(f"  {'en-GB':<8} {'English (UK)':<22} {'English (UK)':<22} {'DD/MM/YYYY':<14}")
+            print(f"  {'fr-FR':<8} {'French':<22} {'Fran\\xe7ais':<22} {'DD/MM/YYYY':<14}")
+            print(f"  {'de-DE':<8} {'German':<22} {'Deutsch':<22} {'DD.MM.YYYY':<14}")
+            print(f"  {'es-ES':<8} {'Spanish':<22} {'Espa\\xf1ol':<22} {'DD/MM/YYYY':<14}")
+            print(f"  {'ja-JP':<8} {'Japanese':<22} {'\\u65e5\\u672c\\u8a9e':<22} {'YYYY/MM/DD':<14}")
+            print(f"  {'zh-CN':<8} {'Chinese':<22} {'\\u4e2d\\u6587':<22} {'YYYY-MM-DD':<14}")
+            print(f"  {'ko-KR':<8} {'Korean':<22} {'\\ud55c\\uad6d\\uc5b4':<22} {'YYYY-MM-DD':<14}")
+            print(f"  {'ar-SA':<8} {'Arabic':<22} {'\\u0627\\u0644\\u0639\\u0631\\u0628\\u064a\\u0629':<22} {'DD/MM/YYYY':<14}")
+            print(f"  {'hi-IN':<8} {'Hindi':<22} {'\\u0939\\u093f\\u0928\\u094d\\u0926\\u0940':<22} {'DD/MM/YYYY':<14}")
+        elif action == "set" and len(args) > 1:
+            print(f"Locale set to {args[1]}")
+        elif action == "info":
+            print(f"\033[1;36m=== Current Locale ===\033[0m")
+            print(f"  Code:           en-US")
+            print(f"  Name:           English (US)")
+            print(f"  Date Format:    MM/DD/YYYY")
+            print(f"  Time Format:    hh:mm:ss A")
+            print(f"  Currency:       $")
+            print(f"  First DOW:      Sunday")
+            print(f"  Translations:   42 strings loaded")
+        elif action == "date" and len(args) > 2:
+            print(f"Date: {args[2]}/{args[1]}/2026")
+        elif action == "time" and len(args) > 2:
+            print(f"Time: {args[1]}:{args[2]}:00")
+        elif action == "currency" and len(args) > 1:
+            print(f"Currency: ${args[1]}")
+        elif action == "tr" and len(args) > 1:
+            print(f"Translation: [{args[1]}] = {args[1]}")
+        else:
+            print("\033[33mlocale: invalid usage\033[0m")
 
 
 # ============================================================
