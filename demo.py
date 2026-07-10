@@ -12,6 +12,7 @@ import os
 import sys
 import time
 import math
+import re
 import cmath
 import json
 import hashlib
@@ -1598,10 +1599,19 @@ class ArcLexer:
     }
 
     KEYWORDS = {
-        "let": "LET", "fn": "FN", "if": "IF", "else": "ELSE",
-        "while": "WHILE", "for": "FOR", "in": "IN", "return": "RETURN",
-        "true": "TRUE", "false": "FALSE", "nil": "NIL",
-        "print": "PRINT", "input": "INPUT",
+        "let": "LET", "define": "LET", "set": "LET",
+        "fn": "FN", "function": "FN",
+        "if": "IF", "when": "IF",
+        "else": "ELSE", "otherwise": "ELSE",
+        "while": "WHILE", "repeat": "WHILE",
+        "for": "FOR", "foreach": "FOR",
+        "in": "IN",
+        "return": "RETURN", "result": "RETURN",
+        "true": "TRUE", "yes": "TRUE", "on": "TRUE",
+        "false": "FALSE", "no": "FALSE", "off": "FALSE",
+        "nil": "NIL", "nothing": "NIL", "none": "NIL",
+        "print": "PRINT", "display": "PRINT", "show": "PRINT", "say": "PRINT",
+        "input": "INPUT",
     }
 
     def __init__(self, source):
@@ -2055,26 +2065,166 @@ class ArcLang:
         self.vm = ArcVM(jit=jit)
         self.jit = jit
 
-    def run(self, source):
+    def _preprocess_readable(self, source):
+        """Convert natural-language Arc syntax to standard Arc."""
+        s = source.strip()
+        if not s.endswith(";") and not s.endswith("}") and not s.endswith("{"):
+            s = s + ";"
+        # set x to 42 → let x = 42
+        s = re.sub(r'\bset\s+(\w+)\s+to\s+', r'let \1 = ', s)
+        # increase x by 1 → x = x + 1
+        s = re.sub(r'\bincrease\s+(\w+)\s+by\s+', r'\1 = \1 + ', s)
+        # decrease x by 1 → x = x - 1
+        s = re.sub(r'\bdecrease\s+(\w+)\s+by\s+', r'\1 = \1 - ', s)
+        # multiply x by 2 → x = x * 2
+        s = re.sub(r'\bmultiply\s+(\w+)\s+by\s+', r'\1 = \1 * ', s)
+        # divide x by 2 → x = x / 2
+        s = re.sub(r'\bdivide\s+(\w+)\s+by\s+', r'\1 = \1 / ', s)
+        # x is greater than y → x > y
+        s = re.sub(r'(\w+)\s+is\s+greater\s+than\s+or\s+equal\s+to\s+', r'\1 >= ', s)
+        s = re.sub(r'(\w+)\s+is\s+less\s+than\s+or\s+equal\s+to\s+', r'\1 <= ', s)
+        s = re.sub(r'(\w+)\s+is\s+greater\s+than\s+', r'\1 > ', s)
+        s = re.sub(r'(\w+)\s+is\s+less\s+than\s+', r'\1 < ', s)
+        s = re.sub(r'(\w+)\s+is\s+equal\s+to\s+', r'\1 == ', s)
+        s = re.sub(r'(\w+)\s+is\s+not\s+equal\s+to\s+', r'\1 != ', s)
+        s = re.sub(r'(\w+)\s+is\s+not\s+', r'\1 != ', s)
+        s = re.sub(r'(\w+)\s+equals\s+', r'\1 == ', s)
+        # then { → {
+        s = re.sub(r'\bthen\s*\{', r'{', s)
+        # do { → {
+        s = re.sub(r'\bdo\s*\{', r'{', s)
+        # times { → {
+        s = re.sub(r'\btimes\s*\{', r'{', s)
+        # a and b → a and b (keep)
+        # a or b → a or b (keep)
+        # not a → not a (keep)
+        return s
+
+    def explain(self, source):
+        """Translate Arc code to plain English."""
+        lexer = ArcLexer(source)
+        parser = ArcParser(lexer.tokens)
+        ast = parser.parse()
+        lines = []
+        self._explain_node(ast, lines, 0)
+        return "\n".join(lines)
+
+    def _explain_node(self, node, lines, indent):
+        prefix = "  " * indent
+        t = node[0] if isinstance(node, tuple) else None
+        if t == "PROGRAM":
+            for stmt in node[1]:
+                self._explain_node(stmt, lines, indent)
+        elif t == "BLOCK":
+            if node[1]:
+                for stmt in node[1]:
+                    self._explain_node(stmt, lines, indent + 1)
+            else:
+                lines.append(f"{prefix}  (do nothing)")
+        elif t == "LET":
+            lines.append(f"{prefix}Create a variable called '{node[1]}' and set it to the value of:")
+            self._explain_node(node[2], lines, indent + 1)
+        elif t == "FN":
+            params = ", ".join(node[2]) if node[2] else "nothing"
+            lines.append(f"{prefix}Define a function called '{node[1]}' that takes {params}:")
+            self._explain_node(node[3], lines, indent + 1)
+        elif t == "IF":
+            cond_text = self._cond_to_english(node[1])
+            lines.append(f"{prefix}If {cond_text}, then:")
+            self._explain_node(node[2], lines, indent + 1)
+            if node[3]:
+                lines.append(f"{prefix}Otherwise:")
+                self._explain_node(node[3], lines, indent + 1)
+        elif t == "WHILE":
+            cond_text = self._cond_to_english(node[1])
+            lines.append(f"{prefix}Repeat as long as {cond_text}:")
+            self._explain_node(node[2], lines, indent + 1)
+        elif t == "FOR":
+            lines.append(f"{prefix}Repeat for each value of '{node[1]}' in:")
+            self._explain_node(node[2], lines, indent + 1)
+            lines.append(f"{prefix}Running the following each time:")
+            self._explain_node(node[3], lines, indent + 1)
+        elif t == "RETURN":
+            lines.append(f"{prefix}Give back the value of:")
+            self._explain_node(node[1], lines, indent + 1)
+        elif t == "PRINT":
+            lines.append(f"{prefix}Display the value of:")
+            self._explain_node(node[1], lines, indent + 1)
+        elif t == "BINOP":
+            self._explain_node(node[2], lines, indent)
+            op_words = {"+": "plus", "-": "minus", "*": "times", "/": "divided by",
+                        "==": "equals", "!=": "does not equal",
+                        "<": "is less than", ">": "is greater than",
+                        "<=": "is less than or equal to", ">=": "is greater than or equal to"}
+            lines.append(f"{prefix}  {op_words.get(node[1], node[1])}")
+            self._explain_node(node[3], lines, indent)
+        elif t == "NUMBER":
+            lines.append(f"{prefix}  the number {node[1]}")
+        elif t == "STRING":
+            lines.append(f"{prefix}  the text \"{node[1]}\"")
+        elif t == "VAR":
+            lines.append(f"{prefix}  the value of '{node[1]}'")
+        elif t == "BOOL":
+            lines.append(f"{prefix}  {'yes' if node[1] else 'no'}")
+        elif t == "NIL":
+            lines.append(f"{prefix}  nothing")
+        elif t == "CALL":
+            lines.append(f"{prefix}Call the function '{node[1][1] if isinstance(node[1], tuple) and node[1][0] == 'VAR' else '?'}' with:")
+            for arg in node[2]:
+                self._explain_node(arg, lines, indent + 1)
+        elif t == "ASSIGN":
+            lines.append(f"{prefix}Update '{node[1][1] if isinstance(node[1], tuple) and node[1][0] == 'VAR' else '?'}' to:")
+            self._explain_node(node[2], lines, indent + 1)
+        elif t == "INPUT":
+            lines.append(f"{prefix}Ask the user to type something")
+        else:
+            lines.append(f"{prefix}({t})")
+
+    def _cond_to_english(self, node):
+        """Convert a condition expression to readable English."""
+        if node[0] == "BINOP":
+            op_words = {"+": "plus", "-": "minus", "*": "times", "/": "divided by",
+                        "==": "equals", "!=": "does not equal",
+                        "<": "is less than", ">": "is greater than",
+                        "<=": "is less than or equal to", ">=": "is greater than or equal to"}
+            return f"{self._val_to_english(node[2])} {op_words.get(node[1], node[1])} {self._val_to_english(node[3])}"
+        if node[0] == "BOOL":
+            return "yes" if node[1] else "no"
+        if node[0] == "VAR":
+            return f"the value of '{node[1]}'"
+        return "(condition)"
+
+    def _val_to_english(self, node):
+        if node[0] == "NUMBER": return str(node[1])
+        if node[0] == "STRING": return f"\"{node[1]}\""
+        if node[0] == "VAR": return f"'{node[1]}'"
+        if node[0] == "BOOL": return "yes" if node[1] else "no"
+        if node[0] == "NIL": return "nothing"
+        return "(value)"
+
+    def run(self, source, readable=False):
         """Compile and execute Arc source code."""
+        if readable:
+            source = self._preprocess_readable(source)
         lexer = ArcLexer(source)
         parser = ArcParser(lexer.tokens)
         ast = parser.parse()
         self.vm.exec(ast)
 
-    def run_file(self, path):
+    def run_file(self, path, readable=False):
         with open(path) as f:
-            return self.run(f.read())
+            return self.run(f.read(), readable=readable)
 
-    def repl(self):
+    def repl(self, readable=False):
         """Interactive Arc REPL."""
-        print("Arc v1.0 — Type 'exit' to quit")
+        mode = "Readable" if readable else "Standard"
+        print(f"Arc v1.0 ({mode} Mode) — Type 'exit' to quit")
         while True:
             try:
                 line = input("arc> ")
                 if line.strip() in ("exit", "quit"):
                     break
-                self.run(line if line.endswith(";") else line + ";")
+                self.run(line if line.endswith(";") else line + ";", readable=readable)
             except Exception as e:
                 print(f"Error: {e}")
 
@@ -2082,7 +2232,9 @@ class ArcLang:
         lexer = ArcLexer(source)
         return lexer.tokens
 
-    def parse(self, source):
+    def parse(self, source, readable=False):
+        if readable:
+            source = self._preprocess_readable(source)
         lexer = ArcLexer(source)
         parser = ArcParser(lexer.tokens)
         return parser.parse()
@@ -2546,10 +2698,19 @@ class ArcIDE:
     """Visual code editor for Arc language with syntax highlighting."""
 
     KEYWORD_COLORS = {
-        "let": "#569CD6", "fn": "#569CD6", "if": "#569CD6", "else": "#569CD6",
-        "while": "#569CD6", "for": "#569CD6", "in": "#569CD6", "return": "#569CD6",
-        "true": "#4EC9B0", "false": "#4EC9B0", "nil": "#4EC9B0",
-        "print": "#DCDCAA", "input": "#DCDCAA",
+        "let": "#569CD6", "define": "#569CD6", "set": "#569CD6",
+        "fn": "#569CD6", "function": "#569CD6",
+        "if": "#569CD6", "when": "#569CD6",
+        "else": "#569CD6", "otherwise": "#569CD6",
+        "while": "#569CD6", "repeat": "#569CD6",
+        "for": "#569CD6", "foreach": "#569CD6",
+        "in": "#569CD6",
+        "return": "#569CD6", "result": "#569CD6",
+        "true": "#4EC9B0", "yes": "#4EC9B0", "on": "#4EC9B0",
+        "false": "#4EC9B0", "no": "#4EC9B0", "off": "#4EC9B0",
+        "nil": "#4EC9B0", "nothing": "#4EC9B0", "none": "#4EC9B0",
+        "print": "#DCDCAA", "display": "#DCDCAA", "show": "#DCDCAA", "say": "#DCDCAA",
+        "input": "#DCDCAA",
     }
 
     def __init__(self, jit=None):
@@ -2557,6 +2718,7 @@ class ArcIDE:
         self.text = None
         self.output = None
         self.arc = ArcLang(jit=jit)
+        self.readable_mode = False
 
     def available(self):
         return _HAVE_TK
@@ -2586,6 +2748,10 @@ class ArcIDE:
         run_menu.add_command(label="Execute", command=self._run_code)
         run_menu.add_command(label="Show Tokens", command=self._show_tokens)
         run_menu.add_command(label="Show AST", command=self._show_ast)
+        run_menu.add_command(label="Explain", command=self._explain_code)
+        run_menu.add_separator()
+        self.readable_var = tk.BooleanVar(value=False)
+        run_menu.add_checkbutton(label="Readable Mode", variable=self.readable_var)
 
         # Editor
         frame = tk.Frame(self.root, bg="#1E1E1E")
@@ -2624,17 +2790,29 @@ class ArcIDE:
         self.text.bind("<KeyRelease>", self._highlight)
 
         # Set default content
-        default_code = """# Arc language demo
+        default_code = """# Arc language demo — Readable Mode examples
+# ------------------------------------------------
+# Standard Arc:
 fn fib(n) {
-    if n <= 1 { return n; }
-    return fib(n-1) + fib(n-2);
+    if n <= 1 { result n; }
+    result fib(n-1) + fib(n-2);
 }
+display "fib(20) = " + fib(20);
 
-print "fib(20) = " + fib(20);
+# Readable English syntax (toggle Readable Mode):
+#   set n to 10;
+#   display n;
+#   increase n by 5;
+#   display "n is now " + n;
+#
+#   repeat n > 0 {
+#       display "counting: " + n;
+#       decrease n by 1;
+#   }
 
 let sum = 0;
 for i in 10 {
-    sum = sum + i;
+    set sum to sum + i;
 }
 print "sum(0..9) = " + sum;
 """
@@ -2728,7 +2906,7 @@ print "sum(0..9) = " + sum;
         old_stdout = sys.stdout
         sys.stdout = output_capture = __import__('io').StringIO()
         try:
-            self.arc.run(code)
+            self.arc.run(code, readable=self.readable_var.get())
             result = output_capture.getvalue()
         except Exception as e:
             result = f"Error: {e}"
@@ -2753,12 +2931,26 @@ print "sum(0..9) = " + sum;
         self.output.insert(tk.END, result if result else "(empty)")
         self.output.config(state=tk.DISABLED)
 
+    def _explain_code(self):
+        """Explain the code in plain English."""
+        code = self.text.get("1.0", tk.END).strip()
+        if not code:
+            return
+        try:
+            result = self.arc.explain(code)
+        except Exception as e:
+            result = f"Error: {e}"
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, result)
+        self.output.config(state=tk.DISABLED)
+
     def _show_ast(self):
         code = self.text.get("1.0", tk.END).strip()
         if not code:
             return
         try:
-            ast = self.arc.parse(code)
+            ast = self.arc.parse(code, readable=self.readable_var.get())
             result = self.arc.ast_str(ast)
         except Exception as e:
             result = f"Error: {e}"
@@ -5145,18 +5337,26 @@ class Shell:
 
     def cmd_arc(self, args):
         if not args:
-            print("Usage: arc [run <file>|eval <code>|tokens <code>|ast <code>|repl|native <expr>|compile <file>]")
+            usage = "Usage: arc [run <file>|eval <code>|tokens <code>|ast <code>|repl"
+            usage += "|native <expr>|compile <file>|explain <code>|readable <code>]"
+            print(usage)
             return
         a = args[0]
+        readable = False
+        # Check -r flag anywhere
+        remaining = [x for x in args[1:] if x != "-r"]
+        if "-r" in args[1:]:
+            readable = True
+            args = [args[0]] + remaining
         if a == "run" and len(args) > 1:
             if not os.path.isfile(args[1]):
                 print(f"\033[31mFile not found: {args[1]}\033[0m")
                 return
-            self.arc.run_file(args[1])
+            self.arc.run_file(args[1], readable=readable)
         elif a == "eval":
             code = " ".join(args[1:]) if len(args) > 1 else ""
             try:
-                self.arc.run(code if code.endswith(";") else code + ";")
+                self.arc.run(code if code.endswith(";") else code + ";", readable=readable)
             except Exception as e:
                 print(f"\033[31mError: {e}\033[0m")
         elif a == "tokens" and len(args) > 1:
@@ -5167,12 +5367,12 @@ class Shell:
         elif a == "ast" and len(args) > 1:
             code = " ".join(args[1:]) if len(args) > 1 else ""
             try:
-                ast = self.arc.parse(code if code.endswith(";") else code + ";")
+                ast = self.arc.parse(code, readable=readable)
                 print(self.arc.ast_str(ast))
             except Exception as e:
                 print(f"\033[31mError: {e}\033[0m")
         elif a == "repl":
-            self.arc.repl()
+            self.arc.repl(readable=readable)
         elif a == "native" and len(args) > 1:
             if not self.arc_compiler:
                 print("\033[31mNative compiler requires JIT (Windows x64)\033[0m")
@@ -5186,6 +5386,18 @@ class Shell:
                 return
             result = self.arc_compiler.compile_file(args[1])
             print(f"\033[32m{result}\033[0m")
+        elif a == "explain" and len(args) > 1:
+            code = " ".join(args[1:])
+            try:
+                print(self.arc.explain(code))
+            except Exception as e:
+                print(f"\033[31mError: {e}\033[0m")
+        elif a == "readable" and len(args) > 1:
+            code = " ".join(args[1:])
+            try:
+                self.arc.run(code + ";", readable=True)
+            except Exception as e:
+                print(f"\033[31mError: {e}\033[0m")
         else:
             print(f"\033[33marc: unknown action '{a}'\033[0m")
 

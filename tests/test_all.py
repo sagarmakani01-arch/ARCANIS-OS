@@ -2861,6 +2861,52 @@ def test_arc_ide():
 
 
 # ============================================================
+# ARC READABILITY TESTS (V10.1)
+# ============================================================
+
+def test_arc_readability():
+    suite = TestSuite("Arc Readability Tests")
+    import io
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLang
+
+    def arc_run(code, readable=False):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            a = ArcLang()
+            a.run(code if code.endswith(";") or code.endswith("}") else code + ";", readable=readable)
+            return sys.stdout.getvalue().strip()
+        finally:
+            sys.stdout = old
+
+    # English keyword aliases
+    suite.assert_equals(arc_run("define x = 42; display x;"), "42", "readable_define")
+    suite.assert_equals(arc_run("function greet() { display \"hi\"; } greet();"), "hi", "readable_function")
+    suite.assert_equals(arc_run("when true { display \"ok\"; }"), "ok", "readable_when")
+    suite.assert_equals(arc_run("if false { } otherwise { display \"yes\"; }"), "yes", "readable_otherwise")
+    suite.assert_equals(arc_run("repeat false { }"), "", "readable_repeat")
+    suite.assert_equals(arc_run("say \"hello\";"), "hello", "readable_say")
+    suite.assert_equals(arc_run("show \"world\";"), "world", "readable_show")
+    suite.assert_equals(arc_run("set x = 10; display x;"), "10", "readable_set")
+
+    # Natural language preprocessor (readable=True)
+    suite.assert_equals(arc_run("set x to 42; display x;", readable=True), "42", "nl_set_to")
+    suite.assert_equals(arc_run("set x to 10; increase x by 5; display x;", readable=True), "15", "nl_increase")
+    suite.assert_equals(arc_run("set x to 10; decrease x by 3; display x;", readable=True), "7", "nl_decrease")
+    suite.assert_equals(arc_run("display 5 is greater than 3;", readable=True), "True", "nl_greater")
+    suite.assert_equals(arc_run("display 5 is less than 3;", readable=True), "False", "nl_less")
+    suite.assert_equals(arc_run("display 5 is equal to 5;", readable=True), "True", "nl_equal")
+
+    # Explain command
+    a = ArcLang()
+    explanation = a.explain("let x = 42;")
+    suite.assert_true("variable" in explanation, "explain_contains_variable")
+    suite.assert_true("42" in explanation, "explain_contains_value")
+    return suite
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -2873,7 +2919,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v9.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v10.1.0\033[0m")
     print()
 
     all_suites = []
@@ -2954,6 +3000,7 @@ def main():
         ("Arc Standard Library", test_arc_stdlib),
         ("Arc Native Compiler", test_arc_compiler),
         ("Arc IDE", test_arc_ide),
+        ("Arc Readability", test_arc_readability),
     ]
 
     for name, test_func in test_funcs:
