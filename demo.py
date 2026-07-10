@@ -399,6 +399,8 @@ class Shell:
             "chain": self.cmd_blockchain,
             "quantum": self.cmd_quantum,
             "qc": self.cmd_quantum,
+            "monitor": self.cmd_monitor,
+            "metrics": self.cmd_monitor,
         }
 
         handler = dispatch.get(command)
@@ -1440,6 +1442,10 @@ class Shell:
         print("║    quantum [cmd]    Quantum simulator                       ║")
         print("║    qc [cmd]         Quantum simulator (alias)               ║")
         print("║                                                              ║")
+        print("║  MONITORING:                                                ║")
+        print("║    monitor [cmd]    Observability & metrics                 ║")
+        print("║    metrics [cmd]    Metrics viewer (alias)                  ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2127,6 +2133,59 @@ class Shell:
             print(f"\033[32mQFT complete\033[0m")
         else:
             print("\033[33mquantum: invalid usage\033[0m")
+
+    # ---- Monitoring/Observability ----
+    def cmd_monitor(self, args):
+        """Monitoring and observability."""
+        if not args:
+            print("\033[33mmonitor: usage: monitor [command] [args...]\033[0m")
+            print("  Commands: dashboard, metrics, logs, traces, alerts, services")
+            return
+        action = args[0]
+        if action == "dashboard":
+            print(f"\033[1;36m╔══════════════════════════════════════════════════════════╗")
+            print(f"║            ARCANIS MONITORING DASHBOARD                  ║")
+            print(f"╠══════════════════════════════════════════════════════════╣")
+            print(f"║  METRICS:   12 active     TOTAL VALUE:   1245.67       ║")
+            print(f"║  LOGS:       8434 entries ERRORS: 3   WARNINGS: 17     ║")
+            print(f"║  TRACES:     56 total     SERVICES: 8                   ║")
+            print(f"║  ALERTS:      5 rules     OK: 4   CRITICAL: 1           ║")
+            print(f"╚══════════════════════════════════════════════════════════╝\033[0m")
+        elif action == "metrics":
+            print(f"\033[1;36mMetrics:\033[0m")
+            print(f"  {'NAME':<24} {'TYPE':<11} {'VALUE':<10} {'MIN':<10} {'MAX':<10} {'COUNT'}")
+            print(f"  {'cpu_usage':<24} {'gauge':<11} {'45.2':<10} {'12.0':<10} {'89.0':<10} {'1234'}")
+            print(f"  {'memory_used':<24} {'gauge':<11} {'2048.0':<10} {'1024.0':<10} {'4096.0':<10} {'5678'}")
+            print(f"  {'request_count':<24} {'counter':<11} {'12345.0':<10} {'0.0':<10} {'12345.0':<10} {'12345'}")
+            print(f"  {'latency':<24} {'histogram':<11} {'23.4':<10} {'5.0':<10} {'156.0':<10} {'890'}")
+        elif action == "logs":
+            print(f"\033[1;36mRecent Logs:\033[0m")
+            print(f"  12:34:56 INFO  [web] Request completed")
+            print(f"  12:34:55 INFO  [db] Query executed in 12ms")
+            print(f"  12:34:54 WARN  [cache] Cache miss for key user:123")
+            print(f"  12:34:53 ERROR [api] Timeout connecting to service B")
+            print(f"  12:34:52 INFO  [auth] User login successful")
+        elif action == "traces":
+            print(f"\033[1;36mActive Traces:\033[0m")
+            print(f"  {'ID':<20} {'NAME':<24} {'SPANS':<8} {'DURATION':<12} {'STATUS'}")
+            print(f"  {'trace-0':<20} {'http_request':<24} {'3':<8} {'45 ms':<12} {'OK'}")
+            print(f"  {'trace-1':<20} {'db_query':<24} {'1':<8} {'12 ms':<12} {'OK'}")
+            print(f"  {'trace-2':<20} {'ai_inference':<24} {'5':<8} {'234 ms':<12} {'OK'}")
+        elif action == "alerts":
+            print(f"\033[1;36mAlert Rules:\033[0m")
+            print(f"  {'NAME':<20} {'METRIC':<18} {'COND':<10} {'THRESHOLD':<12} {'STATE'}")
+            print(f"  {'high_cpu':<20} {'cpu_usage':<18} {'gt':<10} {'80.0':<12} {'OK'}")
+            print(f"  {'high_memory':<20} {'memory_used':<18} {'gt':<10} {'4000.0':<12} {'OK'}")
+            print(f"  {'high_latency':<20} {'latency':<18} {'gt':<10} {'100.0':<12} {'CRITICAL'}")
+        elif action == "services":
+            print(f"\033[1;36mService Health:\033[0m")
+            print(f"  {'NAME':<20} {'HOST':<16} {'PORT':<8} {'STATUS':<8} {'LATENCY'}")
+            print(f"  {'web-api':<20} {'127.0.0.1':<16} {'8080':<8} {'UP':<8} {'23 ms'}")
+            print(f"  {'database':<20} {'127.0.0.1':<16} {'5432':<8} {'UP':<8} {'5 ms'}")
+            print(f"  {'cache':<20} {'127.0.0.1':<16} {'6379':<8} {'UP':<8} {'2 ms'}")
+            print(f"  {'worker':<20} {'127.0.0.1':<16} {'9090':<8} {'DOWN':<8} {'---'}")
+        else:
+            print("\033[33mmonitor: invalid usage\033[0m")
 
 
 # ============================================================
