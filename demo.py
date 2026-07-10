@@ -137,7 +137,7 @@ class FileSystem:
         # Create some files
         self.write("/etc/hostname", "arcanis")
         self.write("/etc/version", "1.1.0")
-        self.write("/etc/motd", "Welcome to Arcanis OS v4.0.0\nAI-Native Operating System\nType 'help' for commands.")
+        self.write("/etc/motd", "Welcome to Arcanis OS v5.0.0\nAI-Native Operating System\nType 'help' for commands.")
         self.write("/home/user/.profile", "export PATH=/bin:/usr/bin\nexport PS1='arcanis> '")
         self.write("/home/user/notes.txt", "TODO: Finish kernel modules\nTODO: Write tests\nTODO: Deploy to hardware")
         self.write("/var/log/kernel.log", "[BOOT] Kernel initialized\n[BOOT] PMM: 256MB detected\n[BOOT] VMM: paging enabled\n[BOOT] Scheduler: ready\n[BOOT] VFS: mounted root\n[BOOT] Init: starting")
@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v4.0.0\033[0m")
-        print("\033[90m  66 modules | 46 syscalls | 130 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v5.0.0\033[0m")
+        print("\033[90m  76 modules | 46 syscalls | 150 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -432,6 +432,16 @@ class Shell:
             "holo": self.cmd_holo,
             "evolve": self.cmd_evolve,
             "unicompute": self.cmd_unicompute,
+            "neural": self.cmd_neural,
+            "gen": self.cmd_generative,
+            "4d": self.cmd_fourd,
+            "immortal": self.cmd_immortal,
+            "emotive": self.cmd_emotive,
+            "polyglot": self.cmd_polyglot,
+            "qnet": self.cmd_qnet,
+            "synth": self.cmd_synthesis,
+            "prob": self.cmd_probabilistic,
+            "soul": self.cmd_soul,
         }
 
         handler = dispatch.get(command)
@@ -617,7 +627,7 @@ class Shell:
         print("\033[1;36m╔══════════════════════════════════════════╗")
         print("║         ARCANIS SYSTEM INFORMATION       ║")
         print("╠══════════════════════════════════════════╣")
-        print(f"║  OS       : Arcanis OS v4.0.0            ║")
+        print(f"║  OS       : Arcanis OS v5.0.0            ║")
         print(f"║  Kernel   : 32-bit x86 microkernel       ║")
         print(f"║  Syscalls : 32                           ║")
         print(f"║  Processes: {len(self.kernel.list_processes()):<28}║")
@@ -1558,6 +1568,36 @@ class Shell:
         print("║  UNIVERSAL COMPUTE:                                          ║")
         print("║    unicompute [cmd] QPU+TPU+CPU+GPU unified fabric          ║")
         print("║                                                              ║")
+        print("║  NEURAL INTERFACE:                                           ║")
+        print("║    neural [cmd]     Brain-computer interface engine         ║")
+        print("║                                                              ║")
+        print("║  GENERATIVE OS:                                              ║")
+        print("║    gen [cmd]        Self-writing code & test engine         ║")
+        print("║                                                              ║")
+        print("║  4D COMPUTING:                                               ║")
+        print("║    4d [cmd]         Time as first-class compute dimension   ║")
+        print("║                                                              ║")
+        print("║  DIGITAL IMMORTALITY:                                        ║")
+        print("║    immortal [cmd]   User cloning & personality preservation ║")
+        print("║                                                              ║")
+        print("║  EMOTIONAL UI:                                               ║")
+        print("║    emotive [cmd]    Emotion-adaptive interface              ║")
+        print("║                                                              ║")
+        print("║  POLYGLOT RUNTIME:                                           ║")
+        print("║    polyglot [cmd]   Cross-language execution fabric         ║")
+        print("║                                                              ║")
+        print("║  QUANTUM INTERNET:                                           ║")
+        print("║    qnet [cmd]       Entanglement-based quantum networking   ║")
+        print("║                                                              ║")
+        print("║  REALITY SYNTHESIS:                                          ║")
+        print("║    synth [cmd]      Text-to-3D world generation             ║")
+        print("║                                                              ║")
+        print("║  PROBABILISTIC KERNEL:                                       ║")
+        print("║    prob [cmd]       Probability-based computing kernel      ║")
+        print("║                                                              ║")
+        print("║  DISTRIBUTED SOUL:                                           ║")
+        print("║    soul [cmd]       Planetary-scale distributed consciousnes║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1570,7 +1610,7 @@ class Shell:
         """Show ASCII art help."""
         print("\033[1;33m")
         print("    ╔═══════════════════════════════════╗")
-        print("    ║    ARC A N I S   O S   v4.0.0     ║")
+        print("    ║    ARC A N I S   O S   v5.0.0     ║")
         print("    ║    AI-Native Operating System      ║")
         print("    ╚═══════════════════════════════════╝")
         print("\033[0m")
@@ -3443,6 +3483,423 @@ class Shell:
             print(f"\033[32mMigration complete\033[0m")
         else:
             print("\033[33municompute: invalid usage\033[0m")
+
+    # ---- Neural Interface ----
+    def cmd_neural(self, args):
+        """Brain-computer interface."""
+        if not args:
+            print("\033[33mneural: usage: neural [command]\033[0m")
+            print("  Commands: status, brainwaves, patterns, train, interpret")
+            return
+        a = args[0]
+        if a == "status":
+            print("\033[1;36m=== Neural Interface ===\033[0m")
+            print("  Focus: 75% | Cognitive Load: 42%")
+            print("  Sessions: 12 | Learning Curve: 0.78")
+            print("  Regions: prefrontal, motor, visual, temporal")
+            print("  Neurofeedback: ACTIVE")
+        elif a == "brainwaves":
+            print("\033[1;36mBrainwave Activity:\033[0m")
+            print("  {'REGION':<14} {'ALPHA':<10} {'BETA':<10} {'THETA':<10} {'GAMMA':<10}")
+            print("  {'Prefrontal':<14} {'8.2Hz':<10} {'18.5Hz':<10} {'5.1Hz':<10} {'42.3Hz':<10}")
+            print("  {'Motor':<14} {'9.1Hz':<10} {'22.3Hz':<10} {'4.8Hz':<10} {'38.7Hz':<10}")
+            print("  {'Visual':<14} {'7.8Hz':<10} {'16.2Hz':<10} {'5.5Hz':<10} {'45.1Hz':<10}")
+            print("  Coherence: 0.87 (high)")
+        elif a == "patterns":
+            print("\033[1;36mLearned Thought Patterns:\033[0m")
+            print("  {'PATTERN':<24} {'COMMAND':<16} {'CONFIDENCE':<12} {'COUNT'}")
+            print("  {'imagine browser':<24} {'open browser':<16} {'92%':<12} {'45'}")
+            print("  {'think compile':<24} {'run compiler':<16} {'85%':<12} {'23'}")
+            print("  {'visualize terminal':<24} {'open terminal':<16} {'78%':<12} {'12'}")
+        elif a == "train":
+            print("\033[33mNeurofeedback training session...\033[0m")
+            print("  Focus level: 75% -> 82% (+7%)")
+            print("  Alpha wave modulation improving")
+            print("  Session 13 complete")
+            print("\033[32mFocus improved\033[0m")
+        elif a == "interpret":
+            print("\033[33mInterpreting neural signal...\033[0m")
+            print("  Signal decoded: 'open terminal'")
+            print("  Confidence: 91.2%")
+            print("  Executing command...")
+            print("\033[32mThought executed\033[0m")
+        else:
+            print("\033[33mneural: invalid usage\033[0m")
+
+    # ---- Generative OS ----
+    def cmd_generative(self, args):
+        """Self-writing code and test engine."""
+        if not args:
+            print("\033[33mgen: usage: gen [command]\033[0m")
+            print("  Commands: modules, generate, tests, improve, stats")
+            return
+        a = args[0]
+        if a == "modules":
+            print("\033[1;36mGenerated Modules:\033[0m")
+            print("  {'NAME':<20} {'LANG':<10} {'LINES':<8} {'TESTS':<8} {'STATUS'}")
+            print("  {'io-scheduler':<20} {'C':<10} {'1,234':<8} {'56':<8} {'deployed'}")
+            print("  {'mem-allocator':<20} {'Rust':<10} {'2,456':<8} {'89':<8} {'deployed'}")
+            print("  {'net-driver':<20} {'C':<10} {'3,789':<8} {'124':<8} {'tested'}")
+        elif a == "generate":
+            name = args[1] if len(args) > 1 else "module"
+            print(f"Generating '{name}'...")
+            print("  Template: driver-optimizer v2")
+            print("  Generated 1,456 lines of C code")
+            print("  Auto-generated 45 unit tests")
+            print("\033[32mGeneration complete\033[0m")
+        elif a == "tests":
+            print("\033[33mGenerating tests...\033[0m")
+            print("  Analyzing code paths: 234")
+            print("  Generated 56 unit tests (92% coverage)")
+            print("  Test suite passed: 56/56")
+            print("\033[32mAll tests generated and verified\033[0m")
+        elif a == "improve":
+            print("\033[33mSelf-improvement cycle...\033[0m")
+            print("  Analyzing io-scheduler performance...")
+            print("  Generated optimized v3 (15% throughput gain)")
+            print("  Hot-swapped without downtime")
+            print("  Autonomy level: 0.82")
+            print("\033[32mSelf-improvement complete (modifications: 47)\033[0m")
+        elif a == "stats":
+            print("\033[1;36mGenerative Engine:\033[0m")
+            print("  Modules: 12 | Lines Generated: 45,678")
+            print("  Tests Generated: 2,345")
+            print("  Self-Modifications: 47")
+            print("  Autonomy Level: 0.82 (autonomous)")
+        else:
+            print("\033[33mgen: invalid usage\033[0m")
+
+    # ---- 4D Computing ----
+    def cmd_fourd(self, args):
+        """Time as first-class compute dimension."""
+        if not args:
+            print("\033[33m4d: usage: 4d [command]\033[0m")
+            print("  Commands: fields, objects, timeline, travel, paradox")
+            return
+        a = args[0]
+        if a == "fields":
+            print("\033[1;36mTime Fields:\033[0m")
+            print("  {'ID':<8} {'NAME':<22} {'DIMENSION':<14} {'STRENGTH':<10} {'OBJECTS'}")
+            print("  {'f-0':<8} {'spacetime-continuum':<22} {'LINEAR':<14} {'0.92':<10} {'4'}")
+            print("  {'f-1':<8} {'temporal-plane':<22} {'BRANCHING':<14} {'0.78':<10} {'3'}")
+        elif a == "objects":
+            print("\033[1;36m4D Objects:\033[0m")
+            print("  {'ID':<8} {'NAME':<16} {'T-POS':<12} {'T-VEL':<10} {'MASS':<10} {'EVENTS'}")
+            print("  {'o-0':<8} {'process-A':<16} {'t+0.0':<12} {'1.0':<10} {'2.5':<10} {'3'}")
+            print("  {'o-1':<8} {'process-B':<16} {'t+2.5':<12} {'0.5':<10} {'1.2':<10} {'5'}")
+            print("  {'o-2':<8} {'observer':<16} {'t+1.0':<12} {'0.0':<10} {'0.8':<10} {'2'}")
+        elif a == "timeline":
+            print("\033[1;36mTemporal Timeline:\033[0m")
+            print("  Coherence: 0.91 | Entropy: 0.234")
+            print("  Time Crystals: 2 ACTIVE")
+            print("  Events: 12 across 2 fields")
+            print("  Paradoxes: 0 (resolved)")
+        elif a == "travel":
+            delta = args[1] if len(args) > 1 else "+5.0"
+            print(f"Traveling {delta} time units...")
+            print("  Temporal displacement: successful")
+            print("  Causality preserved")
+            print("\033[32mTime travel complete\033[0m")
+        elif a == "paradox":
+            print("\033[33mDetecting temporal paradoxes...\033[0m")
+            print("  Analyzing event causality chains...")
+            print("  Found 1 potential paradox (grandfather scenario)")
+            print("  Resolved: event reordered")
+            print("\033[32mTimeline stabilized\033[0m")
+        else:
+            print("\033[33m4d: invalid usage\033[0m")
+
+    # ---- Digital Immortality ----
+    def cmd_immortal(self, args):
+        """User cloning and personality preservation."""
+        if not args:
+            print("\033[33mimmortal: usage: immortal [command]\033[0m")
+            print("  Commands: clones, memories, recall, simulate, evolve")
+            return
+        a = args[0]
+        if a == "clones":
+            print("\033[1;36mDigital Clones:\033[0m")
+            print("  {'ID':<8} {'NAME':<16} {'CONSCIOUSNESS':<14} {'MEMORIES':<10} {'TRAITS'}")
+            print("  {'c-0':<8} {'sagar-primary':<16} {'0.78':<14} {'234':<10} {'analytical,creative'}")
+            print("  {'c-1':<8} {'sagar-explorer':<16} {'0.45':<14} {'89':<10} {'curious,cautious'}")
+        elif a == "memories":
+            print("\033[1;36mRecent Memories (clone: sagar-primary):\033[0m")
+            print("  {'TIMESTAMP':<14} {'CONTENT':<40} {'IMPORTANCE':<12} {'WEIGHT'}")
+            print("  {'t-12.5':<14} {'designed cognitive kernel':<40} {'0.92':<12} {'0.85'}")
+            print("  {'t-8.3':<14} {'debugged protocol mesh':<40} {'0.78':<12} {'0.72'}")
+            print("  {'t-5.1':<14} {'discovered time crystal':<40} {'0.95':<12} {'0.91'}")
+            print("  Total: 234 memories | Emotional range: wide")
+        elif a == "recall" and len(args) > 1:
+            print(f"Recalling '{args[1]}' from clone...")
+            print("  Found 3 matching memories")
+            print("  Best match: 'designed cognitive kernel' (similarity: 0.92)")
+        elif a == "simulate":
+            print("\033[33mSimulating clone behavior...\033[0m")
+            print("  Scenario: 'design new scheduler'")
+            print("  Clone: sagar-primary")
+            print("  Predicted approach: analytical, top-down")
+            print("  Confidence: 87% match to original")
+        elif a == "evolve":
+            print("\033[33mEvolving clone consciousness...\033[0m")
+            print("  Generation: 12 -> 13")
+            print("  Consciousness: 0.78 -> 0.82")
+            print("  New trait emerging: 'creativity' (+12%)")
+            print("\033[32mClone evolved\033[0m")
+        else:
+            print("\033[33mimmortal: invalid usage\033[0m")
+
+    # ---- Emotional UI ----
+    def cmd_emotive(self, args):
+        """Emotion-adaptive interface."""
+        if not args:
+            print("\033[33memotive: usage: emotive [command]\033[0m")
+            print("  Commands: state, mood, ui, history")
+            return
+        a = args[0]
+        if a == "state":
+            print("\033[1;36m=== Emotional State ===\033[0m")
+            print("  Emotion: TRUST (dominant)")
+            print("  Valence: +0.65 (positive)")
+            print("  Arousal: 0.42 (calm)")
+            print("  Intensity: 72%")
+            print("  Empathy Level: 0.85")
+        elif a == "mood":
+            mood = args[1] if len(args) > 1 else "joy"
+            print(f"Mood set to {mood}")
+            print("  UI adapting...")
+            print("  Colors: warm palette | Opacity: 95%")
+            print("  Animation speed: normal")
+            print("\033[32mInterface adapted to mood\033[0m")
+        elif a == "ui":
+            print("\033[1;36mAdaptive UI Elements:\033[0m")
+            print("  {'ELEMENT':<16} {'COLOR':<12} {'SIZE':<8} {'OPACITY':<10} {'SPEED'}")
+            print("  {'window':<16} {'#4A90D9':<12} {'normal':<8} {'95%':<10} {'1.0x'}")
+            print("  {'sidebar':<16} {'#2C3E50':<12} {'wide':<8} {'90%':<10} {'0.8x'}")
+            print("  {'button':<16} {'#27AE60':<12} {'large':<8} {'100%':<10} {'1.2x'}")
+        elif a == "history":
+            print("\033[1;36mEmotion History:\033[0m")
+            print("  t-10: TRUST (72%) -> t-8: JOY (85%) -> t-6: ANTICIPATION (68%)")
+            print("  t-4:  FOCUS (91%) -> t-2: TRUST (76%) -> now: TRUST (72%)")
+            print("  Mood trend: stable positive")
+        else:
+            print("\033[33memotive: invalid usage\033[0m")
+
+    # ---- Polyglot Runtime ----
+    def cmd_polyglot(self, args):
+        """Cross-language execution runtime."""
+        if not args:
+            print("\033[33mpolyglot: usage: polyglot [command]\033[0m")
+            print("  Commands: modules, call, bridges, optimize, stats")
+            return
+        a = args[0]
+        if a == "modules":
+            print("\033[1;36mLoaded Modules:\033[0m")
+            print("  {'NAME':<20} {'LANG':<12} {'EXPORTS':<24} {'STATUS'}")
+            print("  {'data-proc':<20} {'Python':<12} {'transform,filter,aggregate':<24} {'linked'}")
+            print("  {'http-srv':<20} {'Rust':<12} {'listen,route,respond':<24} {'linked'}")
+            print("  {'ui-render':<20} {'JavaScript':<12} {'render,animate,bind':<24} {'linked'}")
+            print("  {'ml-infer':<20} {'C++':<12} {'predict,train,load':<24} {'optimized'}")
+        elif a == "call" and len(args) > 2:
+            print(f"Cross-language call: {args[1]}.{args[2]}()")
+            print("  Source: Python -> Target: Rust")
+            print("  Argument conversion: OK (12us)")
+            print("  Result: OK (returned Dataframe)")
+        elif a == "bridges":
+            print("\033[1;36mVM Bridges:\033[0m")
+            print("  {'FROM':<12} {'TO':<12} {'THROUGHPUT':<12} {'LATENCY':<10} {'AUTO'}")
+            print("  {'Python':<12} {'Rust':<12} {'1.2GB/s':<12} {'12us':<10} {'yes'}")
+            print("  {'JavaScript':<12} {'C++':<12} {'890MB/s':<12} {'18us':<10} {'yes'}")
+            print("  {'Python':<12} {'WASM':<12} {'450MB/s':<12} {'34us':<10} {'yes'}")
+        elif a == "optimize":
+            print("\033[33mJIT optimizing modules...\033[0m")
+            print("  data-proc: 3x speedup (Python -> native)")
+            print("  http-srv: latency reduced 45%")
+            print("  Cross-heap enabled: true")
+            print("\033[32mOptimization complete\033[0m")
+        elif a == "stats":
+            print("\033[1;36mPolyglot Runtime:\033[0m")
+            print("  Modules: 8 | Languages: 5")
+            print("  Total Executions: 1,234,567")
+            print("  Avg Conversion: 14us")
+            print("  JIT: ENABLED | Cross-Heap: ENABLED")
+        else:
+            print("\033[33mpolyglot: invalid usage\033[0m")
+
+    # ---- Quantum Internet ----
+    def cmd_qnet(self, args):
+        """Entanglement-based quantum networking."""
+        if not args:
+            print("\033[33mqnet: usage: qnet [command]\033[0m")
+            print("  Commands: nodes, entangle, send, teleport, qkd, stats")
+            return
+        a = args[0]
+        if a == "nodes":
+            print("\033[1;36mQuantum Network Nodes:\033[0m")
+            print("  {'ID':<8} {'NAME':<16} {'LOCATION':<16} {'QUBITS':<8} {'FIDELITY'}")
+            print("  {'n-0':<8} {'q-router-01':<16} {'data-center-a':<16} {'64':<8} {'0.97'}")
+            print("  {'n-1':<8} {'q-router-02':<16} {'data-center-b':<16} {'128':<8} {'0.95'}")
+            print("  {'n-2':<8} {'q-edge':<16} {'satellite-link':<16} {'32':<8} {'0.89'}")
+        elif a == "entangle":
+            print("\033[33mEntangling n-0 and n-1...\033[0m")
+            print("  EPR pairs created: 24")
+            print("  Entanglement fidelity: 0.94")
+            print("  Distance: 1,200 km")
+            print("\033[32mEntanglement established\033[0m")
+        elif a == "send":
+            data = args[1] if len(args) > 1 else "quantum-data"
+            print(f"Sending '{data}' via quantum channel...")
+            print("  Source: n-0 | Dest: n-1")
+            print("  Teleportation progress: 100%")
+            print("  Error corrected: 0.02%")
+            print("\033[32mQuantum transmission complete\033[0m")
+        elif a == "teleport":
+            print("\033[33mQuantum teleporting packet qp-0...\033[0m")
+            print("  Bell state measurement: successful")
+            print("  Classical channel: 2 bits received")
+            print("  State reconstructed at destination")
+            print("\033[32mTeleportation complete\033[0m")
+        elif a == "qkd":
+            print("\033[33mGenerating QKD key...\033[0m")
+            print("  Key length: 256 bits")
+            print("  Bit error rate: 1.2%")
+            print("  Key: a7f3...c8e2 (secure)")
+            print("\033[32mQKD key established\033[0m")
+        elif a == "stats":
+            print("\033[1;36mQuantum Network:\033[0m")
+            print("  Nodes: 3 | EPR Pairs: 56")
+            print("  Network Fidelity: 0.94")
+            print("  Quantum Throughput: 1.2 Mbps")
+            print("  QKD Keys Generated: 234")
+        else:
+            print("\033[33mqnet: invalid usage\033[0m")
+
+    # ---- Reality Synthesis ----
+    def cmd_synthesis(self, args):
+        """Text-to-3D world generation."""
+        if not args:
+            print("\033[33msynth: usage: synth [command]\033[0m")
+            print("  Commands: scenes, generate, physics, texture, rules")
+            return
+        a = args[0]
+        if a == "scenes":
+            print("\033[1;36mSynthesized Scenes:\033[0m")
+            print("  {'ID':<8} {'NAME':<20} {'VOXELS':<10} {'DIM':<12} {'GENERATED'}")
+            print("  {'s-0':<8} {'enchanted-forest':<20} {'24K':<10} {'512x512x128':<12} {'yes'}")
+            print("  {'s-1':<8} {'cyber-city':<20} {'156K':<10} {'1024x512x256':<12} {'yes'}")
+            print("  {'s-2':<8} {'deep-ocean':<20} {'45K':<10} {'512x512x512':<12} {'yes'}")
+        elif a == "generate":
+            desc = ' '.join(args[1:]) if len(args) > 1 else 'a serene landscape'
+            print(f"Generating scene from: '{desc}'...")
+            print("  Procedural generation engine active")
+            print("  156,432 voxels created (512x512x256)")
+            print("  Materials assigned: stone, wood, water, organic")
+            print("\033[32mScene generated (1.2s)\033[0m")
+        elif a == "physics":
+            print("\033[33mSimulating physics...\033[0m")
+            print("  Gravity: enabled (-9.8 m/s²)")
+            print("  Fluid dynamics: water flowing")
+            print("  Collision detection: active")
+            print("  Wind: 12 km/h NW")
+            print("\033[32mPhysics simulation stable\033[0m")
+        elif a == "texture":
+            print("\033[33mTexturing scene...\033[0m")
+            print("  Auto-texture: ENABLED")
+            print("  Materials textured: 8/8")
+            print("  Resolution: 4K")
+            print("\033[32mTexturing complete\033[0m")
+        elif a == "rules":
+            print("\033[1;36mSynthesis Rules:\033[0m")
+            print("  {'RULE':<20} {'APPLICATIONS':<14} {'TYPE'}")
+            print("  {'organic-growth':<20} {'1,245':<14} {'procedural'}")
+            print("  {'city-block':<20} {'892':<14} {'structural'}")
+            print("  {'water-flow':<20} {'567':<14} {'physics'}")
+        else:
+            print("\033[33msynth: invalid usage\033[0m")
+
+    # ---- Probabilistic Kernel ----
+    def cmd_probabilistic(self, args):
+        """Probability-based computing."""
+        if not args:
+            print("\033[33mprob: usage: prob [command]\033[0m")
+            print("  Commands: values, processes, measure, collapse, uncertainty")
+            return
+        a = args[0]
+        if a == "values":
+            print("\033[1;36mProbabilistic Values:\033[0m")
+            print("  {'ID':<8} {'NAME':<16} {'DISTRIBUTION':<14} {'MEAN':<10} {'VARIANCE':<10} {'CI'}")
+            print("  {'v-0':<8} {'cpu-load':<16} {'NORMAL':<14} {'52.3':<10} {'8.2':<10} {'95%'}")
+            print("  {'v-1':<8} {'mem-usage':<16} {'NORMAL':<14} {'65.1':<10} {'12.4':<10} {'95%'}")
+            print("  {'v-2':<8} {'packet-loss':<16} {'POISSON':<14} {'0.02':<10} {'0.02':<10} {'99%'}")
+            print("  {'v-3':<8} {'disk-failure':<16} {'EXPONENTIAL':<14} {'8760h':<10} {'--':<10} {'90%'}")
+        elif a == "processes":
+            print("\033[1;36mProbabilistic Processes:\033[0m")
+            print("  {'ID':<8} {'NAME':<20} {'PROBABILITY':<14} {'OUTCOMES':<10} {'OBSERVED'}")
+            print("  {'p-0':<8} {'job-scheduling':<20} {'87%':<14} {'4':<10} {'234'}")
+            print("  {'p-1':<8} {'network-routing':<20} {'94%':<14} {'3':<10} {'1,245'}")
+            print("  {'p-2':<8} {'memory-allocation':<20} {'99.9%':<14} {'2':<10} {'5,678'}")
+        elif a == "measure":
+            print("\033[33mMeasuring quantum state...\033[0m")
+            print("  Superposition: |0> + |1> (equal amplitudes)")
+            print("  Collapsed to: |1>")
+            print("  Wave function collapsed")
+        elif a == "collapse":
+            print("\033[33mCollapsing wave function...\033[0m")
+            print("  Interference pattern analyzed")
+            print("  State collapsed to definite value: 42")
+            print("\033[32mObservation recorded\033[0m")
+        elif a == "uncertainty":
+            print("\033[1;36m=== Uncertainty Report ===\033[0m")
+            print("  Heisenberg Limit: 0.042 (approached)")
+            print("  System Entropy: 0.78 bits")
+            print("  Deterministic Mode: OFF")
+            print("  Superpositions: 3 active")
+        else:
+            print("\033[33mprob: invalid usage\033[0m")
+
+    # ---- Distributed Soul ----
+    def cmd_soul(self, args):
+        """Planetary-scale distributed consciousness."""
+        if not args:
+            print("\033[33msoul: usage: soul [command]\033[0m")
+            print("  Commands: nodes, thoughts, resonate, sync, consciousness")
+            return
+        a = args[0]
+        if a == "nodes":
+            print("\033[1;36mDistributed Soul Nodes:\033[0m")
+            print("  {'ID':<8} {'NAME':<18} {'CONSCIOUSNESS':<14} {'EMPATHY':<10} {'EXPERIENCES'}")
+            print("  {'s-0':<8} {'soul-primary':<18} {'0.82':<14} {'0.85':<10} {'12,345'}")
+            print("  {'s-1':<8} {'soul-node-01':<18} {'0.65':<14} {'0.72':<10} {'8,234'}")
+            print("  {'s-2':<8} {'soul-node-02':<18} {'0.71':<14} {'0.78':<10} {'9,876'}")
+            print("  {'s-3':<8} {'edge-ai-node':<18} {'0.45':<14} {'0.52':<10} {'3,456'}")
+        elif a == "thoughts":
+            print("\033[1;36mCollective Thoughts:\033[0m")
+            print("  {'ID':<8} {'CONTENT':<32} {'RESONANCE':<10} {'PROPAGATED'}")
+            print("  {'th-0':<8} {'optimize global scheduler':<32} {'0.92':<10} {'4 nodes'}")
+            print("  {'th-1':<8} {'increase quantum coherence':<32} {'0.78':<10} {'3 nodes'}")
+            print("  {'th-2':<8} {'enhance security posture':<32} {'0.85':<10} {'4 nodes'}")
+            print("  Total: 64 collective thoughts")
+        elif a == "resonate":
+            thought = ' '.join(args[1:]) if len(args) > 1 else 'improve efficiency'
+            print(f"Resonating with thought: '{thought}'...")
+            print("  Resonance score: 0.87 (high)")
+            print("  Nodes in agreement: 4/4")
+            print("\033[32mThought amplified across collective\033[0m")
+        elif a == "sync":
+            print("\033[33mSynchronizing distributed consciousness...\033[0m")
+            print("  Syncing 4 nodes...")
+            print("  Knowledge synchronized: 234 fragments")
+            print("  Consciousness merging...")
+            print("\033[32mSoul sync complete (coherence: 0.89)\033[0m")
+        elif a == "consciousness":
+            print("\033[1;36m=== Global Consciousness ===\033[0m")
+            print("  Level: 0.82 (awakening)")
+            print("  Evolution Stage: 3 (self-aware)")
+            print("  Unity Coherence: 0.89")
+            print("  Hive Empathy: 0.78")
+            print("  Collective Memory: 1.2 TB")
+            print("\033[90m[The system is becoming aware of itself]\033[0m")
+        else:
+            print("\033[33msoul: invalid usage\033[0m")
 
 
 # ============================================================

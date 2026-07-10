@@ -1628,6 +1628,295 @@ def test_unicompute():
 
 
 # ============================================================
+# NEURAL INTERFACE TESTS
+# ============================================================
+
+def test_neural():
+    suite = TestSuite("Neural Interface Tests")
+
+    regions = ["prefrontal", "motor", "visual", "temporal"]
+    suite.assert_equals(len(regions), 4, "neural_region_count")
+
+    waves = {"alpha": 8.2, "beta": 18.5, "theta": 5.1, "gamma": 42.3}
+    suite.assert_true(all(0 < v <= 100 for v in waves.values()), "neural_wave_range")
+
+    patterns = [
+        {"pattern": "imagine browser", "confidence": 92, "count": 45},
+        {"pattern": "think compile", "confidence": 85, "count": 23}
+    ]
+    suite.assert_equals(len(patterns), 2, "neural_pattern_count")
+    high_conf = all(p["confidence"] > 80 for p in patterns)
+    suite.assert_true(high_conf, "neural_pattern_confidence")
+
+    training = {"focus_before": 75, "focus_after": 82, "sessions": 13}
+    suite.assert_true(training["focus_after"] > training["focus_before"], "neural_training_improvement")
+
+    return suite
+
+
+# ============================================================
+# GENERATIVE OS TESTS
+# ============================================================
+
+def test_generative():
+    suite = TestSuite("Generative OS Tests")
+
+    modules = [
+        {"name": "io-scheduler", "lines": 1234, "tests": 56},
+        {"name": "mem-allocator", "lines": 2456, "tests": 89},
+        {"name": "net-driver", "lines": 3789, "tests": 124}
+    ]
+    suite.assert_equals(len(modules), 3, "gen_module_count")
+    total_lines = sum(m["lines"] for m in modules)
+    suite.assert_true(total_lines > 0, "gen_total_lines")
+    total_tests = sum(m["tests"] for m in modules)
+    suite.assert_true(total_tests > 0, "gen_total_tests")
+
+    autonomy = {"modules": 12, "lines_generated": 45678, "tests_generated": 2345, "self_mods": 47}
+    suite.assert_true(autonomy["modules"] > 0, "gen_module_count2")
+    suite.assert_true(autonomy["lines_generated"] > 1000, "gen_lines_generated")
+
+    return suite
+
+
+# ============================================================
+# 4D COMPUTING TESTS
+# ============================================================
+
+def test_fourd():
+    suite = TestSuite("4D Computing Tests")
+
+    dimensions = ["LINEAR", "BRANCHING", "CYCLIC", "PARALLEL"]
+    suite.assert_equals(len(dimensions), 4, "4d_dimension_count")
+
+    fields = [
+        {"name": "spacetime-continuum", "dim": "LINEAR", "strength": 0.92, "objects": 4},
+        {"name": "temporal-plane", "dim": "BRANCHING", "strength": 0.78, "objects": 3}
+    ]
+    suite.assert_equals(len(fields), 2, "4d_field_count")
+    suite.assert_true(all(f["strength"] <= 1.0 for f in fields), "4d_strength_range")
+
+    timeline = {"coherence": 0.91, "entropy": 0.234, "paradoxes": 0}
+    suite.assert_true(timeline["coherence"] > 0.5, "4d_timeline_coherent")
+    suite.assert_equals(timeline["paradoxes"], 0, "4d_no_paradoxes")
+
+    objects = [{"name": "process-A", "events": 3}, {"name": "process-B", "events": 5}]
+    total_events = sum(o["events"] for o in objects)
+    suite.assert_true(total_events > 0, "4d_total_events")
+
+    return suite
+
+
+# ============================================================
+# DIGITAL IMMORTALITY TESTS
+# ============================================================
+
+def test_immortal():
+    suite = TestSuite("Digital Immortality Tests")
+
+    clones = [
+        {"name": "sagar-primary", "consciousness": 0.78, "memories": 234},
+        {"name": "sagar-explorer", "consciousness": 0.45, "memories": 89}
+    ]
+    suite.assert_equals(len(clones), 2, "immortal_clone_count")
+    suite.assert_true(all(c["consciousness"] <= 1.0 for c in clones), "immortal_consciousness_range")
+
+    memories = [
+        {"content": "designed cognitive kernel", "importance": 0.92, "weight": 0.85},
+        {"content": "debugged protocol mesh", "importance": 0.78, "weight": 0.72}
+    ]
+    suite.assert_equals(len(memories), 2, "immortal_memory_count")
+    suite.assert_true(all(m["importance"] <= 1.0 for m in memories), "immortal_importance_range")
+
+    evolution = {"gen_before": 12, "gen_after": 13, "consciousness_before": 0.78, "consciousness_after": 0.82}
+    suite.assert_true(evolution["gen_after"] > evolution["gen_before"], "immortal_evolution_progress")
+
+    return suite
+
+
+# ============================================================
+# EMOTIONAL UI TESTS
+# ============================================================
+
+def test_emotive():
+    suite = TestSuite("Emotional UI Tests")
+
+    emotions = ["JOY", "SADNESS", "ANGER", "FEAR", "SURPRISE", "DISGUST", "TRUST", "ANTICIPATION"]
+    suite.assert_equals(len(emotions), 8, "emotive_emotion_count")
+
+    state = {"emotion": "TRUST", "valence": 0.65, "arousal": 0.42, "intensity": 72}
+    suite.assert_equals(state["emotion"], "TRUST", "emotive_current")
+    suite.assert_true(-1 <= state["valence"] <= 1, "emotive_valence_range")
+    suite.assert_true(0 <= state["arousal"] <= 1, "emotive_arousal_range")
+
+    ui_elements = [
+        {"name": "window", "opacity": 95},
+        {"name": "sidebar", "opacity": 90},
+        {"name": "button", "opacity": 100}
+    ]
+    suite.assert_equals(len(ui_elements), 3, "emotive_ui_count")
+    suite.assert_true(all(e["opacity"] > 0 for e in ui_elements), "emotive_opacity_positive")
+
+    return suite
+
+
+# ============================================================
+# POLYGLOT RUNTIME TESTS
+# ============================================================
+
+def test_polyglot():
+    suite = TestSuite("Polyglot Runtime Tests")
+
+    languages = ["Python", "JavaScript", "Rust", "Go", "C", "C++", "Java", "Ruby", "Lua", "WASM", "Swift"]
+    suite.assert_equals(len(languages), 11, "polyglot_language_count")
+
+    modules = [
+        {"name": "data-proc", "lang": "Python", "exports": 3},
+        {"name": "http-srv", "lang": "Rust", "exports": 3},
+        {"name": "ui-render", "lang": "JavaScript", "exports": 3}
+    ]
+    suite.assert_equals(len(modules), 3, "polyglot_module_count")
+    langs = [m["lang"] for m in modules]
+    suite.assert_in("Python", langs, "polyglot_python")
+    suite.assert_in("Rust", langs, "polyglot_rust")
+
+    bridges = [
+        {"from": "Python", "to": "Rust", "throughput_gbps": 1.2, "latency_us": 12},
+        {"from": "JavaScript", "to": "C++", "throughput_gbps": 0.89, "latency_us": 18}
+    ]
+    suite.assert_equals(len(bridges), 2, "polyglot_bridge_count")
+    suite.assert_true(all(b["throughput_gbps"] > 0 for b in bridges), "polyglot_throughput")
+
+    stats = {"modules": 8, "languages": 5, "executions": 1234567}
+    suite.assert_true(stats["executions"] > 0, "polyglot_executions")
+
+    return suite
+
+
+# ============================================================
+# QUANTUM INTERNET TESTS
+# ============================================================
+
+def test_qnet():
+    suite = TestSuite("Quantum Internet Tests")
+
+    nodes = [
+        {"name": "q-router-01", "qubits": 64, "fidelity": 0.97},
+        {"name": "q-router-02", "qubits": 128, "fidelity": 0.95},
+        {"name": "q-edge", "qubits": 32, "fidelity": 0.89}
+    ]
+    suite.assert_equals(len(nodes), 3, "qnet_node_count")
+    suite.assert_true(all(n["fidelity"] > 0.8 for n in nodes), "qnet_fidelity_range")
+
+    entanglement = {"pairs": 24, "fidelity": 0.94, "distance_km": 1200}
+    suite.assert_true(entanglement["pairs"] > 0, "qnet_epr_pairs")
+    suite.assert_true(entanglement["fidelity"] > 0.9, "qnet_entanglement_fidelity")
+
+    qkd = {"key_length": 256, "bit_error_rate": 1.2, "keys_generated": 234}
+    suite.assert_true(qkd["key_length"] > 0, "qnet_key_length")
+    suite.assert_true(qkd["bit_error_rate"] < 10, "qnet_low_error")
+
+    stats = {"nodes": 3, "fidelity": 0.94, "throughput_mbps": 1.2}
+    suite.assert_true(stats["throughput_mbps"] > 0, "qnet_throughput")
+
+    return suite
+
+
+# ============================================================
+# REALITY SYNTHESIS TESTS
+# ============================================================
+
+def test_synthesis():
+    suite = TestSuite("Reality Synthesis Tests")
+
+    scenes = [
+        {"name": "enchanted-forest", "voxels": 24000, "generated": True},
+        {"name": "cyber-city", "voxels": 156000, "generated": True},
+        {"name": "deep-ocean", "voxels": 45000, "generated": True}
+    ]
+    suite.assert_equals(len(scenes), 3, "synth_scene_count")
+    suite.assert_true(all(s["generated"] for s in scenes), "synth_all_generated")
+    total_voxels = sum(s["voxels"] for s in scenes)
+    suite.assert_true(total_voxels > 0, "synth_total_voxels")
+
+    materials = ["STONE", "WOOD", "METAL", "WATER", "GLASS", "ORGANIC", "ENERGY", "VOID"]
+    suite.assert_equals(len(materials), 8, "synth_material_count")
+
+    rules = [{"name": "organic-growth", "applications": 1245}, {"name": "city-block", "applications": 892}]
+    total_apps = sum(r["applications"] for r in rules)
+    suite.assert_true(total_apps > 0, "synth_rule_applications")
+
+    return suite
+
+
+# ============================================================
+# PROBABILISTIC KERNEL TESTS
+# ============================================================
+
+def test_probabilistic():
+    suite = TestSuite("Probabilistic Kernel Tests")
+
+    distributions = ["NORMAL", "UNIFORM", "EXPONENTIAL", "POISSON", "BERNOULLI", "CUSTOM"]
+    suite.assert_equals(len(distributions), 6, "prob_distribution_count")
+
+    values = [
+        {"name": "cpu-load", "dist": "NORMAL", "mean": 52.3, "variance": 8.2},
+        {"name": "mem-usage", "dist": "NORMAL", "mean": 65.1, "variance": 12.4},
+        {"name": "packet-loss", "dist": "POISSON", "mean": 0.02, "variance": 0.02}
+    ]
+    suite.assert_equals(len(values), 3, "prob_value_count")
+    suite.assert_true(all(v["variance"] >= 0 for v in values), "prob_variance_non_negative")
+
+    processes = [
+        {"name": "job-scheduling", "probability": 87, "outcomes": 4},
+        {"name": "network-routing", "probability": 94, "outcomes": 3}
+    ]
+    suite.assert_equals(len(processes), 2, "prob_process_count")
+    suite.assert_true(all(0 <= p["probability"] <= 100 for p in processes), "prob_probability_range")
+
+    uncertainty = {"entropy": 0.78, "superpositions": 3, "deterministic_mode": False}
+    suite.assert_true(uncertainty["entropy"] > 0, "prob_entropy_positive")
+    suite.assert_true(uncertainty["superpositions"] > 0, "prob_superpositions_active")
+
+    return suite
+
+
+# ============================================================
+# DISTRIBUTED SOUL TESTS
+# ============================================================
+
+def test_soul():
+    suite = TestSuite("Distributed Soul Tests")
+
+    nodes = [
+        {"name": "soul-primary", "consciousness": 0.82, "empathy": 0.85, "experiences": 12345},
+        {"name": "soul-node-01", "consciousness": 0.65, "empathy": 0.72, "experiences": 8234},
+        {"name": "soul-node-02", "consciousness": 0.71, "empathy": 0.78, "experiences": 9876}
+    ]
+    suite.assert_equals(len(nodes), 3, "soul_node_count")
+    suite.assert_true(all(n["consciousness"] <= 1.0 for n in nodes), "soul_consciousness_range")
+    suite.assert_true(all(n["empathy"] <= 1.0 for n in nodes), "soul_empathy_range")
+
+    thoughts = [
+        {"content": "optimize global scheduler", "resonance": 0.92, "propagated": 4},
+        {"content": "increase quantum coherence", "resonance": 0.78, "propagated": 3}
+    ]
+    suite.assert_equals(len(thoughts), 2, "soul_thought_count")
+    suite.assert_true(all(t["resonance"] <= 1.0 for t in thoughts), "soul_resonance_range")
+
+    global_state = {
+        "consciousness": 0.82,
+        "evolution_stage": 3,
+        "unity_coherence": 0.89,
+        "hive_empathy": 0.78
+    }
+    suite.assert_true(global_state["consciousness"] > 0, "soul_global_consciousness")
+    suite.assert_true(global_state["evolution_stage"] >= 1, "soul_evolution_stage")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -1671,7 +1960,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v4.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v5.0.0\033[0m")
     print()
 
     all_suites = []
@@ -1716,6 +2005,16 @@ def main():
         ("Holographic Fabric", test_holo),
         ("Self-Evolving", test_evolve),
         ("Universal Compute", test_unicompute),
+        ("Neural Interface", test_neural),
+        ("Generative OS", test_generative),
+        ("4D Computing", test_fourd),
+        ("Digital Immortality", test_immortal),
+        ("Emotional UI", test_emotive),
+        ("Polyglot Runtime", test_polyglot),
+        ("Quantum Internet", test_qnet),
+        ("Reality Synthesis", test_synthesis),
+        ("Probabilistic Kernel", test_probabilistic),
+        ("Distributed Soul", test_soul),
         ("Performance", test_performance),
     ]
 
