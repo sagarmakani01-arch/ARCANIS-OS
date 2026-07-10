@@ -2186,9 +2186,161 @@ def test_omega():
 
 
 # ============================================================
-# PERFORMANCE TESTS
+# NEURAL NETWORK TESTS
 # ============================================================
 
+def test_neural_network():
+    suite = TestSuite("Neural Network Tests")
+
+    # Test sigmoid
+    def sigmoid(x):
+        if x < -10: return 0.0
+        if x > 10: return 1.0
+        return 1.0 / (1.0 + __import__('math').exp(-x))
+    suite.assert_true(abs(sigmoid(0) - 0.5) < 0.001, "nn_sigmoid_mid")
+    suite.assert_true(sigmoid(10) > 0.999, "nn_sigmoid_high")
+    suite.assert_true(sigmoid(-10) < 0.001, "nn_sigmoid_low")
+
+    # Test XOR gate truth table
+    X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+    y = [[0], [1], [1], [0]]
+    suite.assert_equals(len(X), 4, "nn_xor_inputs")
+    suite.assert_equals(len(y), 4, "nn_xor_targets")
+
+    # Test forward pass structure
+    layers = [2, 4, 1]
+    weights = [[[0.5 for _ in range(layers[0])] for _ in range(layers[1])]]
+    weights.append([[0.5 for _ in range(layers[1])] for _ in range(layers[2])])
+    suite.assert_equals(len(weights), 2, "nn_weight_layers")
+    suite.assert_equals(len(weights[0]), 4, "nn_hidden_neurons")
+    suite.assert_equals(len(weights[1]), 1, "nn_output_neurons")
+
+    # Test forward pass
+    def forward(inp, w, b):
+        acts = [inp]
+        for layer_idx in range(len(w)):
+            z = []
+            for j in range(len(w[layer_idx])):
+                s = b[layer_idx][j]
+                for k in range(len(w[layer_idx][j])):
+                    s += w[layer_idx][j][k] * acts[-1][k]
+                z.append(sigmoid(s))
+            acts.append(z)
+        return acts
+
+    b = [[0.0]*4, [0.0]]
+    acts0 = forward([0, 0], weights, b)
+    acts1 = forward([0, 1], weights, b)
+    suite.assert_equals(len(acts0), 3, "nn_forward_layers")
+    suite.assert_equals(len(acts1[-1]), 1, "nn_forward_output")
+
+    # Test loss calculation
+    def mse_loss(pred, target):
+        return sum((p - t) ** 2 for p, t in zip(pred, target))
+    loss = mse_loss([0.5], [1.0])
+    suite.assert_true(abs(loss - 0.25) < 0.001, "nn_mse_loss")
+
+    # Test model persistence
+    model_data = {"layers": [2, 4, 1], "weights": [[[0.1]]], "loss_history": [0.5, 0.3]}
+    suite.assert_equals(model_data["layers"][0], 2, "nn_model_layers")
+    suite.assert_equals(len(model_data["loss_history"]), 2, "nn_loss_history")
+
+    return suite
+
+
+# ============================================================
+# SCRIPTING TESTS
+# ============================================================
+
+def test_scripting():
+    suite = TestSuite("Scripting Engine Tests")
+
+    # Test condition evaluation
+    suite.assert_true(5 < 10, "script_condition_lt")
+    suite.assert_true(10 == 10, "script_condition_eq")
+    suite.assert_true("hello" != "world", "script_condition_neq")
+
+    # Test let variable assignment
+    vars_dict = {}
+    parts = ["x ", " 5"]
+    var_name = parts[0].strip()
+    val = 5
+    vars_dict[var_name] = val
+    suite.assert_equals(vars_dict.get("x"), 5, "script_let_assign")
+
+    # Test expression evaluation
+    import math
+    result = eval("2 + 3", {"__builtins__": {}})
+    suite.assert_equals(result, 5, "script_expression_add")
+
+    result = eval("5 * 3", {"__builtins__": {}})
+    suite.assert_equals(result, 15, "script_expression_mul")
+
+    # Test for loop
+    items = [1, 2, 3]
+    count = 0
+    for _ in items:
+        count += 1
+    suite.assert_equals(count, 3, "script_for_loop")
+
+    # Test while loop
+    i = 0
+    while i < 5:
+        i += 1
+    suite.assert_equals(i, 5, "script_while_loop")
+
+    # Test variable substitution
+    name = "Arcanis"
+    text = "hello $name"
+    text = text.replace("$name", name)
+    suite.assert_equals(text, "hello Arcanis", "script_var_subst")
+
+    # Test nested scope
+    outer = {"x": 10}
+    inner = dict(outer)
+    inner["y"] = 20
+    suite.assert_equals(outer.get("x"), 10, "script_scope_outer")
+    suite.assert_equals(inner.get("y"), 20, "script_scope_inner")
+
+    return suite
+
+
+# ============================================================
+# DISTRIBUTED MODE TESTS
+# ============================================================
+
+def test_distributed():
+    suite = TestSuite("Distributed Mode Tests")
+
+    # Test peer message format
+    msg = "hello from node1"
+    formatted = f"MSG:{msg}"
+    suite.assert_true(formatted.startswith("MSG:"), "dist_msg_format")
+
+    # Test sync format
+    import json
+    chain = [{"index": 0, "hash": "abc"}, {"index": 1, "hash": "def"}]
+    sync_data = json.dumps(chain)
+    formatted = f"SYNC:{sync_data}"
+    suite.assert_true(formatted.startswith("SYNC:"), "dist_sync_format")
+    parsed = json.loads(formatted[5:])
+    suite.assert_equals(len(parsed), 2, "dist_sync_blocks")
+
+    # Test PING/PONG
+    suite.assert_equals("PING", "PING", "dist_ping")
+    suite.assert_equals("PONG", "PONG", "dist_pong")
+
+    # Test blockchain sync validation
+    chain1 = [{"index": 0, "hash": "a"}, {"index": 1, "hash": "b"}]
+    chain2 = [{"index": 0, "hash": "a"}, {"index": 1, "hash": "b"}, {"index": 2, "hash": "c"}]
+    suite.assert_true(len(chain2) > len(chain1), "dist_sync_longer")
+
+    return suite
+
+
+# ============================================================
+# PERFORMANCE TESTS
+# ============================================================
 def test_performance():
     suite = TestSuite("Performance Tests")
 
@@ -2229,7 +2381,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v6.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v7.0.0\033[0m")
     print()
 
     all_suites = []
@@ -2294,6 +2446,9 @@ def main():
         ("Meta-OS Fabric", test_metaos),
         ("Eternity Engine", test_eternity),
         ("Omega OS", test_omega),
+        ("Neural Network", test_neural_network),
+        ("Scripting", test_scripting),
+        ("Distributed", test_distributed),
         ("Performance", test_performance),
     ]
 

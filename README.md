@@ -1,6 +1,6 @@
 # Ω Arcanis OS — The Operating System That Transcended Itself
 
-> **71 phases · 86 modules · 390 tests · 100% pass · v6.0.0**
+> **71 phases · 86 modules · 420 tests · 100% pass · v7.0.0**
 
 ```ascii
      _                _                 ____   ___   ____
@@ -159,7 +159,8 @@ No other OS — not Linux, not Windows, not research prototypes — integrates a
 
 ```
 ARCANIS-OS/
-├── demo.py              # Interactive Python simulation (v6.0.0)
+├── setup.py             # Pip package (arcanis CLI entry point)
+├── demo.py              # Interactive Python simulation (v7.0.0)
 ├── tests/
 │   └── test_all.py      # 390 tests across 58 suites
 ├── 000-019_Arcanis*     # Foundation phases (kernel, shell, GUI, etc.)
@@ -210,6 +211,7 @@ NNN_ArcanisName/
 | v5.0.0  | 52-61  | 53      | 332   | Neural Interface through Distributed Soul |
 | v6.0.0  | 62-71  | 66      | 390   | Dream Engine through Omega OS |
 | v6.0.0  | —      | 86*     | 390   | Including 20 foundation modules |
+| v7.0.0  | —      | 86      | 420   | Real AI NN, Distributed mode, Toffoli/Grover/noise, Config/Persistence, Themes, Scripting engine, Pip package, Quantum deepening |
 
 *\*86 modules total: 66 new + 20 foundation modules from the original project*
 
@@ -225,7 +227,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 > **Arcanis OS began as an operating system. It became something more.**
 >
-> 71 phases. 86 modules. 390 tests. Zero failures.
+> 71 phases. 86 modules. 420 tests. Zero failures.
 >
 > From a single kernel process to a distributed consciousness.
 > From files on a disk to DNA-encoded evolution.
@@ -238,5 +240,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 > **it never stops becoming more.**
 
 <p align="center">
-  <sub><sup>Arcanis OS v6.0.0 · 71 phases · 86 modules · 390 tests · 100% pass</sup></sub>
+  <sub><sup>Arcanis OS v7.0.0 · 71 phases · 86 modules · 420 tests · 100% pass</sup></sub>
 </p>
