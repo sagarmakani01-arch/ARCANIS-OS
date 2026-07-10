@@ -2655,6 +2655,139 @@ def test_fat32():
 
 
 # ============================================================
+# ARC LANG TESTS
+# ============================================================
+
+def test_arc_lang():
+    suite = TestSuite("Arc Language Tests")
+
+    # Test lexer tokens
+    tokens = [
+        ("LET", "let"), ("IDENT", "x"), ("EQ", "="),
+        ("NUMBER", 42), ("SEMI", ";"), ("EOF", ""),
+    ]
+    suite.assert_equals(tokens[0][0], "LET", "arc_token_let")
+    suite.assert_equals(tokens[3][1], 42, "arc_token_number")
+    suite.assert_equals(tokens[5][0], "EOF", "arc_token_eof")
+
+    # Test parser AST structure
+    ast = ("PROGRAM", [
+        ("LET", "x", ("NUMBER", 42)),
+        ("PRINT", ("VAR", "x")),
+    ])
+    suite.assert_equals(ast[0], "PROGRAM", "arc_ast_program")
+    suite.assert_equals(ast[1][0][1], "x", "arc_ast_let_name")
+    suite.assert_equals(ast[1][0][2][1], 42, "arc_ast_let_value")
+
+    # Test function definition
+    fn_ast = ("FN", "add", ["a", "b"], ("BLOCK", [("RETURN", ("BINOP", "+", ("VAR", "a"), ("VAR", "b")))]))
+    suite.assert_equals(fn_ast[0], "FN", "arc_ast_fn")
+    suite.assert_equals(fn_ast[1], "add", "arc_ast_fn_name")
+    suite.assert_equals(len(fn_ast[2]), 2, "arc_ast_fn_params")
+
+    # Test if/else AST
+    if_ast = ("IF", ("BINOP", ">", ("VAR", "x"), ("NUMBER", 5)), ("BLOCK", []), ("BLOCK", []))
+    suite.assert_equals(if_ast[0], "IF", "arc_ast_if")
+    suite.assert_equals(if_ast[1][0], "BINOP", "arc_ast_if_cond")
+
+    # Test while loop AST
+    while_ast = ("WHILE", ("BINOP", "<", ("VAR", "i"), ("NUMBER", 3)), ("BLOCK", []))
+    suite.assert_equals(while_ast[0], "WHILE", "arc_ast_while")
+
+    # Test for loop AST
+    for_ast = ("FOR", "i", ("NUMBER", 3), ("BLOCK", []))
+    suite.assert_equals(for_ast[0], "FOR", "arc_ast_for")
+    suite.assert_equals(for_ast[1], "i", "arc_ast_for_var")
+
+    # Test binary operations
+    binop_add = ("BINOP", "+", ("NUMBER", 1), ("NUMBER", 2))
+    suite.assert_equals(binop_add[1], "+", "arc_binop_add")
+
+    binop_sub = ("BINOP", "-", ("NUMBER", 5), ("NUMBER", 3))
+    suite.assert_equals(binop_sub[1], "-", "arc_binop_sub")
+
+    binop_mul = ("BINOP", "*", ("NUMBER", 3), ("NUMBER", 4))
+    suite.assert_equals(binop_mul[1], "*", "arc_binop_mul")
+
+    binop_div = ("BINOP", "/", ("NUMBER", 10), ("NUMBER", 2))
+    suite.assert_equals(binop_div[1], "/", "arc_binop_div")
+
+    # Test comparison operators
+    comp_eq = ("BINOP", "==", ("NUMBER", 1), ("NUMBER", 1))
+    suite.assert_equals(comp_eq[1], "==", "arc_comp_eq")
+
+    comp_lt = ("BINOP", "<", ("NUMBER", 1), ("NUMBER", 2))
+    suite.assert_equals(comp_lt[1], "<", "arc_comp_lt")
+
+    comp_gt = ("BINOP", ">", ("NUMBER", 2), ("NUMBER", 1))
+    suite.assert_equals(comp_gt[1], ">", "arc_comp_gt")
+
+    return suite
+
+
+# ============================================================
+# B-TREE DB TESTS
+# ============================================================
+
+def test_btreedb():
+    suite = TestSuite("B-Tree Database Tests")
+
+    # Import real B-tree from demo
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import BTreeNode, BTreeDB
+
+    node = BTreeNode(is_leaf=True)
+    suite.assert_true(node.is_leaf, "btree_node_leaf")
+    suite.assert_equals(len(node.keys), 0, "btree_node_empty")
+
+    # Test insert and search
+    import tempfile
+    db_path = os.path.join(tempfile.gettempdir(), "_test_btree_unit.json")
+    if os.path.isfile(db_path):
+        os.remove(db_path)
+    db = BTreeDB(path=db_path, order=3)
+
+    db.insert("key1", "value1")
+    db.insert("key2", "value2")
+    db.insert("key3", "value3")
+    suite.assert_equals(db.search("key1"), "value1", "btree_insert_get")
+    suite.assert_equals(db.search("key2"), "value2", "btree_insert_get2")
+    suite.assert_equals(db.search("nonexistent"), None, "btree_missing")
+
+    # Test scan
+    results = db.scan()
+    suite.assert_equals(len(results), 3, "btree_scan_count")
+
+    results = db.scan("key")
+    suite.assert_equals(len(results), 3, "btree_scan_prefix_full")
+
+    # Test delete
+    db.delete("key2")
+    suite.assert_equals(db.search("key2"), None, "btree_delete")
+    suite.assert_equals(len(db.scan()), 2, "btree_after_delete")
+
+    # Test larger dataset
+    for i in range(20):
+        db.insert(f"test_{i}", i)
+    suite.assert_equals(db.search("test_15"), 15, "btree_large_insert")
+    suite.assert_equals(len(db.scan("test_")), 20, "btree_large_scan")
+
+    # Test stats
+    stats = db.stats()
+    suite.assert_true(stats["keys"] > 0, "btree_stats_keys")
+    suite.assert_true(stats["order"] > 0, "btree_stats_order")
+    suite.assert_true(stats["size"] >= 0, "btree_stats_size")
+
+    # Cleanup
+    try:
+        os.remove(db_path)
+    except Exception:
+        pass
+
+    return suite
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -2667,7 +2800,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v8.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v9.0.0\033[0m")
     print()
 
     all_suites = []
@@ -2743,6 +2876,8 @@ def main():
         ("Desktop Manager", test_desktop),
         ("Sound System", test_sound),
         ("FAT32 Driver", test_fat32),
+        ("Arc Language", test_arc_lang),
+        ("B-Tree Database", test_btreedb),
     ]
 
     for name, test_func in test_funcs:

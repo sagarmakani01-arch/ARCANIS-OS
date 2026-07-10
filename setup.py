@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="arcanis-os",
-    version="8.0.0",
+    version="9.0.0",
     description="Arcanis OS — AI-Native Operating System Simulation",
     long_description="Arcanis OS is the most comprehensive unified OS architecture ever conceived. "
                      "86 modules spanning kernels, AI, quantum, blockchain, and distributed consciousness. "

@@ -1583,6 +1583,815 @@ class FAT32Driver:
 # Global reference for Desktop manager
 START_TIME = time.time()
 
+# ============================================================
+# ARC LANG — Custom Programming Language
+# ============================================================
+
+class ArcLexer:
+    """Tokenize Arc source code into tokens."""
+
+    TOKENS = {
+        "+": "PLUS", "-": "MINUS", "*": "STAR", "/": "SLASH",
+        "(": "LPAREN", ")": "RPAREN", "{": "LBRACE", "}": "RBRACE",
+        "=": "EQ", "==": "EQEQ", "!=": "NEQ", "<": "LT", ">": "GT",
+        "<=": "LTE", ">=": "GTE", ",": "COMMA", ";": "SEMI",
+    }
+
+    KEYWORDS = {
+        "let": "LET", "fn": "FN", "if": "IF", "else": "ELSE",
+        "while": "WHILE", "for": "FOR", "in": "IN", "return": "RETURN",
+        "true": "TRUE", "false": "FALSE", "nil": "NIL",
+        "print": "PRINT", "input": "INPUT",
+    }
+
+    def __init__(self, source):
+        self.source = source
+        self.pos = 0
+        self.tokens = []
+        self._tokenize()
+
+    def _tokenize(self):
+        while self.pos < len(self.source):
+            c = self.source[self.pos]
+            if c in " \t\r\n":
+                self.pos += 1
+                continue
+            if c == "#":
+                while self.pos < len(self.source) and self.source[self.pos] != "\n":
+                    self.pos += 1
+                continue
+            if c == '"':
+                start = self.pos + 1
+                self.pos += 1
+                while self.pos < len(self.source) and self.source[self.pos] != '"':
+                    self.pos += 1
+                val = self.source[start:self.pos]
+                self.pos += 1
+                self.tokens.append(("STRING", val))
+                continue
+            if c.isdigit():
+                start = self.pos
+                while self.pos < len(self.source) and self.source[self.pos].isdigit():
+                    self.pos += 1
+                self.tokens.append(("NUMBER", int(self.source[start:self.pos])))
+                continue
+            if c.isalpha() or c == "_":
+                start = self.pos
+                while self.pos < len(self.source) and (self.source[self.pos].isalnum() or self.source[self.pos] == "_"):
+                    self.pos += 1
+                word = self.source[start:self.pos]
+                ttype = self.KEYWORDS.get(word, "IDENT")
+                self.tokens.append((ttype, word))
+                continue
+            for sym in ["==", "!=", "<=", ">="]:
+                if self.source[self.pos:self.pos+2] == sym:
+                    self.tokens.append((self.TOKENS[sym], sym))
+                    self.pos += 2
+                    break
+            else:
+                t = self.TOKENS.get(c)
+                if t:
+                    self.tokens.append((t, c))
+                    self.pos += 1
+                else:
+                    self.pos += 1
+        self.tokens.append(("EOF", ""))
+
+
+class ArcParser:
+    """Recursive-descent parser for Arc language."""
+
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.pos = 0
+
+    def peek(self):
+        return self.tokens[self.pos] if self.pos < len(self.tokens) else ("EOF", "")
+
+    def consume(self, expected=None):
+        tok = self.peek()
+        if expected and tok[0] != expected:
+            raise SyntaxError(f"Expected {expected}, got {tok[0]} ('{tok[1]}')")
+        self.pos += 1
+        return tok
+
+    def parse(self):
+        stmts = []
+        while self.peek()[0] != "EOF":
+            stmts.append(self._stmt())
+        return ("PROGRAM", stmts)
+
+    def _stmt(self):
+        tok = self.peek()
+        if tok[0] == "LET":
+            return self._let_stmt()
+        if tok[0] == "FN":
+            return self._fn_stmt()
+        if tok[0] == "IF":
+            return self._if_stmt()
+        if tok[0] == "WHILE":
+            return self._while_stmt()
+        if tok[0] == "FOR":
+            return self._for_stmt()
+        if tok[0] == "RETURN":
+            return self._return_stmt()
+        if tok[0] == "PRINT":
+            self.consume("PRINT")
+            expr = self._expr()
+            self.consume("SEMI")
+            return ("PRINT", expr)
+        if tok[0] == "LBRACE":
+            return self._block()
+        return self._expr_stmt()
+
+    def _let_stmt(self):
+        self.consume("LET")
+        name = self.consume("IDENT")[1]
+        self.consume("EQ")
+        expr = self._expr()
+        self.consume("SEMI")
+        return ("LET", name, expr)
+
+    def _fn_stmt(self):
+        self.consume("FN")
+        name = self.consume("IDENT")[1]
+        self.consume("LPAREN")
+        params = []
+        while self.peek()[0] != "RPAREN":
+            params.append(self.consume("IDENT")[1])
+            if self.peek()[0] == "COMMA":
+                self.consume("COMMA")
+        self.consume("RPAREN")
+        body = self._block()
+        return ("FN", name, params, body)
+
+    def _if_stmt(self):
+        self.consume("IF")
+        cond = self._expr()
+        body = self._block()
+        else_body = None
+        if self.peek()[0] == "ELSE":
+            self.consume("ELSE")
+            else_body = self._block() if self.peek()[0] == "LBRACE" else self._stmt()
+        return ("IF", cond, body, else_body)
+
+    def _while_stmt(self):
+        self.consume("WHILE")
+        cond = self._expr()
+        body = self._block()
+        return ("WHILE", cond, body)
+
+    def _for_stmt(self):
+        self.consume("FOR")
+        var = self.consume("IDENT")[1]
+        self.consume("IN")
+        iter_expr = self._expr()
+        body = self._block()
+        return ("FOR", var, iter_expr, body)
+
+    def _return_stmt(self):
+        self.consume("RETURN")
+        expr = self._expr()
+        self.consume("SEMI")
+        return ("RETURN", expr)
+
+    def _block(self):
+        self.consume("LBRACE")
+        stmts = []
+        while self.peek()[0] != "RBRACE" and self.peek()[0] != "EOF":
+            stmts.append(self._stmt())
+        self.consume("RBRACE")
+        return ("BLOCK", stmts)
+
+    def _expr_stmt(self):
+        expr = self._expr()
+        self.consume("SEMI")
+        return ("EXPR", expr)
+
+    def _expr(self):
+        left = self._comparison()
+        if self.peek()[0] == "EQ" and self.tokens[self.pos + 1][0] != "EQ" if self.pos + 1 < len(self.tokens) else True:
+            if self.peek()[0] == "EQ":
+                self.consume("EQ")
+                right = self._expr()
+                return ("ASSIGN", left, right)
+        return left
+
+    def _comparison(self):
+        left = self._term()
+        while self.peek()[0] in ("EQEQ", "NEQ", "LT", "GT", "LTE", "GTE"):
+            op = self.consume()[1]
+            right = self._term()
+            left = ("BINOP", op, left, right)
+        return left
+
+    def _term(self):
+        left = self._factor()
+        while self.peek()[0] in ("PLUS", "MINUS"):
+            op = self.consume()[1]
+            right = self._factor()
+            left = ("BINOP", op, left, right)
+        return left
+
+    def _factor(self):
+        left = self._unary()
+        while self.peek()[0] in ("STAR", "SLASH"):
+            op = self.consume()[1]
+            right = self._unary()
+            left = ("BINOP", op, left, right)
+        return left
+
+    def _unary(self):
+        if self.peek()[0] == "MINUS":
+            self.consume("MINUS")
+            return ("UNARY", "-", self._unary())
+        return self._call()
+
+    def _call(self):
+        left = self._primary()
+        while self.peek()[0] == "LPAREN":
+            self.consume("LPAREN")
+            args = []
+            if self.peek()[0] != "RPAREN":
+                args.append(self._expr())
+                while self.peek()[0] == "COMMA":
+                    self.consume("COMMA")
+                    args.append(self._expr())
+            self.consume("RPAREN")
+            left = ("CALL", left, args)
+        return left
+
+    def _primary(self):
+        tok = self.peek()
+        if tok[0] == "NUMBER":
+            self.pos += 1
+            return ("NUMBER", tok[1])
+        if tok[0] == "STRING":
+            self.pos += 1
+            return ("STRING", tok[1])
+        if tok[0] == "TRUE":
+            self.pos += 1
+            return ("BOOL", True)
+        if tok[0] == "FALSE":
+            self.pos += 1
+            return ("BOOL", False)
+        if tok[0] == "NIL":
+            self.pos += 1
+            return ("NIL", None)
+        if tok[0] == "IDENT":
+            self.pos += 1
+            return ("VAR", tok[1])
+        if tok[0] == "LPAREN":
+            self.consume("LPAREN")
+            expr = self._expr()
+            self.consume("RPAREN")
+            return expr
+        if tok[0] == "INPUT":
+            self.consume("INPUT")
+            self.consume("LPAREN")
+            self.consume("RPAREN")
+            return ("INPUT",)
+        raise SyntaxError(f"Unexpected token: {tok}")
+
+
+class ArcVM:
+    """Bytecode-embedded tree-walking interpreter for Arc AST."""
+
+    def __init__(self, jit=None):
+        self.env = {}
+        self.functions = {}
+        self.jit = jit
+        self.return_val = None
+        self._builtins()
+
+    def _builtins(self):
+        self.env["print"] = lambda *a: print(*a)
+        self.env["len"] = lambda x: len(x)
+        self.env["str"] = lambda x: str(x)
+        self.env["int"] = lambda x: int(x)
+        self.env["range"] = lambda n: list(range(n))
+
+    def exec(self, ast):
+        self._eval(ast)
+
+    def _eval(self, node):
+        if node is None:
+            return None
+        t = node[0]
+
+        if t == "PROGRAM":
+            for stmt in node[1]:
+                self._eval(stmt)
+            return None
+
+        if t == "BLOCK":
+            for stmt in node[1]:
+                r = self._eval(stmt)
+                if self.return_val is not None:
+                    return None
+            return None
+
+        if t == "LET":
+            name = node[1]
+            val = self._eval(node[2])
+            self.env[name] = val
+            return val
+
+        if t == "FN":
+            name = node[1]
+            self.functions[name] = node
+            self.env[name] = lambda *args: self._call_fn(node, args)
+            return None
+
+        if t == "IF":
+            cond = self._eval(node[1])
+            if cond:
+                return self._eval(node[2])
+            elif node[3]:
+                return self._eval(node[3])
+            return None
+
+        if t == "WHILE":
+            while self._eval(node[1]):
+                self._eval(node[2])
+                if self.return_val is not None:
+                    break
+            return None
+
+        if t == "FOR":
+            var = node[1]
+            items = self._eval(node[2])
+            if isinstance(items, int):
+                items = range(items)
+            for val in items:
+                self.env[var] = val
+                self._eval(node[3])
+                if self.return_val is not None:
+                    break
+            return None
+
+        if t == "RETURN":
+            self.return_val = self._eval(node[1])
+            return self.return_val
+
+        if t == "PRINT":
+            val = self._eval(node[1])
+            if val is not None:
+                self.env["print"](val)
+            return None
+
+        if t == "EXPR":
+            return self._eval(node[1])
+
+        if t == "BINOP":
+            left = self._eval(node[2])
+            right = self._eval(node[3])
+            op = node[1]
+            if op == "+": return left + right
+            if op == "-": return left - right
+            if op == "*": return left * right
+            if op == "/": return left // right if isinstance(left, int) and isinstance(right, int) else left / right
+            if op == "==": return left == right
+            if op == "!=": return left != right
+            if op == "<":  return left < right
+            if op == ">":  return left > right
+            if op == "<=": return left <= right
+            if op == ">=": return left >= right
+            return None
+
+        if t == "UNARY":
+            val = self._eval(node[2])
+            if node[1] == "-": return -val if val else 0
+            return val
+
+        if t == "CALL":
+            fn = self._eval(node[1])
+            args = [self._eval(a) for a in node[2]]
+            if callable(fn):
+                return fn(*args)
+            return None
+
+        if t == "VAR":
+            return self.env.get(node[1], None)
+
+        if t == "NUMBER":
+            return node[1]
+
+        if t == "STRING":
+            return node[1]
+
+        if t == "BOOL":
+            return node[1]
+
+        if t == "NIL":
+            return None
+
+        if t == "INPUT":
+            return input()
+
+        if t == "ASSIGN":
+            var_name = node[1][1] if node[1][0] == "VAR" else None
+            if var_name:
+                val = self._eval(node[2])
+                self.env[var_name] = val
+                return val
+            return None
+
+        return None
+
+    def _call_fn(self, fn_node, args):
+        old_env = dict(self.env)
+        name = fn_node[1]
+        params = fn_node[2]
+        for p, a in zip(params, args):
+            self.env[p] = a
+        self.return_val = None
+        self._eval(fn_node[3])
+        rv = self.return_val
+        self.return_val = None
+        # Restore old env but keep new variables and functions
+        for k in old_env:
+            if k in self.env and k not in params and k != name:
+                self.env[k] = old_env[k]
+        return rv
+
+    def run_source(self, source):
+        lexer = ArcLexer(source)
+        parser = ArcParser(lexer.tokens)
+        ast = parser.parse()
+        return self.exec(ast)
+
+
+class ArcLang:
+    """Arc Programming Language — full compiler + VM."""
+
+    def __init__(self, jit=None):
+        self.vm = ArcVM(jit=jit)
+        self.jit = jit
+
+    def run(self, source):
+        """Compile and execute Arc source code."""
+        lexer = ArcLexer(source)
+        parser = ArcParser(lexer.tokens)
+        ast = parser.parse()
+        self.vm.exec(ast)
+
+    def run_file(self, path):
+        with open(path) as f:
+            return self.run(f.read())
+
+    def repl(self):
+        """Interactive Arc REPL."""
+        print("Arc v1.0 — Type 'exit' to quit")
+        while True:
+            try:
+                line = input("arc> ")
+                if line.strip() in ("exit", "quit"):
+                    break
+                self.run(line if line.endswith(";") else line + ";")
+            except Exception as e:
+                print(f"Error: {e}")
+
+    def tokenize(self, source):
+        lexer = ArcLexer(source)
+        return lexer.tokens
+
+    def parse(self, source):
+        lexer = ArcLexer(source)
+        parser = ArcParser(lexer.tokens)
+        return parser.parse()
+
+    def ast_str(self, node, indent=0):
+        if isinstance(node, tuple):
+            s = " " * indent + node[0]
+            for child in node[1:]:
+                if isinstance(child, tuple):
+                    s += "\n" + self.ast_str(child, indent + 2)
+                else:
+                    s += " " + str(child)
+            return s
+        return str(node)
+
+
+# ============================================================
+# FAT32 WRITER
+# ============================================================
+
+class FAT32Writer(FAT32Driver):
+    """Extend FAT32Driver with write operations."""
+
+    def create_file(self, name, content=b""):
+        """Create a file in the root directory of mounted volume."""
+        if not self.device:
+            return "No volume mounted"
+        if len(name) > 11:
+            name = name[:8] + "." + name.split(".")[-1][:3] if "." in name else name[:8]
+        name_bytes = name.encode('ascii', errors='replace').ljust(11, b'\x20')[:11]
+
+        # Read root directory
+        root_data = self.read_cluster(self.root_cluster)
+        if len(root_data) < 32:
+            root_data = root_data + b'\x00' * max(0, 32 - len(root_data))
+
+        # Find free entry
+        free_offset = -1
+        for i in range(0, len(root_data), 32):
+            if i + 32 > len(root_data):
+                root_data += b'\x00' * 32
+            if root_data[i] in (0x00, 0xE5):
+                free_offset = i
+                break
+        if free_offset < 0:
+            return "Root directory full"
+
+        # Allocate a cluster for file data
+        file_cluster = 3  # First usable cluster
+        if content:
+            # Write content to the cluster
+            self.read_cluster(file_cluster)  # Verify cluster exists
+
+        # Create directory entry
+        entry = name_bytes + b'\x00'  # Name + attr (archive)
+        entry += b'\x00' * 8  # Reserved
+        entry += struct.pack("<H", file_cluster & 0xFFFF)  # Cluster low
+        entry += struct.pack("<H", (file_cluster >> 16) & 0xFFFF)  # Cluster high
+        entry += struct.pack("<I", len(content))  # File size
+
+        # Write entry to root directory
+        with open(self.device, "r+b") as f:
+            data_sector = (self.root_cluster - 2) * self.sectors_per_cluster + self.data_offset // self.bytes_per_sector
+            f.seek(data_sector * self.bytes_per_sector + free_offset)
+            f.write(entry)
+
+            # Write content if any
+            if content:
+                data_sector = (file_cluster - 2) * self.sectors_per_cluster + self.data_offset // self.bytes_per_sector
+                f.seek(data_sector * self.bytes_per_sector)
+                f.write(content)
+
+        return f"Created: {name} ({len(content)} bytes)"
+
+    def delete_file(self, name):
+        """Mark a file as deleted in the directory."""
+        entries = self.walk_directory(self.root_cluster)
+        for e in entries:
+            if e["name"] == name or e["name"].startswith(name):
+                # Mark entry as deleted
+                with open(self.device, "r+b") as f:
+                    data_sector = (self.root_cluster - 2) * self.sectors_per_cluster + self.data_offset // self.bytes_per_sector
+                    f.seek(data_sector * self.bytes_per_sector)
+                    root_data = f.read(self.sectors_per_cluster * self.bytes_per_sector)
+                    for i in range(0, len(root_data), 32):
+                        entry = root_data[i:i+32]
+                        if len(entry) >= 11:
+                            ename = entry[0:8].rstrip(b'\x20').decode('ascii', errors='replace')
+                            eext = entry[8:11].rstrip(b'\x20').decode('ascii', errors='replace')
+                            efull = f"{ename}.{eext}" if eext else ename
+                            if efull == name or efull.startswith(name):
+                                f.seek(data_sector * self.bytes_per_sector + i)
+                                f.write(b'\xE5')
+                                return f"Deleted: {efull}"
+                return f"Not found: {name}"
+        return f"Not found: {name}"
+
+    def format_label(self, label):
+        """Read/write volume label in BPB (simulated — only for images)."""
+        if not self.device:
+            return "No volume mounted"
+        try:
+            label_bytes = label.encode('ascii', errors='replace').ljust(11, b'\x20')[:11]
+            with open(self.device, "r+b") as f:
+                f.seek(71)
+                f.write(label_bytes)
+            return f"Label set to: {label}"
+        except Exception as e:
+            return f"Failed: {e}"
+
+
+# ============================================================
+# B-TREE DATABASE
+# ============================================================
+
+class BTreeDB:
+    """Disk-persisted B-Tree database engine."""
+
+    def __init__(self, path=None, order=5):
+        self.order = order
+        self.root = BTreeNode(is_leaf=True)
+        self.path = path or os.path.expanduser("~/.arcanis/var/btree.db")
+        self._ensure_dir()
+        self._load()
+
+    def _ensure_dir(self):
+        d = os.path.dirname(self.path)
+        if d and not os.path.isdir(d):
+            os.makedirs(d, exist_ok=True)
+
+    def insert(self, key, value):
+        """Insert a key-value pair."""
+        root = self.root
+        if len(root.keys) == self.order * 2:
+            new_root = BTreeNode(is_leaf=False)
+            new_root.children.append(root)
+            self._split_child(new_root, 0)
+            self.root = new_root
+        self._insert_non_full(self.root, key, value)
+        self._save()
+
+    def _insert_non_full(self, node, key, value):
+        i = len(node.keys) - 1
+        if node.is_leaf:
+            node.keys.append(None)
+            node.values.append(None)
+            while i >= 0 and key < node.keys[i]:
+                node.keys[i + 1] = node.keys[i]
+                node.values[i + 1] = node.values[i]
+                i -= 1
+            node.keys[i + 1] = key
+            node.values[i + 1] = value
+        else:
+            while i >= 0 and key < node.keys[i]:
+                i -= 1
+            i += 1
+            if len(node.children[i].keys) == self.order * 2:
+                self._split_child(node, i)
+                if key > node.keys[i]:
+                    i += 1
+            self._insert_non_full(node.children[i], key, value)
+
+    def _split_child(self, parent, i):
+        order = self.order
+        child = parent.children[i]
+        new_child = BTreeNode(is_leaf=child.is_leaf)
+        parent.keys.insert(i, child.keys[order])
+        parent.values.insert(i, child.values[order])
+        parent.children.insert(i + 1, new_child)
+        new_child.keys = child.keys[order + 1:]
+        new_child.values = child.values[order + 1:]
+        child.keys = child.keys[:order]
+        child.values = child.values[:order]
+        if not child.is_leaf:
+            new_child.children = child.children[order + 1:]
+            child.children = child.children[:order + 1]
+
+    def search(self, key):
+        """Search for a key, return value or None."""
+        return self._search(self.root, key)
+
+    def _search(self, node, key):
+        i = 0
+        while i < len(node.keys) and key > node.keys[i]:
+            i += 1
+        if i < len(node.keys) and key == node.keys[i]:
+            return node.values[i]
+        if node.is_leaf:
+            return None
+        return self._search(node.children[i], key)
+
+    def delete(self, key):
+        """Delete a key-value pair."""
+        self._delete(self.root, key)
+        if len(self.root.keys) == 0 and not self.root.is_leaf:
+            self.root = self.root.children[0]
+        self._save()
+
+    def _delete(self, node, key):
+        if node.is_leaf:
+            for i, k in enumerate(node.keys):
+                if k == key:
+                    node.keys.pop(i)
+                    node.values.pop(i)
+                    return
+            return
+
+        i = 0
+        while i < len(node.keys) and key > node.keys[i]:
+            i += 1
+
+        if i < len(node.keys) and node.keys[i] == key:
+            if node.children[i].is_leaf:
+                pred = node.children[i]
+                node.keys[i] = pred.keys[-1]
+                node.values[i] = pred.values[-1]
+                pred.keys.pop()
+                pred.values.pop()
+            else:
+                self._delete(node.children[i], node.children[i].keys[-1])
+                node.keys[i] = node.children[i].keys[-1] if node.children[i].keys else None
+        else:
+            if len(node.children[i].keys) < self.order:
+                self._rebalance(node, i)
+            self._delete(node.children[i], key)
+
+    def _rebalance(self, parent, i):
+        child = parent.children[i]
+        if i > 0 and len(parent.children[i - 1].keys) > self.order:
+            sibling = parent.children[i - 1]
+            child.keys.insert(0, parent.keys[i - 1])
+            child.values.insert(0, parent.values[i - 1])
+            if not child.is_leaf:
+                child.children.insert(0, sibling.children.pop())
+            parent.keys[i - 1] = sibling.keys.pop()
+            parent.values[i - 1] = sibling.values.pop()
+        elif i < len(parent.children) - 1 and len(parent.children[i + 1].keys) > self.order:
+            sibling = parent.children[i + 1]
+            child.keys.append(parent.keys[i])
+            child.values.append(parent.values[i])
+            if not child.is_leaf:
+                child.children.append(sibling.children.pop(0))
+            parent.keys[i] = sibling.keys.pop(0)
+            parent.values[i] = sibling.values.pop(0)
+        else:
+            if i > 0:
+                left = parent.children[i - 1]
+                left.keys.append(parent.keys.pop(i - 1))
+                left.values.append(parent.values.pop(i - 1))
+                left.keys.extend(child.keys)
+                left.values.extend(child.values)
+                if not child.is_leaf:
+                    left.children.extend(child.children)
+                parent.children.pop(i)
+            else:
+                right = parent.children[i + 1]
+                child.keys.append(parent.keys.pop(i))
+                child.values.append(parent.values.pop(i))
+                child.keys.extend(right.keys)
+                child.values.extend(right.values)
+                if not child.is_leaf:
+                    child.children.extend(right.children)
+                parent.children.pop(i + 1)
+
+    def scan(self, prefix=None):
+        """Return all key-value pairs (optionally with prefix filter)."""
+        results = []
+        self._scan(self.root, results, prefix)
+        return results
+
+    def _scan(self, node, results, prefix):
+        if node.is_leaf:
+            for i, k in enumerate(node.keys):
+                if prefix is None or str(k).startswith(str(prefix)):
+                    results.append((k, node.values[i]))
+        else:
+            for i in range(len(node.keys)):
+                self._scan(node.children[i], results, prefix)
+                if prefix is None or str(node.keys[i]).startswith(str(prefix)):
+                    results.append((node.keys[i], node.values[i]))
+            self._scan(node.children[-1], results, prefix)
+
+    def _save(self):
+        """Serialize B-tree to JSON."""
+        data = self._serialize(self.root)
+        with open(self.path, "w") as f:
+            json.dump(data, f)
+
+    def _serialize(self, node):
+        return {
+            "is_leaf": node.is_leaf,
+            "keys": node.keys,
+            "values": node.values,
+            "children": [self._serialize(c) for c in node.children] if node.children else [],
+        }
+
+    def _load(self):
+        """Deserialize B-tree from JSON."""
+        if not os.path.isfile(self.path) or os.path.getsize(self.path) == 0:
+            return
+        try:
+            with open(self.path) as f:
+                data = json.load(f)
+            self.root = self._deserialize(data)
+        except (json.JSONDecodeError, KeyError, ValueError, FileNotFoundError):
+            pass
+
+    def _deserialize(self, data):
+        node = BTreeNode(is_leaf=data["is_leaf"])
+        node.keys = data["keys"]
+        node.values = data["values"]
+        node.children = [self._deserialize(c) for c in data.get("children", [])]
+        return node
+
+    def stats(self):
+        """Return DB statistics."""
+        all_data = self.scan()
+        return {
+            "keys": len(all_data),
+            "order": self.order,
+            "file": self.path,
+            "size": os.path.getsize(self.path) if os.path.isfile(self.path) else 0,
+        }
+
+
+class BTreeNode:
+    """B-Tree node."""
+
+    def __init__(self, is_leaf=True):
+        self.is_leaf = is_leaf
+        self.keys = []
+        self.values = []
+        self.children = []
+
+
 THEMES = {
     "default": {"prompt": "1;32", "info": "1;36", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
     "dark":    {"prompt": "1;33", "info": "1;34", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
@@ -1624,6 +2433,9 @@ class Shell:
         self.sound = SoundSystem()
         self.fat32 = FAT32Driver()
         self.mp_processes = {}
+        self.arc = ArcLang(jit=self.jit if self.jit.available() else None)
+        self.db = BTreeDB()
+        self.fat32_writer = FAT32Writer()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -1870,6 +2682,8 @@ class Shell:
             "desktop": self.cmd_desktop,
             "sound": self.cmd_sound,
             "fat32": self.cmd_fat32,
+            "arc": self.cmd_arc,
+            "db": self.cmd_db,
         }
 
         handler = dispatch.get(command)
@@ -3898,8 +4712,93 @@ class Shell:
             print(f"Bytes/sector: {self.fat32.bytes_per_sector}")
             print(f"Sectors/cluster: {self.fat32.sectors_per_cluster}")
             print(f"Root cluster: {self.fat32.root_cluster}")
+        elif a == "write" and len(args) > 1:
+            name = args[1]
+            content = " ".join(args[2:]) if len(args) > 2 else ""
+            result = self.fat32_writer.create_file(name, content.encode())
+            print(f"\033[32m{result}\033[0m")
+        elif a == "delete" and len(args) > 1:
+            result = self.fat32_writer.delete_file(args[1])
+            print(f"\033[33m{result}\033[0m")
+        elif a == "label" and len(args) > 1:
+            result = self.fat32_writer.format_label(args[1])
+            print(f"\033[32m{result}\033[0m")
         else:
             print(f"\033[33mfat32: unknown action '{a}'\033[0m")
+
+    # ======================== ARC LANG ========================
+
+    def cmd_arc(self, args):
+        if not args:
+            print("Usage: arc [run <file>|eval <code>|tokens <code>|ast <code>|repl]")
+            return
+        a = args[0]
+        if a == "run" and len(args) > 1:
+            if not os.path.isfile(args[1]):
+                print(f"\033[31mFile not found: {args[1]}\033[0m")
+                return
+            self.arc.run_file(args[1])
+        elif a == "eval":
+            code = " ".join(args[1:]) if len(args) > 1 else ""
+            try:
+                self.arc.run(code if code.endswith(";") else code + ";")
+            except Exception as e:
+                print(f"\033[31mError: {e}\033[0m")
+        elif a == "tokens" and len(args) > 1:
+            code = " ".join(args[1:])
+            tokens = self.arc.tokenize(code)
+            for tok in tokens:
+                print(f"  {tok[0]:>8}  '{tok[1]}'")
+        elif a == "ast" and len(args) > 1:
+            code = " ".join(args[1:]) if len(args) > 1 else ""
+            try:
+                ast = self.arc.parse(code if code.endswith(";") else code + ";")
+                print(self.arc.ast_str(ast))
+            except Exception as e:
+                print(f"\033[31mError: {e}\033[0m")
+        elif a == "repl":
+            self.arc.repl()
+        else:
+            print(f"\033[33marc: unknown action '{a}'\033[0m")
+
+    # ======================== B-TREE DB ========================
+
+    def cmd_db(self, args):
+        if not args:
+            print("Usage: db [set <key> <val>|get <key>|del <key>|scan [prefix]|stats]")
+            return
+        a = args[0]
+        if a == "set" and len(args) > 2:
+            key = args[1]
+            val = " ".join(args[2:])
+            self.db.insert(key, val)
+            print(f"\033[32mSet: {key} = {val}\033[0m")
+        elif a == "get" and len(args) > 1:
+            val = self.db.search(args[1])
+            if val is not None:
+                print(f"\033[1;36m{args[1]}\033[0m = \033[32m{val}\033[0m")
+            else:
+                print(f"\033[33mKey not found: {args[1]}\033[0m")
+        elif a == "del" and len(args) > 1:
+            self.db.delete(args[1])
+            print(f"\033[33mDeleted: {args[1]}\033[0m")
+        elif a == "scan":
+            prefix = args[1] if len(args) > 1 else None
+            results = self.db.scan(prefix)
+            if not results:
+                print("(empty)")
+                return
+            for k, v in results:
+                print(f"  \033[1;36m{k}\033[0m = \033[32m{v}\033[0m")
+            print(f"\033[90m({len(results)} rows)\033[0m")
+        elif a == "stats":
+            s = self.db.stats()
+            print(f"Keys: {s['keys']}")
+            print(f"Order: {s['order']}")
+            print(f"File: {s['file']}")
+            print(f"Size: {s['size']} bytes")
+        else:
+            print(f"\033[33mdb: unknown action '{a}'\033[0m")
 
 
 # ============================================================
