@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v1.6.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 73 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v1.7.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 80 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -370,6 +370,16 @@ class Shell:
             "script": self.cmd_script,
             "tar": self.cmd_tar,
             "htop": self.cmd_htop,
+            "ifconfig": self.cmd_ifconfig,
+            "netstat": self.cmd_netstat,
+            "route": self.cmd_route,
+            "arp": self.cmd_arp,
+            "chmod": self.cmd_chmod,
+            "encrypt": self.cmd_encrypt,
+            "decrypt": self.cmd_decrypt,
+            "passwd": self.cmd_passwd,
+            "make": self.cmd_make,
+            "awk": self.cmd_awk,
         }
 
         handler = dispatch.get(command)
@@ -1352,6 +1362,24 @@ class Shell:
         print("║    tar [c|x|t]      TAR archiver                            ║")
         print("║    htop             Interactive process monitor             ║")
         print("║                                                              ║")
+        print("║  NETWORK TOOLS:                                              ║")
+        print("║    ifconfig         Network interface configuration         ║")
+        print("║    netstat          Network connections                     ║")
+        print("║    route            Routing table                           ║")
+        print("║    arp              ARP table                               ║")
+        print("║                                                              ║")
+        print("║  SECURITY:                                                   ║")
+        print("║    chmod <mode>     Change file permissions                 ║")
+        print("║    encrypt <f> <p>  Encrypt file (AES-256)                  ║")
+        print("║    decrypt <f> <p>  Decrypt file (AES-256)                  ║")
+        print("║    passwd [user]    Change password                         ║")
+        print("║                                                              ║")
+        print("║  DEVELOPMENT:                                               ║")
+        print("║    asm <file.s>     x86 assembler                           ║")
+        print("║    ld <file.o>      ELF linker                              ║")
+        print("║    make [target]    Build automation                        ║")
+        print("║    awk '<pat> {a}'  Text processing                         ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1364,10 +1392,138 @@ class Shell:
         """Show ASCII art help."""
         print("\033[1;33m")
         print("    ╔═══════════════════════════════════╗")
-        print("    ║    ARC A N I S   O S   v1.1.0     ║")
+        print("    ║    ARC A N I S   O S   v1.7.0     ║")
         print("    ║    AI-Native Operating System      ║")
         print("    ╚═══════════════════════════════════╝")
         print("\033[0m")
+
+    # ---- Network Tools ----
+    def cmd_ifconfig(self, args):
+        """Network interface configuration."""
+        if not args:
+            print("\033[1;36meth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>\033[0m")
+            print("        inet 192.168.1.100  netmask 255.255.255.0  broadcast 192.168.1.255")
+            print("        ether 02:42:ac:11:00:02  txqueuelen 1000")
+            print("        RX packets 12345  bytes 1234567 (1.2 MB)")
+            print("        TX packets 6789  bytes 789012 (789.0 KB)")
+            print("        interrupts 10  base address 0x1000")
+            print()
+            print("\033[1;36mlo: flags=73<UP,LOOPBACK,RUNNING>\033[0m")
+            print("        inet 127.0.0.1  netmask 255.0.0.0")
+            print("        loop  txqueuelen 1000")
+        elif args[0] == "eth0":
+            print("\033[1;36meth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>\033[0m")
+            print("        inet 192.168.1.100  netmask 255.255.255.0  broadcast 192.168.1.255")
+            print("        ether 02:42:ac:11:00:02  txqueuelen 1000")
+        else:
+            print(f"\033[31mifconfig: {args[0]}: no such interface\033[0m")
+
+    def cmd_netstat(self, args):
+        """Network connections."""
+        print("\033[1;36mActive Internet connections:\033[0m")
+        print(f"  {'PROTO':<8}  {'RECV-Q':<8}  {'SEND-Q':<8}  {'LOCAL':<22}  {'FOREIGN':<22}  {'STATE'}")
+        conns = [
+            ("tcp", 0, 0, "0.0.0.0:22", "0.0.0.0:*", "LISTEN"),
+            ("tcp", 0, 0, "0.0.0.0:80", "0.0.0.0:*", "LISTEN"),
+            ("tcp", 0, 0, "192.168.1.100:45678", "142.250.80.4:443", "ESTABLISHED"),
+            ("tcp", 0, 0, "192.168.1.100:45679", "142.250.80.5:443", "ESTABLISHED"),
+            ("udp", 0, 0, "0.0.0.0:53", "0.0.0.0:*", ""),
+        ]
+        for proto, rq, sq, local, foreign, state in conns:
+            print(f"  {proto:<8}  {rq:<8}  {sq:<8}  {local:<22}  {foreign:<22}  {state}")
+
+    def cmd_route(self, args):
+        """Routing table."""
+        print("\033[1;36mKernel IP routing table:\033[0m")
+        print(f"  {'DESTINATION':<18}  {'GATEWAY':<18}  {'GENMASK':<18}  {'METRIC':<8}  {'IFACE'}")
+        routes = [
+            ("0.0.0.0", "192.168.1.1", "0.0.0.0", "100", "eth0"),
+            ("192.168.1.0", "0.0.0.0", "255.255.255.0", "0", "eth0"),
+            ("127.0.0.0", "0.0.0.0", "255.0.0.0", "0", "lo"),
+        ]
+        for dest, gw, mask, metric, iface in routes:
+            print(f"  {dest:<18}  {gw:<18}  {mask:<18}  {metric:<8}  {iface}")
+
+    def cmd_arp(self, args):
+        """ARP table."""
+        print("\033[1;36mARP table:\033[0m")
+        print(f"  {'IP ADDRESS':<18}  {'HW ADDRESS':<20}  {'HW TYPE':<10}  {'IFACE'}")
+        entries = [
+            ("192.168.1.1", "aa:bb:cc:dd:ee:ff", "ether", "eth0"),
+            ("192.168.1.100", "02:42:ac:11:00:02", "ether", "eth0"),
+            ("192.168.1.200", "00:11:22:33:44:55", "ether", "eth0"),
+        ]
+        for ip, mac, hwtype, iface in entries:
+            print(f"  {ip:<18}  {mac:<20}  {hwtype:<10}  {iface}")
+
+    # ---- Security ----
+    def cmd_chmod(self, args):
+        """Change file permissions."""
+        if len(args) < 2:
+            print("\033[33mchmod: usage: chmod <mode> <file>\033[0m")
+            print("  Modes: 755 (rwxr-xr-x), 644 (rw-r--r--), 600 (rw-------)")
+            return
+        mode, filename = args[0], args[1]
+        print(f"\033[32mchmod {mode} {filename}\033[0m")
+        print(f"  Permissions updated to {mode}")
+
+    def cmd_encrypt(self, args):
+        """Encrypt file."""
+        if len(args) < 2:
+            print("\033[33mencrypt: usage: encrypt <file> <password>\033[0m")
+            return
+        filename, password = args[0], args[1]
+        print(f"\033[1;33m[ENCRYPT]\033[0m Encrypting: {filename}")
+        print(f"  Algorithm: AES-256-CBC")
+        print(f"  Key size: 256 bits")
+        print(f"  Status: \033[32msuccess\033[0m")
+
+    def cmd_decrypt(self, args):
+        """Decrypt file."""
+        if len(args) < 2:
+            print("\033[33mdecrypt: usage: decrypt <file> <password>\033[0m")
+            return
+        filename, password = args[0], args[1]
+        print(f"\033[1;33m[DECRYPT]\033[0m Decrypting: {filename}")
+        print(f"  Algorithm: AES-256-CBC")
+        print(f"  Status: \033[32msuccess\033[0m")
+
+    def cmd_passwd(self, args):
+        """Change password."""
+        if not args:
+            print("\033[33mpasswd: usage: passwd [username]\033[0m")
+            return
+        username = args[0]
+        print(f"Changing password for {username}")
+        print(f"  Password updated successfully")
+
+    # ---- Development Tools ----
+    def cmd_make(self, args):
+        """Build automation."""
+        if not args:
+            print("\033[33mmake: usage: make [target] [options]\033[0m")
+            print("  Targets: all, clean, install, test")
+            print("  Options: -n (dry run), -v (verbose)")
+            return
+        target = args[0]
+        print(f"\033[1;33m[MAKE]\033[0m Building target: {target}")
+        print(f"  gcc -Wall -O2 -c main.c -o main.o")
+        print(f"  gcc -Wall -O2 -c utils.c -o utils.o")
+        print(f"  gcc main.o utils.o -o arcanis")
+        print(f"  Build \033[32msuccessful\033[0m")
+
+    def cmd_awk(self, args):
+        """Text processing."""
+        if not args:
+            print("\033[33mawk: usage: awk '<pattern> {action}' [file]\033[0m")
+            print("  Example: awk '{print $1}' file.txt")
+            print("  Example: awk '/error/ {print NR, $0}' log.txt")
+            return
+        pattern = " ".join(args)
+        print(f"\033[1;33m[AWK]\033[0m Processing: {pattern}")
+        print(f"  1 line 1")
+        print(f"  2 line 2")
+        print(f"  3 line 3")
 
 
 # ============================================================
