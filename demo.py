@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v2.0.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 84 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v2.1.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 92 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -384,6 +384,13 @@ class Shell:
             "podman": self.cmd_podman,
             "iptables": self.cmd_iptables,
             "vpn": self.cmd_vpn,
+            "aws": self.cmd_aws,
+            "lambda": self.cmd_lambda,
+            "ai": self.cmd_ai,
+            "rag": self.cmd_rag,
+            "agent": self.cmd_agent,
+            "gpu": self.cmd_gpu,
+            "fpga": self.cmd_fpga,
         }
 
         handler = dispatch.get(command)
@@ -1392,6 +1399,19 @@ class Shell:
         print("║    iptables [opt]   Firewall management                     ║")
         print("║    vpn [cmd]        VPN tunnel management                   ║")
         print("║                                                              ║")
+        print("║  CLOUD SERVICES:                                            ║")
+        print("║    aws [svc] [cmd]  AWS-like cloud services                 ║")
+        print("║    lambda [cmd]     Serverless function management          ║")
+        print("║                                                              ║")
+        print("║  AI FEATURES:                                               ║")
+        print("║    ai [cmd]         AI inference and generation             ║")
+        print("║    rag [cmd]        Retrieval Augmented Generation          ║")
+        print("║    agent [cmd]      AI Agent management                     ║")
+        print("║                                                              ║")
+        print("║  HARDWARE OPT:                                              ║")
+        print("║    gpu [cmd]        GPU device management                   ║")
+        print("║    fpga [cmd]       FPGA device management                  ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1642,6 +1662,207 @@ class Shell:
             print(f"{'office-vpn':<20} {'WireGuard':<12} {'connected':<12} {'vpn.arcanis.io'}")
         else:
             print("\033[33mvpn: invalid usage\033[0m")
+
+    # ---- Cloud Services ----
+    def cmd_aws(self, args):
+        """AWS-like cloud services."""
+        if not args:
+            print("\033[33maws: usage: aws [service] [command] [args...]\033[0m")
+            print("  Services: s3, ec2, lambda")
+            return
+        service = args[0]
+        action = args[1] if len(args) > 1 else "help"
+
+        if service == "s3":
+            if action == "ls":
+                print(f"\033[1;36mS3 Buckets:\033[0m")
+                print(f"  {'BUCKET':<20} {'REGION':<12} {'CREATED'}")
+                print(f"  {'arcanis-data':<20} {'us-east-1':<12} {'2026-01-15'}")
+                print(f"  {'arcanis-logs':<20} {'us-east-1':<12} {'2026-02-20'}")
+            elif action == "mb" and len(args) > 2:
+                print(f"\033[32mBucket '{args[2]}' created\033[0m")
+            elif action == "rb" and len(args) > 2:
+                print(f"\033[31mBucket '{args[2]}' deleted\033[0m")
+            else:
+                print("\033[33maws s3: ls, mb, rb\033[0m")
+
+        elif service == "ec2":
+            if action == "ls":
+                print(f"\033[1;36mEC2 Instances:\033[0m")
+                print(f"  {'ID':<18} {'NAME':<15} {'STATE':<10} {'TYPE':<12} {'IP'}")
+                print(f"  {'i-01234567':<18} {'web':<15} {'running':<10} {'t3.micro':<12} {'54.123.45.67'}")
+            elif action == "run" and len(args) > 2:
+                print(f"\033[32mInstance '{args[2]}' started\033[0m")
+            elif action == "stop" and len(args) > 2:
+                print(f"\033[31mInstance '{args[2]}' stopped\033[0m")
+            else:
+                print("\033[33maws ec2: ls, run, stop\033[0m")
+
+        elif service == "lambda":
+            if action == "list":
+                print(f"\033[1;36mLambda Functions:\033[0m")
+                print(f"  {'NAME':<20} {'RUNTIME':<12} {'MEMORY':<10} {'INVOCATIONS'}")
+                print(f"  {'process-data':<20} {'python3.9':<12} {'128MB':<10} {'1234'}")
+            elif action == "invoke" and len(args) > 2:
+                print(f"\033[33mInvoking '{args[2]}'...\033[0m")
+                print(f"\033[32mStatus: 200 OK\033[0m")
+            else:
+                print("\033[33maws lambda: list, invoke\033[0m")
+        else:
+            print(f"\033[31maws: unknown service '{service}'\033[0m")
+
+    def cmd_lambda(self, args):
+        """Lambda function management."""
+        if not args:
+            print("\033[33mlambda: usage: lambda [command] [args...]\033[0m")
+            print("  Commands: list, create, invoke, delete")
+            return
+        action = args[0]
+        if action == "list":
+            print(f"\033[1;36mLambda Functions:\033[0m")
+            print(f"  {'NAME':<20} {'RUNTIME':<12} {'MEMORY':<10} {'STATUS'}")
+            print(f"  {'process-data':<20} {'python3.9':<12} {'128MB':<10} {'Active'}")
+            print(f"  {'send-email':<20} {'nodejs18':<12} {'256MB':<10} {'Active'}")
+        elif action == "create" and len(args) > 1:
+            print(f"\033[32mFunction '{args[1]}' created\033[0m")
+        elif action == "invoke" and len(args) > 1:
+            print(f"\033[33mInvoking '{args[1]}'...\033[0m")
+            print(f"\033[32mExecuted successfully\033[0m")
+        elif action == "delete" and len(args) > 1:
+            print(f"\033[31mFunction '{args[1]}' deleted\033[0m")
+        else:
+            print("\033[33mlambda: invalid usage\033[0m")
+
+    # ---- AI Features ----
+    def cmd_ai(self, args):
+        """AI inference and generation."""
+        if not args:
+            print("\033[33mai: usage: ai [command] [args...]\033[0m")
+            print("  Commands: generate, models, info")
+            return
+        action = args[0]
+        if action == "generate" and len(args) > 1:
+            prompt = " ".join(args[1:])
+            print(f"\033[1;35m[AI]\033[0m Generating response for: '{prompt}'")
+            print(f"  Model: arcanis-7b")
+            print(f"  Temperature: 0.7")
+            print(f"  Tokens: 128")
+            print(f"\033[36mResponse: This is a simulated AI response. In production, "
+                  f"this would use the actual loaded model to generate contextual text.\033[0m")
+        elif action == "models":
+            print(f"\033[1;36mAvailable Models:\033[0m")
+            print(f"  {'NAME':<20} {'TYPE':<12} {'PARAMS':<12} {'STATUS'}")
+            print(f"  {'arcanis-7b':<20} {'LLaMA':<12} {'7B':<12} {'loaded'}")
+            print(f"  {'arcanis-13b':<20} {'LLaMA':<12} {'13B':<12} {'available'}")
+        elif action == "info":
+            print(f"\033[1;36mAI System Info:\033[0m")
+            print(f"  Models loaded: 1")
+            print(f"  Total tokens used: 12,345")
+            print(f"  Total requests: 1,234")
+        else:
+            print("\033[33mai: invalid usage\033[0m")
+
+    def cmd_rag(self, args):
+        """RAG (Retrieval Augmented Generation)."""
+        if not args:
+            print("\033[33mrag: usage: rag [command] [args...]\033[0m")
+            print("  Commands: index, query, list")
+            return
+        action = args[0]
+        if action == "index" and len(args) > 1:
+            print(f"\033[33mIndexing '{args[1]}'...\033[0m")
+            print(f"\033[32mDocument indexed (3 chunks)\033[0m")
+        elif action == "query" and len(args) > 1:
+            query = " ".join(args[1:])
+            print(f"\033[1;35m[RAG]\033[0m Query: '{query}'")
+            print(f"  Found 3 relevant documents")
+            print(f"  Top result: (score=0.92) Simulated document content...")
+        elif action == "list":
+            print(f"\033[1;36mIndexed Documents:\033[0m")
+            print(f"  {'ID':<6} {'DOC_ID':<20} {'CHUNKS':<10} {'SIZE'}")
+            print(f"  {'1':<6} {'readme.md':<20} {'3':<10} {'4.2 KB'}")
+            print(f"  {'2':<6} {'architecture.md':<20} {'5':<10} {'8.1 KB'}")
+        else:
+            print("\033[33mrag: invalid usage\033[0m")
+
+    def cmd_agent(self, args):
+        """AI Agent management."""
+        if not args:
+            print("\033[33magent: usage: agent [command] [args...]\033[0m")
+            print("  Commands: create, list, chat, execute")
+            return
+        action = args[0]
+        if action == "create" and len(args) > 1:
+            print(f"\033[32mAgent '{args[1]}' created\033[0m")
+        elif action == "list":
+            print(f"\033[1;36mAI Agents:\033[0m")
+            print(f"  {'ID':<6} {'NAME':<20} {'TYPE':<15} {'TOOLS':<8} {'REQUESTS'}")
+            print(f"  {'1':<6} {'research':<20} {'rag':<15} {'3':<8} {'456'}")
+            print(f"  {'2':<6} {'coder':<20} {'task':<15} {'5':<8} {'789'}")
+        elif action == "chat" and len(args) > 1:
+            msg = " ".join(args[1:])
+            print(f"\033[1;35m[AGENT]\033[0m User: {msg}")
+            print(f"\033[36mAgent: This is a simulated response from the AI agent.\033[0m")
+        elif action == "execute" and len(args) > 1:
+            task = " ".join(args[1:])
+            print(f"\033[1;35m[AGENT]\033[0m Executing: {task}")
+            print(f"  Step 1: Analyzing task...")
+            print(f"  Step 2: Planning approach...")
+            print(f"  Step 3: Executing...")
+            print(f"\033[32mTask completed successfully\033[0m")
+        else:
+            print("\033[33magent: invalid usage\033[0m")
+
+    # ---- Hardware Optimization ----
+    def cmd_gpu(self, args):
+        """GPU management."""
+        if not args:
+            print("\033[33mgpu: usage: gpu [command] [args...]\033[0m")
+            print("  Commands: list, info, status")
+            return
+        action = args[0]
+        if action == "list":
+            print(f"\033[1;36mGPU Devices:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<20} {'VENDOR':<10} {'MEMORY':<12} {'CLOCK'}")
+            print(f"  {'1':<4} {'RTX 4090':<20} {'NVIDIA':<10} {'24576 MB':<12} {'2520 MHz'}")
+            print(f"  {'2':<4} {'RX 7900 XTX':<20} {'AMD':<10} {'24576 MB':<12} {'2500 MHz'}")
+        elif action == "info" and len(args) > 1:
+            print(f"\033[1;36mGPU {args[1]}:\033[0m")
+            print(f"  Name: NVIDIA RTX 4090")
+            print(f"  CUDA Cores: 16384")
+            print(f"  Memory: 24576 MB")
+            print(f"  Utilization: 45%")
+            print(f"  Temperature: 65°C")
+        elif action == "status":
+            print(f"\033[1;36mGPU Status:\033[0m")
+            print(f"  GPU 0: idle (45°C, 120W)")
+            print(f"  GPU 1: idle (42°C, 95W)")
+        else:
+            print("\033[33mgpu: invalid usage\033[0m")
+
+    def cmd_fpga(self, args):
+        """FPGA management."""
+        if not args:
+            print("\033[33mfpga: usage: fpga [command] [args...]\033[0m")
+            print("  Commands: list, info, configure")
+            return
+        action = args[0]
+        if action == "list":
+            print(f"\033[1;36mFPGA Devices:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<20} {'STATE':<12} {'CELLS':<10} {'FREQ'}")
+            print(f"  {'1':<4} {'Virtex-7':<20} {'configured':<12} {'2M':<10} {'500 MHz'}")
+        elif action == "info" and len(args) > 1:
+            print(f"\033[1;36mFPGA {args[1]}:\033[0m")
+            print(f"  Name: Xilinx Virtex-7")
+            print(f"  Logic Cells: 2,000,000")
+            print(f"  DSP Slices: 3,000")
+            print(f"  BRAM: 13,000 KB")
+            print(f"  Frequency: 500 MHz")
+        elif action == "configure" and len(args) > 1:
+            print(f"\033[33mConfiguring FPGA with '{args[1]}'...\033[0m")
+            print(f"\033[32mFPGA configured successfully\033[0m")
+        else:
+            print("\033[33mfpga: invalid usage\033[0m")
 
 
 # ============================================================
