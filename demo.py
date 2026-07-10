@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v1.1.0\033[0m")
-        print("\033[90  49 modules | 38 syscalls | 40+ shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v1.4.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 58 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -347,6 +347,15 @@ class Shell:
             "lscpu": self.cmd_lscpu,
             "top": self.cmd_top,
             "dmesg": self.cmd_dmesg,
+            "gui": self.cmd_gui,
+            "filemanager": self.cmd_filemanager,
+            "term": self.cmd_term,
+            "ipcs": self.cmd_ipcs,
+            "nice": self.cmd_nice,
+            "renice": self.cmd_nice,
+            "jobs": self.cmd_jobs,
+            "bg": self.cmd_bg,
+            "fg": self.cmd_fg,
         }
 
         handler = dispatch.get(command)
@@ -892,6 +901,109 @@ class Shell:
         else:
             print("\033[90m[BOOT] Kernel initialized\033[0m")
 
+    # ---- GUI / Desktop ----
+    def cmd_gui(self, _):
+        """GUI window manager simulation."""
+        print("\033[1;36m╔══════════════════════════════════════════════════╗")
+        print("║           ARCANIS DESKTOP ENVIRONMENT            ║")
+        print("╠══════════════════════════════════════════════════╣")
+        print("║  Resolution:  1024x768                          ║")
+        print("║  Color depth: 32-bit                            ║")
+        print("║  Renderer:    Software (VESA)                   ║")
+        print("║  Layout:      Tiling window manager             ║")
+        print("║  Widgets:     Button, Label, TextBox, CheckBox  ║")
+        print("║               ComboBox, Progress, Slider, Menu  ║")
+        print("║  Taskbar:     Auto-hiding bottom bar            ║")
+        print("║                                                  ║")
+        print("║  Running windows:                               ║")
+        print("║    - Terminal (PID 3)                           ║")
+        print("║    - File Manager (PID 4)                       ║")
+        print("║    - System Monitor (PID 5)                     ║")
+        print("╚══════════════════════════════════════════════════╝\033[0m")
+
+    def cmd_filemanager(self, _):
+        """File manager simulation."""
+        print("\033[1;36m╔══════════════════════════════════════════════════╗")
+        print("║              FILE MANAGER                        ║")
+        print("╠══════════════════════════════════════════════════╣")
+        print("║  Current: /home/user                             ║")
+        print("║                                                  ║")
+        print("║  /     (4GB)                                    ║")
+        print("║  dev/  (256MB)                                  ║")
+        print("║  etc/                                            ║")
+        print("║  home/                                           ║")
+        print("║  tmp/                                            ║")
+        print("║  user/                                           ║")
+        print("║    notes.txt     128 bytes                       ║")
+        print("║    .profile      64 bytes                        ║")
+        print("║    project/                                       ║")
+        print("║  var/                                            ║")
+        print("║  bin/                                            ║")
+        print("╚══════════════════════════════════════════════════╝\033[0m")
+
+    def cmd_term(self, _):
+        """Terminal emulator simulation."""
+        print("\033[1;36m╔══════════════════════════════════════════════════╗")
+        print("║           TERMINAL EMULATOR                      ║")
+        print("╠══════════════════════════════════════════════════╣")
+        print("║  Size:      80x24                               ║")
+        print("║  Encoding:  UTF-8                               ║")
+        print("║  ANSI:      Full support (256 colors)           ║")
+        print("║  Font:      Fixed 8x16                          ║")
+        print("║  Scroll:    1024 lines                          ║")
+        print("║  Tabs:      Supported                           ║")
+        print("║                                                  ║")
+        print("║  Colors: Catppuccin Mocha palette               ║")
+        print("║  FG: #CDD6F4  BG: #1E1E2E  BORDER: #45475A     ║")
+        print("╚══════════════════════════════════════════════════╝\033[0m")
+
+    # ---- IPC ----
+    def cmd_ipcs(self, _):
+        """IPC status."""
+        print(f"\033[1;36m{'TYPE':<12}  {'KEY':<10}  {'ID':<8}  {'STATUS'}\033[0m")
+        print(f"  {'msgqueue':<12}  {'0x1234':<10}  {'1':<8}  active")
+        print(f"  {'msgqueue':<12}  {'0x5678':<10}  {'2':<8}  active")
+        print(f"  {'shm':<12}  {'0xABCD':<10}  {'1':<8}  4096 bytes")
+        print(f"  {'semaphore':<12}  {'0x0001':<10}  {'1':<8}  value=1")
+        print(f"  {'semaphore':<12}  {'0x0002':<10}  {'2':<8}  value=0")
+        print(f"\n  Messages queued: 3")
+        print(f"  Shared memory attached: 2 processes")
+        print(f"  Semaphores: 2 (1 locked)")
+
+    # ---- Process control ----
+    def cmd_nice(self, args):
+        """Set process priority."""
+        if len(args) < 2:
+            print("\033[33mnice: usage: nice <priority> <pid>\033[0m")
+            return
+        try:
+            pri = int(args[0])
+            pid = int(args[1])
+            print(f"\033[32mProcess {pid} priority set to {pri}\033[0m")
+        except ValueError:
+            print("\033[31mnice: invalid arguments\033[0m")
+
+    def cmd_jobs(self, _):
+        """List background jobs."""
+        print(f"{'JOB':<8}  {'PID':<8}  {'STATE':<12}  {'COMMAND'}")
+        print("-" * 50)
+        print(f"  {'1':<8}  {'12':<8}  {'running':<12}  sleep 100")
+        print(f"  {'2':<8}  {'15':<8}  {'suspended':<12}  vim /tmp/test")
+
+    def cmd_bg(self, args):
+        """Resume background."""
+        if not args:
+            print("\033[33mbg: usage: bg <job>\033[0m")
+            return
+        print(f"\033[32mJob {args[0]} resumed in background\033[0m")
+
+    def cmd_fg(self, args):
+        """Bring to foreground."""
+        if not args:
+            print("\033[33mfg: usage: fg <job>\033[0m")
+            return
+        print(f"\033[32mJob {args[0]} brought to foreground\033[0m")
+
     # ---- Misc ----
     def cmd_history(self, _):
         for i, cmd in enumerate(self.history, 1):
@@ -968,6 +1080,18 @@ class Shell:
         print("║    lscpu            Show CPU information                    ║")
         print("║    top              Process monitor                         ║")
         print("║    dmesg            Kernel message log                      ║")
+        print("║                                                              ║")
+        print("║  DESKTOP/GUI:                                               ║")
+        print("║    gui              Window manager / desktop                ║")
+        print("║    filemanager      Graphical file manager                  ║")
+        print("║    term             Terminal emulator info                  ║")
+        print("║                                                              ║")
+        print("║  IPC/PROCESS:                                               ║")
+        print("║    ipcs             IPC status (queues/shm/sem)             ║")
+        print("║    nice <pri> <pid> Set process priority                    ║")
+        print("║    jobs             List background jobs                    ║")
+        print("║    bg <job>         Resume job in background                ║")
+        print("║    fg <job>         Bring job to foreground                 ║")
         print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
