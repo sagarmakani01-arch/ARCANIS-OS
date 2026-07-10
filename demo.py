@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v1.4.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 58 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v1.5.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 68 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -356,6 +356,16 @@ class Shell:
             "jobs": self.cmd_jobs,
             "bg": self.cmd_bg,
             "fg": self.cmd_fg,
+            "nslookup": self.cmd_nslookup,
+            "dig": self.cmd_dig,
+            "curl": self.cmd_curl,
+            "wget": self.cmd_wget,
+            "dhcp": self.cmd_dhcp,
+            "gdb": self.cmd_gdb,
+            "lspci": self.cmd_lspci,
+            "lsusb": self.cmd_lsusb,
+            "strace": self.cmd_strace,
+            "ltrace": self.cmd_ltrace,
         }
 
         handler = dispatch.get(command)
@@ -1004,6 +1014,146 @@ class Shell:
             return
         print(f"\033[32mJob {args[0]} brought to foreground\033[0m")
 
+    # ---- Network Applications ----
+    def cmd_nslookup(self, args):
+        """DNS lookup."""
+        if not args:
+            print("\033[33mnslookup: usage: nslookup <hostname>\033[0m")
+            return
+        host = args[0]
+        print(f"Server:   8.8.8.8")
+        print(f"Address:  8.8.8.8#53")
+        print()
+        print(f"Non-authoritative answer:")
+        print(f"Name:     {host}")
+        print(f"Address:  142.250.80.4")
+
+    def cmd_dig(self, args):
+        """DNS query (verbose)."""
+        if not args:
+            print("\033[33mdig: usage: dig <hostname> [type]\033[0m")
+            return
+        host = args[0]
+        rtype = args[1] if len(args) > 1 else "A"
+        print(f";; QUESTION SECTION:")
+        print(f";; {host:<30} IN  {rtype}")
+        print()
+        print(f";; ANSWER SECTION:")
+        print(f"{host}        300    IN  A       142.250.80.4")
+        print()
+        print(f";; Query time: 23 msec")
+        print(f";; SERVER: 8.8.8.8#53")
+        print(f";; WHEN: Fri Jul 10 2026")
+
+    def cmd_curl(self, args):
+        """HTTP client."""
+        if not args:
+            print("\033[33mcurl: usage: curl <url>\033[0m")
+            return
+        url = args[0]
+        print(f"  % Total    % Received  Xferd  Speed")
+        print(f"  100  1256  100  1256    0     0  12560      0 --:--:-- --:--:-- --:--:-- 12560")
+        print(f"<!DOCTYPE html><html><head><title>Arcanis OS</title></head>")
+        print(f"<body><h1>Welcome to Arcanis OS</h1></body></html>")
+
+    def cmd_wget(self, args):
+        """Download file."""
+        if not args:
+            print("\033[33mwget: usage: wget <url>\033[0m")
+            return
+        url = args[0]
+        print(f"Connecting to {url}... connected.")
+        print(f"HTTP request sent, awaiting response... 200 OK")
+        print(f"Length: 4096 (4.0K) [text/html]")
+        print(f"Saving to: 'index.html'")
+        print(f"index.html 100%[===================>]   4.00K  --.-KB/s    in 0s")
+        print(f"2026-07-10 12:00:00 (40.0 MB/s) - 'index.html' saved [4096/4096]")
+
+    def cmd_dhcp(self, args):
+        """DHCP client status."""
+        print(f"\033[1;36mDHCP Client Status:\033[0m")
+        print(f"  State:      BOUND")
+        print(f"  Interface:  eth0")
+        print(f"  MAC:        02:42:ac:11:00:02")
+        print(f"  IP:         192.168.1.100")
+        print(f"  Subnet:     255.255.255.0")
+        print(f"  Gateway:    192.168.1.1")
+        print(f"  DNS:        8.8.8.8, 8.8.4.4")
+        print(f"  Lease:      86400s (expires in 43200s)")
+        print(f"  Server:     192.168.1.1")
+
+    # ---- Debugging ----
+    def cmd_gdb(self, args):
+        """GDB-like debugger."""
+        print("\033[1;36m╔══════════════════════════════════════════════════╗")
+        print("║          ARCANIS DEBUGGER (GDB stub)             ║")
+        print("╠══════════════════════════════════════════════════╣")
+        print("║  Commands:                                      ║")
+        print("║    r        Run program                         ║")
+        print("║    c        Continue execution                   ║")
+        print("║    s        Single step                          ║")
+        print("║    n        Step over                            ║")
+        print("║    b <addr> Set breakpoint                      ║")
+        print("║    d <addr> Delete breakpoint                   ║")
+        print("║    i        Info registers                      ║")
+        print("║    x <addr> Examine memory                      ║")
+        print("║    bt       Backtrace                           ║")
+        print("║    q        Quit debugger                       ║")
+        print("╚══════════════════════════════════════════════════╝\033[0m")
+
+    def cmd_lspci(self, _):
+        """List PCI devices."""
+        print(f"{'BDF':<12}  {'CLASS':<28}  {'DEVICE'}")
+        print("-" * 70)
+        devices = [
+            ("00:00.0", "Host bridge", "440FX - 82441FX PMC [Intel]"),
+            ("00:01.0", "ISA bridge", "82371SB PIIX3 ISA [Intel]"),
+            ("00:01.1", "IDE interface", "82371AB PIIX4 IDE [Intel]"),
+            ("00:01.3", "Bridge", "82371AB PIIX4 ACPI [Intel]"),
+            ("00:02.0", "VGA compatible", "Device 1111 [Red Hat]"),
+            ("00:03.0", "Ethernet controller", "RTL8111/8168 [Realtek]"),
+            ("00:04.0", "Network controller", "VirtIO Network [Red Hat]"),
+        ]
+        for bdf, cls, dev in devices:
+            print(f"  {bdf:<12}  {cls:<28}  {dev}")
+        print(f"\n  {len(devices)} devices found")
+
+    def cmd_lsusb(self, _):
+        """List USB devices."""
+        print(f"{'BUS':<6}  {'ID':<12}  {'DESCRIPTION'}")
+        print("-" * 50)
+        print(f"  001    1d6b:0002   Linux Foundation 2.0 root hub")
+        print(f"  001    8087:0024   Intel Integrated Hub")
+        print(f"  002    0627:0001   Adomax Virtual Device")
+        print(f"\n  3 devices found")
+
+    def cmd_strace(self, args):
+        """System call tracer."""
+        if not args:
+            print("\033[33mstrace: usage: strace <command>\033[0m")
+            return
+        cmd = " ".join(args)
+        print(f"execve(\"{cmd}\", [{cmd}], 0x7ffd1234) = 3")
+        print(f"brk(NULL)                               = 0x55a1234000")
+        print(f"open(\"/etc/ld.so.cache\", O_RDONLY|O_CLOEXEC) = 4")
+        print(f"mmap(NULL, 8192, PROT_READ, MAP_PRIVATE, 4, 0) = 0x7f12340000")
+        print(f"read(0, \"hello\\n\", 1024)              = 6")
+        print(f"write(1, \"hello\\n\", 6)               = 6")
+        print(f"exit_group(0)                           = ?")
+        print(f"+++ exited with 0 +++")
+
+    def cmd_ltrace(self, args):
+        """Library call tracer."""
+        if not args:
+            print("\033[33mltrace: usage: ltrace <command>\033[0m")
+            return
+        cmd = " ".join(args)
+        print(f"__libc_start_main(0x55a1234, 1, 0x7ffd, ...)")
+        print(f"printf(\"Hello, %s!\\n\", \"world\") = 13")
+        print(f"malloc(1024)                           = 0x55a6789")
+        print(f"free(0x55a6789)                        = <void>")
+        print(f"+++ exited (status 0) +++")
+
     # ---- Misc ----
     def cmd_history(self, _):
         for i, cmd in enumerate(self.history, 1):
@@ -1092,6 +1242,22 @@ class Shell:
         print("║    jobs             List background jobs                    ║")
         print("║    bg <job>         Resume job in background                ║")
         print("║    fg <job>         Bring job to foreground                 ║")
+        print("║                                                              ║")
+        print("║  NETWORK:                                                   ║")
+        print("║    nslookup <host>  DNS lookup                              ║")
+        print("║    dig <host>       DNS query (verbose)                     ║")
+        print("║    curl <url>       HTTP client                             ║")
+        print("║    wget <url>       Download file                           ║")
+        print("║    dhcp             DHCP client status                      ║")
+        print("║                                                              ║")
+        print("║  DEBUGGING:                                                 ║")
+        print("║    gdb              GDB-like debugger                       ║")
+        print("║    strace <cmd>     System call tracer                      ║")
+        print("║    ltrace <cmd>     Library call tracer                     ║")
+        print("║                                                              ║")
+        print("║  HARDWARE:                                                  ║")
+        print("║    lspci            List PCI devices                        ║")
+        print("║    lsusb            List USB devices                        ║")
         print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
