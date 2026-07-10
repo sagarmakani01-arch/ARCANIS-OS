@@ -405,6 +405,10 @@ class Shell:
             "edgeai": self.cmd_edgeai,
             "sdn": self.cmd_sdn,
             "hpc": self.cmd_hpc,
+            "analytics": self.cmd_analytics,
+            "gateway": self.cmd_gateway,
+            "gw": self.cmd_gateway,
+            "autonomous": self.cmd_autonomous,
         }
 
         handler = dispatch.get(command)
@@ -1462,6 +1466,16 @@ class Shell:
         print("║  HIGH PERFORMANCE COMPUTING:                                 ║")
         print("║    hpc [cmd]        HPC cluster & job management            ║")
         print("║                                                              ║")
+        print("║  DATA ANALYTICS:                                            ║")
+        print("║    analytics [cmd]  Data analytics pipeline                 ║")
+        print("║                                                              ║")
+        print("║  API GATEWAY:                                               ║")
+        print("║    gateway [cmd]    API gateway & service mesh              ║")
+        print("║    gw [cmd]         API gateway (alias)                     ║")
+        print("║                                                              ║")
+        print("║  AUTONOMOUS SYSTEMS:                                        ║")
+        print("║    autonomous [cmd] Self-healing & auto-scaling             ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2405,6 +2419,126 @@ class Shell:
             print(f"  Jobs: 3 (1 running, 1 pending, 1 completed)")
         else:
             print("\033[33mhpc: invalid usage\033[0m")
+
+    # ---- Data Analytics ----
+    def cmd_analytics(self, args):
+        """Data analytics pipeline."""
+        if not args:
+            print("\033[33manalytics: usage: analytics [command] [args...]\033[0m")
+            print("  Commands: sources, jobs, query, run, stats")
+            return
+        action = args[0]
+        if action == "sources":
+            print(f"\033[1;36mData Sources:\033[0m")
+            print(f"  {'NAME':<14} {'TYPE':<10} {'LOCATION':<24} {'STATUS'}")
+            print(f"  {'logs':<14} {'file':<10} {'/var/log/app/*.log':<24} {'CONNECTED'}")
+            print(f"  {'metrics':<14} {'stream':<10} {'kafka://10.0.0.1:9092':<24} {'CONNECTED'}")
+            print(f"  {'database':<14} {'database':<10} {'postgresql://db:5432':<24} {'CONNECTED'}")
+        elif action == "jobs":
+            print(f"\033[1;36mAnalytics Jobs:\033[0m")
+            print(f"  {'ID':<8} {'NAME':<18} {'SOURCE':<14} {'STATE':<10} {'RECORDS'}")
+            print(f"  {'job-0':<8} {'error_analysis':<18} {'logs':<14} {'RUNNING':<10} {'45,678'}")
+            print(f"  {'job-1':<8} {'realtime_dash':<18} {'metrics':<14} {'RUNNING':<10} {'12,345'}")
+            print(f"  {'job-2':<8} {'daily_report':<18} {'database':<14} {'COMPLETED':<10} {'1.2M'}")
+        elif action == "query" and len(args) > 1:
+            q = " ".join(args[1:])
+            print(f"\033[33mQuery: {q}\033[0m")
+            print(f"  Source: logs")
+            print(f"  Status: EXECUTED")
+            print(f"  Rows: 100")
+            print(f"  Time: 23ms")
+        elif action == "run" and len(args) > 1:
+            print(f"\033[33mStarting job '{args[1]}'...\033[0m")
+            print(f"\033[32mJob is now RUNNING\033[0m")
+        elif action == "stats":
+            print(f"\033[1;36mAnalytics Pipeline:\033[0m")
+            print(f"  Sources: 3")
+            print(f"  Jobs: 3 (2 running, 1 completed)")
+            print(f"  Total Records: 1,258,023")
+            print(f"  Total Bytes: 2.1 GB")
+        else:
+            print("\033[33manalytics: invalid usage\033[0m")
+
+    # ---- API Gateway ----
+    def cmd_gateway(self, args):
+        """API Gateway and service mesh."""
+        if not args:
+            print("\033[33mgateway: usage: gateway [command] [args...]\033[0m")
+            print("  Commands: services, routes, lb, middleware, stats")
+            return
+        action = args[0]
+        if action == "services":
+            print(f"\033[1;36mAPI Services:\033[0m")
+            print(f"  {'ID':<8} {'NAME':<18} {'HOST:PORT':<24} {'STATUS':<8} {'LATENCY'}")
+            print(f"  {'svc-0':<8} {'user-service':<18} {'10.0.0.1:8080':<24} {'UP':<8} {'12ms'}")
+            print(f"  {'svc-1':<8} {'order-service':<18} {'10.0.0.2:8080':<24} {'UP':<8} {'8ms'}")
+            print(f"  {'svc-2':<8} {'payment-service':<18} {'10.0.0.3:8080':<24} {'DEGRADED':<8} {'345ms'}")
+            print(f"  {'svc-3':<8} {'notification':<18} {'10.0.0.4:8080':<24} {'UP':<8} {'5ms'}")
+        elif action == "routes":
+            print(f"\033[1;36mAPI Routes:\033[0m")
+            print(f"  {'NAME':<16} {'PATH':<20} {'METHOD':<8} {'TARGET':<18} {'HITS'}")
+            print(f"  {'users_api':<16} {'/api/users':<20} {'GET':<8} {'user-service':<18} {'45,678'}")
+            print(f"  {'orders_api':<16} {'/api/orders':<20} {'POST':<8} {'order-service':<18} {'12,345'}")
+            print(f"  {'payments':<16} {'/api/pay':<20} {'POST':<8} {'payment-service':<18} {'8,901'}")
+        elif action == "lb" and len(args) > 1:
+            print(f"\033[33mSetting load balancer to {args[1]}...\033[0m")
+            print(f"\033[32mLoad balancer changed to: {args[1]}\033[0m")
+        elif action == "middleware":
+            print(f"\033[1;36mMiddleware Chain:\033[0m")
+            print(f"  1. [Auth] JWT validation")
+            print(f"  2. [RateLimit] 100 req/s per key")
+            print(f"  3. [CORS] All origins allowed")
+            print(f"  4. [Logging] Structured JSON logs")
+        elif action == "stats":
+            print(f"\033[1;36mGateway Stats:\033[0m")
+            print(f"  LB Algorithm: round-robin")
+            print(f"  Services: 4 (3 up, 1 degraded)")
+            print(f"  Routes: 3")
+            print(f"  Middleware: 4")
+            print(f"  Total Requests: 66,924")
+            print(f"  Total Errors: 234")
+        else:
+            print("\033[33mgateway: invalid usage\033[0m")
+
+    # ---- Autonomous Systems ----
+    def cmd_autonomous(self, args):
+        """Autonomous self-healing system."""
+        if not args:
+            print("\033[33mautonomous: usage: autonomous [command] [args...]\033[0m")
+            print("  Commands: status, metrics, policies, scaling, heal")
+            return
+        action = args[0]
+        if action == "status":
+            print(f"\033[1;36mAutonomous System:\033[0m")
+            print(f"  State: NORMAL")
+            print(f"  Health Score: 92/100")
+            print(f"  Healing Policies: 3")
+            print(f"  Scaling Policies: 2")
+            print(f"  Total Incidents: 12")
+            print(f"  Healing Actions: 34")
+            print(f"  Scale Events: 8")
+        elif action == "metrics":
+            print(f"\033[1;36mSystem Metrics:\033[0m")
+            print(f"  {'NAME':<14} {'VALUE':<10} {'WARNING':<10} {'CRITICAL':<10} {'STATUS'}")
+            print(f"  {'cpu_usage':<14} {'72.5':<10} {'80.0':<10} {'95.0':<10} {'OK'}")
+            print(f"  {'memory_usage':<14} {'65.2':<10} {'80.0':<10} {'90.0':<10} {'OK'}")
+            print(f"  {'error_rate':<14} {'2.1':<10} {'5.0':<10} {'10.0':<10} {'OK'}")
+        elif action == "policies":
+            print(f"\033[1;36mHealing Policies:\033[0m")
+            print(f"  1. [ON]  high_cpu     cpu_usage >= 90.0 (actions: 2)")
+            print(f"  2. [ON]  high_memory  memory_usage >= 85.0 (actions: 1)")
+            print(f"  3. [OFF] high_errors  error_rate >= 8.0 (actions: 2)")
+        elif action == "scaling":
+            print(f"\033[1;36mScaling Policies:\033[0m")
+            print(f"  1. [ON]  web_tier    inst: 4/10 scale: up@80% down@25%")
+            print(f"  2. [ON]  worker_tier inst: 2/20 scale: up@70% down@20%")
+        elif action == "heal":
+            print(f"\033[33mRunning healing cycle...\033[0m")
+            print(f"  Checking 3 metrics against 3 policies...")
+            print(f"  All metrics within thresholds")
+            print(f"\033[32mSystem healthy\033[0m")
+        else:
+            print("\033[33mautonomous: invalid usage\033[0m")
 
 
 # ============================================================
