@@ -2037,9 +2037,9 @@ class Shell:
             print(f"  {'3':<4} {'active':<12} {'3':<8} {'2000-2999'}")
         elif action == "kv":
             print(f"\033[1;36mKey-Value Store:\033[0m")
-            print(f"  {'KEY':<20} {'VALUE':<20} {'VERSION'}")
-            print(f"  {'user:1':<20} {'{'name': 'john'}':<20} {'1'}")
-            print(f"  {'config:db':<20} {'{'host': 'localhost'}':<20} {'3'}")
+            print("  KEY                  VALUE                 VERSION")
+            print("  user:1               {'name': 'john'}      1")
+            print("  config:db            {'host': 'localhost'} 3")
         else:
             print("\033[33mcluster: invalid usage\033[0m")
 
