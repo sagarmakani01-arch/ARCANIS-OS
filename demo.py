@@ -403,6 +403,7 @@ class Shell:
             "metrics": self.cmd_monitor,
             "twin": self.cmd_digital_twin,
             "edgeai": self.cmd_edgeai,
+            "sdn": self.cmd_sdn,
         }
 
         handler = dispatch.get(command)
@@ -1454,6 +1455,9 @@ class Shell:
         print("║  EDGE AI:                                                   ║")
         print("║    edgeai [cmd]     Edge AI & federated learning            ║")
         print("║                                                              ║")
+        print("║  SOFTWARE-DEFINED NETWORKING:                                ║")
+        print("║    sdn [cmd]        SDN controller & flow management        ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2288,6 +2292,66 @@ class Shell:
             print(f"\033[32mRound complete\033[0m")
         else:
             print("\033[33medgeai: invalid usage\033[0m")
+
+    # ---- SDN / Advanced Networking ----
+    def cmd_sdn(self, args):
+        """Software-Defined Networking."""
+        if not args:
+            print("\033[33msdn: usage: sdn [command] [args...]\033[0m")
+            print("  Commands: switches, ports, flows, controllers, vlans, stats, topology")
+            return
+        action = args[0]
+        if action == "switches":
+            print(f"\033[1;36mSDN Switches:\033[0m")
+            print(f"  {'ID':<8} {'NAME':<20} {'DPID':<16} {'PORTS':<6} {'STATUS'}")
+            print(f"  {'sw-0':<8} {'core-switch':<20} {'000000000001':<16} {'8':<6} {'CONNECTED'}")
+            print(f"  {'sw-1':<8} {'edge-switch':<20} {'000000000002':<16} {'4':<6} {'CONNECTED'}")
+            print(f"  {'sw-2':<8} {'access-switch':<20} {'000000000003':<16} {'24':<6} {'CONNECTED'}")
+        elif action == "ports" and len(args) > 1:
+            print(f"\033[1;36mPorts for {args[1]}:\033[0m")
+            print(f"  {'PORT':<6} {'NAME':<16} {'STATE':<10} {'SPEED':<10} {'RX':<12} {'TX'}")
+            print(f"  {'1':<6} {'eth0':<16} {'UP':<10} {'1 Gbps':<10} {'1.2M':<12} {'3.4M'}")
+            print(f"  {'2':<6} {'eth1':<16} {'UP':<10} {'10 Gbps':<10} {'5.6M':<12} {'2.3M'}")
+            print(f"  {'3':<6} {'eth2':<16} {'DOWN':<10} {'--':<10} {'--':<12} {'--'}")
+        elif action == "flows":
+            print(f"\033[1;36mFlow Table:\033[0m")
+            print(f"  {'PRIO':<6} {'SRC':<16} {'DST':<16} {'PROTO':<8} {'ACTION':<10} {'PACKETS'}")
+            print(f"  {'100':<6} {'10.0.0.0/24':<16} {'any':<16} {'TCP':<8} {'FORWARD':<10} {'45,678'}")
+            print(f"  {'90':<6} {'any':<16} {'10.0.1.0/24':<16} {'UDP':<8} {'FORWARD':<10} {'12,345'}")
+            print(f"  {'10':<6} {'0.0.0.0/0':<16} {'0.0.0.0/0':<16} {'ANY':<8} {'DROP':<10} {'8,901'}")
+        elif action == "controllers":
+            print(f"\033[1;36mSDN Controllers:\033[0m")
+            print(f"  {'ID':<10} {'NAME':<20} {'HOST':<16} {'PORT':<8} {'ROLE':<10} {'STATUS'}")
+            print(f"  {'ctrl-0':<10} {'primary':<20} {'192.168.1.10':<16} {'6633':<8} {'MASTER':<10} {'ACTIVE'}")
+            print(f"  {'ctrl-1':<10} {'backup':<20} {'192.168.1.11':<16} {'6633':<8} {'SLAVE':<10} {'STANDBY'}")
+        elif action == "vlans":
+            print(f"\033[1;36mVLANs:\033[0m")
+            print(f"  {'ID':<6} {'NAME':<20} {'PORTS':<8} {'STATUS'}")
+            print(f"  {'100':<6} {'management':<20} {'3':<8} {'ACTIVE'}")
+            print(f"  {'200':<6} {'data':<20} {'5':<8} {'ACTIVE'}")
+            print(f"  {'300':<6} {'voice':<20} {'2':<8} {'ACTIVE'}")
+        elif action == "stats":
+            print(f"\033[1;36mSDN Statistics:\033[0m")
+            print(f"  Switches: 3")
+            print(f"  Ports: 36")
+            print(f"  Active Flows: 128")
+            print(f"  Controllers: 2")
+            print(f"  VLANs: 3")
+            print(f"  Total Packets: 1,234,567")
+            print(f"  Total Bytes: 1.2 GB")
+        elif action == "topology":
+            print(f"\033[1;36mNetwork Topology:\033[0m")
+            print(f"  core-switch (000000000001)")
+            print(f"    port 1: trunk [UP] -> edge-switch")
+            print(f"    port 2: trunk [UP] -> access-switch")
+            print(f"  edge-switch (000000000002)")
+            print(f"    port 1: trunk [UP] -> core-switch")
+            print(f"    port 2: access [UP] -> server-1")
+            print(f"  access-switch (000000000003)")
+            print(f"    port 1: trunk [UP] -> core-switch")
+            print(f"    port 2-24: access [UP] -> workstations")
+        else:
+            print("\033[33msdn: invalid usage\033[0m")
 
 
 # ============================================================
