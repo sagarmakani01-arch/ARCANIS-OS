@@ -2788,6 +2788,79 @@ def test_btreedb():
 
 
 # ============================================================
+# ARC STANDARD LIBRARY TESTS (V10)
+# ============================================================
+
+def test_arc_stdlib():
+    suite = TestSuite("Arc Standard Library Tests")
+    import io
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLang
+
+    def arc_run(code):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            a = ArcLang()
+            a.run(code if code.endswith(";") else code + ";")
+            return sys.stdout.getvalue().strip()
+        finally:
+            sys.stdout = old
+
+    suite.assert_equals(arc_run("print len(\"hello\");"), "5", "arc_stdlib_len")
+    suite.assert_equals(arc_run("print str(42);"), "42", "arc_stdlib_str")
+    suite.assert_equals(arc_run("print int(\"100\") + 1;"), "101", "arc_stdlib_int")
+    suite.assert_equals(arc_run("print contains(\"hello world\", \"world\");"), "True", "arc_stdlib_contains")
+    suite.assert_equals(arc_run("print replace(\"hello world\", \"world\", \"arc\");"), "hello arc", "arc_stdlib_replace")
+    suite.assert_equals(arc_run("print upper(\"hello\");"), "HELLO", "arc_stdlib_upper")
+    suite.assert_equals(arc_run("print split(\"a,b,c\", \",\");"), "['a', 'b', 'c']", "arc_stdlib_split")
+    suite.assert_equals(arc_run("print starts_with(\"arcanis\", \"arc\");"), "True", "arc_stdlib_startswith")
+    suite.assert_equals(arc_run("print type(42);"), "int", "arc_stdlib_type")
+    suite.assert_equals(arc_run("print abs(-10);"), "10", "arc_stdlib_abs")
+    suite.assert_equals(arc_run("print max(3, 7);"), "7", "arc_stdlib_max")
+    suite.assert_equals(arc_run("print min(10, 3);"), "3", "arc_stdlib_min")
+    suite.assert_equals(arc_run("print range(5);"), "[0, 1, 2, 3, 4]", "arc_stdlib_range")
+    return suite
+
+
+# ============================================================
+# ARC NATIVE COMPILER TESTS (V10)
+# ============================================================
+
+def test_arc_compiler():
+    suite = TestSuite("Arc Native Compiler Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import NativeJIT, ArcCompiler
+    jit = NativeJIT()
+    if jit.available():
+        ac = ArcCompiler(jit)
+        suite.assert_equals(ac.compile_and_run("42"), 42, "arc_compile_literal")
+        suite.assert_equals(ac.compile_and_run("2 + 3"), 5, "arc_compile_add")
+        suite.assert_equals(ac.compile_and_run("10 - 3"), 7, "arc_compile_sub")
+        suite.assert_equals(ac.compile_and_run("4 * 5"), 20, "arc_compile_mul")
+        suite.assert_equals(ac.compile_and_run("20 / 4"), 5, "arc_compile_div")
+        suite.assert_equals(ac.compile_and_run("100 + 200 * 3"), 700, "arc_compile_precedence")
+        suite.assert_equals(ac.compile_and_run("10 - 2 * 3"), 4, "arc_compile_precedence2")
+        suite.assert_equals(ac.compile_and_run("(2 + 3) * 4"), 20, "arc_compile_parens")
+    else:
+        suite.assert_true(True, "arc_compile_skipped_no_jit")
+    return suite
+
+
+# ============================================================
+# ARC IDE TESTS (V10)
+# ============================================================
+
+def test_arc_ide():
+    suite = TestSuite("Arc IDE Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcIDE
+    ide = ArcIDE()
+    suite.assert_true(ide.available(), "arc_ide_available")
+    return suite
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -2878,6 +2951,9 @@ def main():
         ("FAT32 Driver", test_fat32),
         ("Arc Language", test_arc_lang),
         ("B-Tree Database", test_btreedb),
+        ("Arc Standard Library", test_arc_stdlib),
+        ("Arc Native Compiler", test_arc_compiler),
+        ("Arc IDE", test_arc_ide),
     ]
 
     for name, test_func in test_funcs:

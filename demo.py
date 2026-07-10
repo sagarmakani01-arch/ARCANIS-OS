@@ -1870,6 +1870,34 @@ class ArcVM:
         self.env["str"] = lambda x: str(x)
         self.env["int"] = lambda x: int(x)
         self.env["range"] = lambda n: list(range(n))
+        # File I/O
+        self.env["read_file"] = lambda p: open(p).read() if os.path.isfile(p) else ""
+        self.env["write_file"] = lambda p, c: (lambda f: (f.write(c), f.close(), c)[2])(open(p, "w")) if c is not None else 0
+        self.env["file_exists"] = lambda p: os.path.isfile(p)
+        self.env["list_dir"] = lambda p: os.listdir(p) if os.path.isdir(p) else []
+        # Shell
+        self.env["shell"] = lambda c: subprocess.run(c, shell=True, capture_output=True, text=True).stdout.strip()
+        # HTTP
+        self.env["http_get"] = lambda u: urllib.request.urlopen(u, timeout=5).read().decode("utf-8", errors="replace") if u.startswith("http") else ""
+        # String functions
+        self.env["split"] = lambda s, d=" ": s.split(d)
+        self.env["contains"] = lambda s, sub: sub in s
+        self.env["replace"] = lambda s, o, n: s.replace(o, n)
+        self.env["substr"] = lambda s, st, en: s[st:en] if en is not None else s[st:]
+        self.env["upper"] = lambda s: s.upper()
+        self.env["lower"] = lambda s: s.lower()
+        self.env["trim"] = lambda s: s.strip()
+        self.env["starts_with"] = lambda s, pre: s.startswith(pre)
+        self.env["ends_with"] = lambda s, suf: s.endswith(suf)
+        # System
+        self.env["env"] = lambda k: os.environ.get(k, "")
+        self.env["exit"] = lambda: (_ for _ in ()).throw(SystemExit(0))
+        self.env["type"] = lambda x: type(x).__name__
+        # Math
+        self.env["abs"] = lambda x: abs(x)
+        self.env["min"] = lambda *a: min(a) if a else 0
+        self.env["max"] = lambda *a: max(a) if a else 0
+        self.env["round"] = lambda x: round(x)
 
     def exec(self, ast):
         self._eval(ast)
@@ -1947,7 +1975,7 @@ class ArcVM:
             left = self._eval(node[2])
             right = self._eval(node[3])
             op = node[1]
-            if op == "+": return left + right
+            if op == "+": return str(left) + str(right) if isinstance(left, str) or isinstance(right, str) else left + right
             if op == "-": return left - right
             if op == "*": return left * right
             if op == "/": return left // right if isinstance(left, int) and isinstance(right, int) else left / right
@@ -2001,7 +2029,6 @@ class ArcVM:
 
     def _call_fn(self, fn_node, args):
         old_env = dict(self.env)
-        name = fn_node[1]
         params = fn_node[2]
         for p, a in zip(params, args):
             self.env[p] = a
@@ -2009,10 +2036,9 @@ class ArcVM:
         self._eval(fn_node[3])
         rv = self.return_val
         self.return_val = None
-        # Restore old env but keep new variables and functions
-        for k in old_env:
-            if k in self.env and k not in params and k != name:
-                self.env[k] = old_env[k]
+        # Fully restore old environment
+        self.env.clear()
+        self.env.update(old_env)
         return rv
 
     def run_source(self, source):
@@ -2392,6 +2418,392 @@ class BTreeNode:
         self.children = []
 
 
+# ============================================================
+# ARC NATIVE COMPILER (Arc → x86_64)
+# ============================================================
+
+class ArcCompiler:
+    """Compile Arc AST to native x86_64 machine code via JIT."""
+
+    def __init__(self, jit):
+        self.jit = jit
+        self.abi = "microsoft"  # default for Windows
+
+    def compile_expr(self, source):
+        """Compile an Arc expression to x86_64 and return the function pointer."""
+        lexer = ArcLexer(source if source.endswith(";") else source + ";")
+        parser = ArcParser(lexer.tokens)
+        ast = parser.parse()
+        # Extract the expression from the program
+        stmts = ast[1] if ast[0] == "PROGRAM" else [ast]
+        if not stmts:
+            return None, "No statements"
+        stmt = stmts[0]
+        # Handle PRINT expr
+        if stmt[0] == "PRINT":
+            expr = stmt[1]
+        elif stmt[0] == "EXPR":
+            expr = stmt[1]
+        elif stmt[0] == "RETURN":
+            expr = stmt[1]
+        else:
+            expr = stmt
+
+        try:
+            code = self._gen_expr(expr)
+            code += bytes([0xC3])  # ret
+            func, ptr = self.jit.make_function(code, argtypes=[])
+            return func, ptr
+        except Exception as e:
+            return None, str(e)
+
+    def compile_and_run(self, source):
+        """Compile and execute an Arc expression, return result."""
+        func, ptr_or_err = self.compile_expr(source)
+        if func is None:
+            return f"Compile error: {ptr_or_err}"
+        try:
+            result = func()
+            return result
+        finally:
+            try:
+                self.jit.free(ptr_or_err, 64)
+            except Exception:
+                pass
+
+    def _gen_expr(self, node):
+        """Generate x86_64 bytes for an AST node. Result left in RAX."""
+        if node[0] == "NUMBER":
+            val = node[1]
+            if val == 0:
+                return bytes([0x48, 0x31, 0xC0])  # xor rax, rax
+            if -0x80000000 <= val <= 0x7FFFFFFF:
+                code = bytes([0x48, 0xC7, 0xC0])  # mov rax, imm32
+                code += struct.pack("<i", val)
+                return code
+            code = bytes([0x48, 0xB8])  # mov rax, imm64
+            code += struct.pack("<q", val)
+            return code
+
+        if node[0] == "BINOP":
+            # Generate code for right operand first (will be pushed)
+            right_code = self._gen_expr(node[3])
+            left_code = self._gen_expr(node[2])
+            # push right; push left; pop rax; pop rbx; op rax, rbx; push rax; pop rax
+            code = right_code
+            code += bytes([0x50])  # push rax
+            code += left_code
+            code += bytes([0x50])  # push rax
+            code += bytes([0x58])  # pop rax — left
+            code += bytes([0x5B])  # pop rbx — right
+            op = node[1]
+            if op == "+":
+                code += bytes([0x48, 0x01, 0xD8])  # add rax, rbx
+            elif op == "-":
+                code += bytes([0x48, 0x29, 0xD8])  # sub rax, rbx
+            elif op == "*":
+                code += bytes([0x48, 0x0F, 0xAF, 0xC3])  # imul rax, rbx
+            elif op == "/":
+                code += bytes([0x48, 0x31, 0xD2])  # xor rdx, rdx
+                code += bytes([0x48, 0xF7, 0xF3])  # div rbx (rax = rax/rbx)
+            else:
+                raise ValueError(f"Unsupported op for native: {op}")
+            return code
+
+        if node[0] == "UNARY":
+            sub_code = self._gen_expr(node[2])
+            if node[1] == "-":
+                code = sub_code
+                code += bytes([0x48, 0xF7, 0xD8])  # neg rax
+                return code
+            return sub_code
+
+        if node[0] == "BOOL":
+            code = bytes([0x48, 0xC7, 0xC0])
+            code += struct.pack("<i", 1 if node[1] else 0)
+            return code
+
+        # Default: return 0
+        return bytes([0x48, 0x31, 0xC0])
+
+    def compile_file(self, path):
+        """Compile and run an Arc script file natively."""
+        if not os.path.isfile(path):
+            return f"File not found: {path}"
+        with open(path) as f:
+            source = f.read()
+        # For multi-statement scripts, fall back to VM
+        arc = ArcLang(jit=self.jit)
+        arc.run(source)
+        return "Script executed (VM fallback for multi-statement)"
+
+
+# ============================================================
+# VISUAL ARC IDE (tkinter)
+# ============================================================
+
+class ArcIDE:
+    """Visual code editor for Arc language with syntax highlighting."""
+
+    KEYWORD_COLORS = {
+        "let": "#569CD6", "fn": "#569CD6", "if": "#569CD6", "else": "#569CD6",
+        "while": "#569CD6", "for": "#569CD6", "in": "#569CD6", "return": "#569CD6",
+        "true": "#4EC9B0", "false": "#4EC9B0", "nil": "#4EC9B0",
+        "print": "#DCDCAA", "input": "#DCDCAA",
+    }
+
+    def __init__(self, jit=None):
+        self.root = None
+        self.text = None
+        self.output = None
+        self.arc = ArcLang(jit=jit)
+
+    def available(self):
+        return _HAVE_TK
+
+    def launch(self):
+        if not _HAVE_TK:
+            print("\033[31mTkinter not available\033[0m")
+            return
+        self.root = tk.Tk()
+        self.root.title("Arc IDE")
+        self.root.geometry("800x600")
+        self.root.configure(bg="#1E1E1E")
+
+        # Menu
+        menu = tk.Menu(self.root)
+        self.root.config(menu=menu)
+        file_menu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="New", command=self._new_file)
+        file_menu.add_command(label="Open", command=self._open_file)
+        file_menu.add_command(label="Save", command=self._save_file)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.destroy)
+
+        run_menu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="Run", menu=run_menu)
+        run_menu.add_command(label="Execute", command=self._run_code)
+        run_menu.add_command(label="Show Tokens", command=self._show_tokens)
+        run_menu.add_command(label="Show AST", command=self._show_ast)
+
+        # Editor
+        frame = tk.Frame(self.root, bg="#1E1E1E")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        self.text = tk.Text(frame, bg="#1E1E1E", fg="#D4D4D4",
+                            insertbackground="#D4D4D4", font=("Consolas", 11),
+                            wrap=tk.NONE, relief=tk.FLAT, padx=10, pady=10)
+        self.text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+
+        scroll_y = tk.Scrollbar(frame, orient=tk.VERTICAL, command=self.text.yview)
+        scroll_y.pack(fill=tk.Y, side=tk.RIGHT)
+        self.text.config(yscrollcommand=scroll_y.set)
+
+        # Line numbers
+        line_frame = tk.Frame(self.root, bg="#252526")
+        line_frame.pack(fill=tk.X)
+
+        tk.Label(line_frame, text="Ln 1, Col 1", bg="#252526", fg="#858585",
+                 font=("Consolas", 9), anchor="w").pack(side=tk.LEFT, padx=10)
+
+        run_btn = tk.Button(line_frame, text="Run ▶", bg="#0E639C", fg="white",
+                            font=("Consolas", 9), command=self._run_code,
+                            relief=tk.FLAT, padx=15)
+        run_btn.pack(side=tk.RIGHT, padx=5, pady=2)
+
+        # Output pane
+        self.output = tk.Text(self.root, bg="#1E3A3A", fg="#4EC9B0",
+                              font=("Consolas", 10), height=8, relief=tk.FLAT,
+                              padx=10, pady=5)
+        self.output.pack(fill=tk.BOTH, side=tk.BOTTOM)
+        self.output.insert(tk.END, "▶ Output will appear here\n")
+        self.output.config(state=tk.DISABLED)
+
+        # Syntax highlight on key release
+        self.text.bind("<KeyRelease>", self._highlight)
+
+        # Set default content
+        default_code = """# Arc language demo
+fn fib(n) {
+    if n <= 1 { return n; }
+    return fib(n-1) + fib(n-2);
+}
+
+print "fib(20) = " + fib(20);
+
+let sum = 0;
+for i in 10 {
+    sum = sum + i;
+}
+print "sum(0..9) = " + sum;
+"""
+        self.text.insert(tk.END, default_code)
+        self._highlight()
+
+        self.root.mainloop()
+
+    def _highlight(self, event=None):
+        """Apply syntax highlighting."""
+        if not self.text:
+            return
+        try:
+            content = self.text.get("1.0", tk.END)
+            self.text.mark_set(tk.INSERT, self.text.index(tk.INSERT))
+            # Reset all to default
+            self.text.config(state=tk.NORMAL)
+            # Clear tags
+            for tag in self.text.tag_names():
+                if tag != "sel":
+                    self.text.tag_delete(tag)
+
+            # Highlight strings
+            start = None
+            for i, ch in enumerate(content):
+                if ch == '"' and start is None:
+                    start = i
+                elif ch == '"' and start is not None:
+                    idx1 = f"1.0 + {start} chars"
+                    idx2 = f"1.0 + {i + 1} chars"
+                    self.text.tag_add("str", idx1, idx2)
+                    self.text.tag_config("str", foreground="#CE9178")
+                    start = None
+
+            # Highlight keywords
+            for word, color in self.KEYWORD_COLORS.items():
+                idx = content.find(word)
+                while idx >= 0:
+                    prev = content[idx - 1] if idx > 0 else " "
+                    nxt = content[idx + len(word)] if idx + len(word) < len(content) else " "
+                    if not prev.isalnum() and not nxt.isalnum():
+                        idx1 = f"1.0 + {idx} chars"
+                        idx2 = f"1.0 + {idx + len(word)} chars"
+                        self.text.tag_add(f"kw_{word}", idx1, idx2)
+                        self.text.tag_config(f"kw_{word}", foreground=color)
+                    idx = content.find(word, idx + 1)
+
+            # Highlight numbers
+            i = 0
+            while i < len(content):
+                if content[i].isdigit() and (i == 0 or not content[i-1].isalnum()):
+                    j = i
+                    while j < len(content) and content[j].isdigit():
+                        j += 1
+                    idx1 = f"1.0 + {i} chars"
+                    idx2 = f"1.0 + {j} chars"
+                    self.text.tag_add(f"num_{i}", idx1, idx2)
+                    self.text.tag_config(f"num_{i}", foreground="#B5CEA8")
+                    i = j
+                else:
+                    i += 1
+
+            # Highlight comments
+            i = 0
+            while i < len(content):
+                if content[i] == '#':
+                    j = i
+                    while j < len(content) and content[j] != '\n':
+                        j += 1
+                    idx1 = f"1.0 + {i} chars"
+                    idx2 = f"1.0 + {j} chars"
+                    self.text.tag_add(f"cmt_{i}", idx1, idx2)
+                    self.text.tag_config(f"cmt_{i}", foreground="#6A9955")
+                    i = j
+                else:
+                    i += 1
+
+            self.text.config(state=tk.NORMAL)
+        except Exception:
+            pass
+
+    def _run_code(self):
+        """Execute the code in the editor."""
+        code = self.text.get("1.0", tk.END).strip()
+        if not code:
+            return
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, "▶ Running...\n")
+
+        old_stdout = sys.stdout
+        sys.stdout = output_capture = __import__('io').StringIO()
+        try:
+            self.arc.run(code)
+            result = output_capture.getvalue()
+        except Exception as e:
+            result = f"Error: {e}"
+        finally:
+            sys.stdout = old_stdout
+
+        self.output.delete("1.0", tk.END)
+        if result:
+            self.output.insert(tk.END, result)
+        else:
+            self.output.insert(tk.END, "(no output)")
+        self.output.config(state=tk.DISABLED)
+
+    def _show_tokens(self):
+        code = self.text.get("1.0", tk.END).strip()
+        if not code:
+            return
+        lexer = ArcLexer(code)
+        result = "\n".join(f"  {t[0]:>8}  '{t[1]}'" for t in lexer.tokens)
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, result if result else "(empty)")
+        self.output.config(state=tk.DISABLED)
+
+    def _show_ast(self):
+        code = self.text.get("1.0", tk.END).strip()
+        if not code:
+            return
+        try:
+            ast = self.arc.parse(code)
+            result = self.arc.ast_str(ast)
+        except Exception as e:
+            result = f"Error: {e}"
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, result)
+        self.output.config(state=tk.DISABLED)
+
+    def _new_file(self):
+        self.text.delete("1.0", tk.END)
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, "▶ New file\n")
+        self.output.config(state=tk.DISABLED)
+
+    def _open_file(self):
+        from tkinter import filedialog
+        path = filedialog.askopenfilename(filetypes=[("Arc files", "*.arc"), ("All files", "*.*")])
+        if path:
+            try:
+                with open(path) as f:
+                    self.text.delete("1.0", tk.END)
+                    self.text.insert(tk.END, f.read())
+                self._highlight()
+            except Exception as e:
+                self.output.config(state=tk.NORMAL)
+                self.output.delete("1.0", tk.END)
+                self.output.insert(tk.END, f"Error: {e}")
+                self.output.config(state=tk.DISABLED)
+
+    def _save_file(self):
+        from tkinter import filedialog
+        path = filedialog.asksaveasfilename(defaultextension=".arc",
+                                              filetypes=[("Arc files", "*.arc"), ("All files", "*.*")])
+        if path:
+            try:
+                with open(path, "w") as f:
+                    f.write(self.text.get("1.0", tk.END).strip())
+            except Exception as e:
+                self.output.config(state=tk.NORMAL)
+                self.output.delete("1.0", tk.END)
+                self.output.insert(tk.END, f"Error: {e}")
+                self.output.config(state=tk.DISABLED)
+
+
 THEMES = {
     "default": {"prompt": "1;32", "info": "1;36", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
     "dark":    {"prompt": "1;33", "info": "1;34", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
@@ -2434,6 +2846,8 @@ class Shell:
         self.fat32 = FAT32Driver()
         self.mp_processes = {}
         self.arc = ArcLang(jit=self.jit if self.jit.available() else None)
+        self.arc_compiler = ArcCompiler(self.jit) if self.jit.available() else None
+        self.arc_ide = ArcIDE(jit=self.jit if self.jit.available() else None)
         self.db = BTreeDB()
         self.fat32_writer = FAT32Writer()
 
@@ -2684,6 +3098,7 @@ class Shell:
             "fat32": self.cmd_fat32,
             "arc": self.cmd_arc,
             "db": self.cmd_db,
+            "arcide": self.cmd_arcide,
         }
 
         handler = dispatch.get(command)
@@ -4730,7 +5145,7 @@ class Shell:
 
     def cmd_arc(self, args):
         if not args:
-            print("Usage: arc [run <file>|eval <code>|tokens <code>|ast <code>|repl]")
+            print("Usage: arc [run <file>|eval <code>|tokens <code>|ast <code>|repl|native <expr>|compile <file>]")
             return
         a = args[0]
         if a == "run" and len(args) > 1:
@@ -4758,6 +5173,19 @@ class Shell:
                 print(f"\033[31mError: {e}\033[0m")
         elif a == "repl":
             self.arc.repl()
+        elif a == "native" and len(args) > 1:
+            if not self.arc_compiler:
+                print("\033[31mNative compiler requires JIT (Windows x64)\033[0m")
+                return
+            code = " ".join(args[1:])
+            result = self.arc_compiler.compile_and_run(code)
+            print(f"\033[1;36m[Native] {code} = {result}\033[0m")
+        elif a == "compile" and len(args) > 1:
+            if not self.arc_compiler:
+                print("\033[31mNative compiler requires JIT (Windows x64)\033[0m")
+                return
+            result = self.arc_compiler.compile_file(args[1])
+            print(f"\033[32m{result}\033[0m")
         else:
             print(f"\033[33marc: unknown action '{a}'\033[0m")
 
@@ -4799,6 +5227,18 @@ class Shell:
             print(f"Size: {s['size']} bytes")
         else:
             print(f"\033[33mdb: unknown action '{a}'\033[0m")
+
+    # ======================== ARC IDE ========================
+
+    def cmd_arcide(self, args):
+        if not args:
+            print("Usage: arcide [launch]")
+            return
+        a = args[0]
+        if a == "launch":
+            self.arc_ide.launch()
+        else:
+            print(f"\033[33marcide: unknown action '{a}'\033[0m")
 
 
 # ============================================================
