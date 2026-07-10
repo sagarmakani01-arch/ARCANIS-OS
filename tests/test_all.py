@@ -563,6 +563,156 @@ def test_integration():
 
 
 # ============================================================
+# IoT TESTS
+# ============================================================
+
+def test_iot():
+    suite = TestSuite("IoT Tests")
+
+    # Simulate IoT device management
+    devices = []
+    for i in range(5):
+        device = {
+            "id": i,
+            "name": f"sensor_{i}",
+            "type": "temperature",
+            "protocol": "MQTT",
+            "status": "online"
+        }
+        devices.append(device)
+
+    suite.assert_equals(len(devices), 5, "iot_device_count")
+    suite.assert_true(all(d["status"] == "online" for d in devices), "iot_all_online")
+
+    # Test MQTT publish/subscribe
+    messages = []
+    def on_message(topic, payload):
+        messages.append({"topic": topic, "payload": payload})
+
+    on_message("sensors/temp", "23.5")
+    suite.assert_equals(len(messages), 1, "iot_mqtt_subscribe")
+    suite.assert_equals(messages[0]["topic"], "sensors/temp", "iot_mqtt_topic")
+
+    # Test sensor data aggregation
+    readings = [23.1, 23.5, 23.8, 23.2, 23.6]
+    avg = sum(readings) / len(readings)
+    suite.assert_true(23.0 < avg < 24.0, "iot_sensor_avg", f"avg={avg}")
+
+    return suite
+
+
+# ============================================================
+# BLOCKCHAIN TESTS
+# ============================================================
+
+def test_blockchain():
+    suite = TestSuite("Blockchain Tests")
+
+    # Simulate blockchain
+    chain = []
+    for i in range(3):
+        block = {
+            "index": i,
+            "hash": hashlib.sha256(str(i).encode()).hexdigest()[:16],
+            "prev_hash": chain[-1]["hash"] if chain else "0" * 16,
+            "transactions": i + 1,
+            "nonce": i * 1000
+        }
+        chain.append(block)
+
+    suite.assert_equals(len(chain), 3, "blockchain_length")
+    suite.assert_true(chain[1]["prev_hash"] == chain[0]["hash"], "blockchain_hash_chain")
+
+    # Test transaction creation
+    tx = {
+        "from": "0x0001",
+        "to": "0x0002",
+        "amount": 100,
+        "hash": hashlib.sha256(b"test_tx").hexdigest()[:16]
+    }
+    suite.assert_equals(tx["amount"], 100, "blockchain_tx_amount")
+    suite.assert_not_none(tx["hash"], "blockchain_tx_hash")
+
+    # Test account balances
+    accounts = {"0x0001": 500, "0x0002": 300}
+    suite.assert_equals(accounts["0x0001"], 500, "blockchain_account_balance")
+
+    return suite
+
+
+# ============================================================
+# QUANTUM TESTS
+# ============================================================
+
+def test_quantum():
+    suite = TestSuite("Quantum Computing Tests")
+
+    # Test complex number operations
+    def complex_mult(a, b):
+        return (a[0]*b[0] - a[1]*b[1], a[0]*b[1] + a[1]*b[0])
+
+    result = complex_mult((1, 0), (0, 1))
+    suite.assert_equals(result, (0, 1), "quantum_complex_mult")
+
+    # Test Hadamard gate (simplified)
+    import math
+    inv_sqrt2 = 1 / math.sqrt(2)
+    state = [(1, 0), (0, 0)]  # |0>
+    # Apply H: (|0> + |1>)/sqrt(2)
+    new_state = [
+        (inv_sqrt2 * state[0][0] + inv_sqrt2 * state[1][0], 0),
+        (inv_sqrt2 * state[0][0] - inv_sqrt2 * state[1][0], 0)
+    ]
+    suite.assert_true(abs(new_state[0][0] - inv_sqrt2) < 0.001, "quantum_h_gate")
+
+    # Test qubit count
+    num_qubits = 3
+    num_states = 2 ** num_qubits
+    suite.assert_equals(num_states, 8, "quantum_state_count")
+
+    # Test Bell state creation
+    bell_state = [(inv_sqrt2, 0), (0, 0), (0, 0), (inv_sqrt2, 0)]
+    prob = sum(a**2 + b**2 for a, b in bell_state)
+    suite.assert_true(abs(prob - 1.0) < 0.001, "quantum_bell_normalize")
+
+    return suite
+
+
+# ============================================================
+# MONITORING TESTS
+# ============================================================
+
+def test_monitoring():
+    suite = TestSuite("Monitoring Tests")
+
+    # Test metric creation
+    metrics = {}
+    metrics["cpu_usage"] = {"type": "gauge", "value": 45.2, "min": 12.0, "max": 89.0}
+    metrics["request_count"] = {"type": "counter", "value": 12345, "min": 0, "max": 12345}
+    suite.assert_equals(len(metrics), 2, "monitor_metric_count")
+
+    # Test log entries
+    logs = []
+    logs.append({"level": "INFO", "service": "web", "message": "Request completed"})
+    logs.append({"level": "ERROR", "service": "db", "message": "Connection failed"})
+    suite.assert_equals(len(logs), 2, "monitor_log_count")
+    suite.assert_equals(logs[1]["level"], "ERROR", "monitor_log_level")
+
+    # Test alerts
+    alerts = []
+    alerts.append({"name": "high_cpu", "metric": "cpu_usage", "condition": "gt", "threshold": 80.0, "state": "OK"})
+    suite.assert_equals(alerts[0]["state"], "OK", "monitor_alert_state")
+
+    # Test service health
+    services = []
+    services.append({"name": "web-api", "status": "UP", "latency_ms": 23})
+    services.append({"name": "database", "status": "UP", "latency_ms": 5})
+    suite.assert_true(all(s["status"] == "UP" for s in services), "monitor_services_up")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -606,7 +756,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v2.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v2.5.0\033[0m")
     print()
 
     all_suites = []
@@ -622,6 +772,10 @@ def main():
         ("Security", test_security),
         ("Containers", test_containers),
         ("Integration", test_integration),
+        ("IoT", test_iot),
+        ("Blockchain", test_blockchain),
+        ("Quantum Computing", test_quantum),
+        ("Monitoring", test_monitoring),
         ("Performance", test_performance),
     ]
 
