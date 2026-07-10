@@ -1596,6 +1596,7 @@ class ArcLexer:
         "(": "LPAREN", ")": "RPAREN", "{": "LBRACE", "}": "RBRACE",
         "=": "EQ", "==": "EQEQ", "!=": "NEQ", "<": "LT", ">": "GT",
         "<=": "LTE", ">=": "GTE", ",": "COMMA", ";": "SEMI",
+        "[": "LBRACKET", "]": "RBRACKET",
     }
 
     KEYWORDS = {
@@ -1613,6 +1614,7 @@ class ArcLexer:
         "print": "PRINT", "display": "PRINT", "show": "PRINT", "say": "PRINT",
         "input": "INPUT",
         "import": "IMPORT", "export": "EXPORT", "as": "AS",
+        "and": "AND", "or": "OR", "not": "NOT",
     }
 
     def __init__(self, source):
@@ -1631,10 +1633,11 @@ class ArcLexer:
                 while self.pos < len(self.source) and self.source[self.pos] != "\n":
                     self.pos += 1
                 continue
-            if c == '"':
+            if c in ('"', "'"):
+                quote = c
                 start = self.pos + 1
                 self.pos += 1
-                while self.pos < len(self.source) and self.source[self.pos] != '"':
+                while self.pos < len(self.source) and self.source[self.pos] != quote:
                     self.pos += 1
                 val = self.source[start:self.pos]
                 self.pos += 1
@@ -1806,12 +1809,20 @@ class ArcParser:
         return ("EXPR", expr)
 
     def _expr(self):
-        left = self._comparison()
+        left = self._and_or()
         if self.peek()[0] == "EQ" and self.tokens[self.pos + 1][0] != "EQ" if self.pos + 1 < len(self.tokens) else True:
             if self.peek()[0] == "EQ":
                 self.consume("EQ")
                 right = self._expr()
                 return ("ASSIGN", left, right)
+        return left
+
+    def _and_or(self):
+        left = self._comparison()
+        while self.peek()[0] in ("AND", "OR"):
+            op = self.consume()[1]
+            right = self._comparison()
+            left = ("BINOP", op, left, right)
         return left
 
     def _comparison(self):
@@ -1842,20 +1853,31 @@ class ArcParser:
         if self.peek()[0] == "MINUS":
             self.consume("MINUS")
             return ("UNARY", "-", self._unary())
+        if self.peek()[0] == "NOT":
+            self.consume("NOT")
+            return ("UNARY", "not", self._unary())
         return self._call()
 
     def _call(self):
         left = self._primary()
-        while self.peek()[0] == "LPAREN":
-            self.consume("LPAREN")
-            args = []
-            if self.peek()[0] != "RPAREN":
-                args.append(self._expr())
-                while self.peek()[0] == "COMMA":
-                    self.consume("COMMA")
+        while True:
+            if self.peek()[0] == "LPAREN":
+                self.consume("LPAREN")
+                args = []
+                if self.peek()[0] != "RPAREN":
                     args.append(self._expr())
-            self.consume("RPAREN")
-            left = ("CALL", left, args)
+                    while self.peek()[0] == "COMMA":
+                        self.consume("COMMA")
+                        args.append(self._expr())
+                self.consume("RPAREN")
+                left = ("CALL", left, args)
+            elif self.peek()[0] == "LBRACKET":
+                self.consume("LBRACKET")
+                index = self._expr()
+                self.consume("RBRACKET")
+                left = ("INDEX", left, index)
+            else:
+                break
         return left
 
     def _primary(self):
@@ -1883,11 +1905,33 @@ class ArcParser:
             expr = self._expr()
             self.consume("RPAREN")
             return expr
+        if tok[0] == "LBRACKET":
+            self.consume("LBRACKET")
+            elements = []
+            while self.peek()[0] != "RBRACKET":
+                elements.append(self._expr())
+                if self.peek()[0] == "COMMA":
+                    self.consume("COMMA")
+            self.consume("RBRACKET")
+            return ("LIST", elements)
         if tok[0] == "INPUT":
             self.consume("INPUT")
             self.consume("LPAREN")
             self.consume("RPAREN")
             return ("INPUT",)
+        if tok[0] == "FN":
+            # Anonymous function expression
+            self.consume("FN")
+            name = None
+            self.consume("LPAREN")
+            params = []
+            while self.peek()[0] != "RPAREN":
+                params.append(self.consume("IDENT")[1])
+                if self.peek()[0] == "COMMA":
+                    self.consume("COMMA")
+            self.consume("RPAREN")
+            body = self._block()
+            return ("FN", name, params, body)
         raise SyntaxError(f"Unexpected token: {tok}")
 
 
@@ -1938,6 +1982,23 @@ class ArcVM:
         self.env["min"] = lambda *a: min(a) if a else 0
         self.env["max"] = lambda *a: max(a) if a else 0
         self.env["round"] = lambda x: round(x)
+        # Threading
+        self.env["spawn"] = self._spawn
+        self.env["sync"] = self._sync
+        self.env["channel"] = self._channel
+        self.env["chan_send"] = lambda ch, val: ch["send"](val) if isinstance(ch, dict) and "send" in ch else None
+        self.env["chan_recv"] = lambda ch: ch["recv"]() if isinstance(ch, dict) and "recv" in ch else None
+        self.env["sleep"] = lambda ms: __import__('time').sleep(ms / 1000.0)
+        # List operations
+        self.env["push"] = lambda lst, val: (lst.append(val), lst)[1] if isinstance(lst, list) else None
+        self.env["pop"] = lambda lst: lst.pop() if isinstance(lst, list) and lst else None
+        self.env["map"] = lambda fn, lst: [fn(x) for x in lst] if callable(fn) and isinstance(lst, list) else lst
+        self.env["filter"] = lambda fn, lst: [x for x in lst if fn(x)] if callable(fn) and isinstance(lst, list) else lst
+        self.env["reduce"] = lambda fn, lst, init: __import__('functools').reduce(fn, lst, init) if callable(fn) and isinstance(lst, list) else init
+        self.env["join"] = lambda lst, sep: sep.join(str(x) for x in lst) if isinstance(lst, list) else ""
+        self.env["sort"] = lambda lst: (lst.sort(), lst)[1] if isinstance(lst, list) else lst
+        self.env["reverse"] = lambda lst: (lst.reverse(), lst)[1] if isinstance(lst, list) else lst
+        self.env["append"] = lambda lst, val: (lst.append(val), lst)[1] if isinstance(lst, list) else None
 
     def exec(self, ast):
         self._eval(ast)
@@ -1981,8 +2042,12 @@ class ArcVM:
 
         if t == "FN":
             name = node[1]
-            self.functions[name] = node
-            self.env[name] = lambda *args: self._call_fn(node, args)
+            if name:
+                self.functions[name] = node
+                self.env[name] = lambda *args: self._call_fn(node, args)
+            else:
+                # Anonymous function — return a callable
+                return lambda *args: self._call_fn(node, args)
             return None
 
         if t == "IF":
@@ -2039,11 +2104,14 @@ class ArcVM:
             if op == ">":  return left > right
             if op == "<=": return left <= right
             if op == ">=": return left >= right
+            if op == "and": return left and right
+            if op == "or": return left or right
             return None
 
         if t == "UNARY":
             val = self._eval(node[2])
             if node[1] == "-": return -val if val else 0
+            if node[1] == "not": return not val
             return val
 
         if t == "CALL":
@@ -2066,6 +2134,21 @@ class ArcVM:
             return node[1]
 
         if t == "NIL":
+            return None
+
+        if t == "LIST":
+            return [self._eval(e) for e in node[1]]
+
+        if t == "INDEX":
+            collection = self._eval(node[1])
+            index = self._eval(node[2])
+            if isinstance(collection, (list, tuple)):
+                try:
+                    return collection[index]
+                except IndexError:
+                    return None
+            if isinstance(collection, dict):
+                return collection.get(index, None)
             return None
 
         if t == "INPUT":
@@ -2144,6 +2227,17 @@ class ArcVM:
                 fn size(path) { return call_native("fs_size", path); }
                 print "[stdlib/fs loaded]";
             """,
+            "ai": """
+                export model;
+                export predict;
+                export train;
+                export classify;
+                fn model(layers) { return call_native("ai_model", layers); }
+                fn predict(m, inp) { return call_native("ai_predict", m, inp); }
+                fn train(m, x, y, epochs) { return call_native("ai_train", m, x, y, epochs); }
+                fn classify(m, inp) { return call_native("ai_classify", m, inp); }
+                print "[stdlib/ai loaded]";
+            """,
         }
 
         if module in stdlib_modules:
@@ -2169,6 +2263,10 @@ class ArcVM:
                 "fs_exists": lambda p: os.path.isfile(p),
                 "fs_list": lambda p: os.listdir(p) if os.path.isdir(p) else [],
                 "fs_size": lambda p: os.path.getsize(p) if os.path.isfile(p) else 0,
+                "ai_model": lambda layers: NeuralNetwork(layers),
+                "ai_predict": lambda m, inp: m.predict(inp),
+                "ai_train": lambda m, inputs, outputs, epochs: (m.train(inputs, outputs, epochs), m)[1],
+                "ai_classify": lambda m, inp: (lambda out: out.index(max(out)) if len(out) > 1 else round(out[0]))(m.predict(inp)),
             }
             self.env["call_native"] = lambda fn, *a: native_cbs.get(fn, lambda *_: None)(*a)
 
@@ -2234,6 +2332,34 @@ class ArcVM:
         self.env.clear()
         self.env.update(old_env)
         return rv
+
+    def _spawn(self, fn, *args):
+        """Spawn a function in a new thread."""
+        import threading as _th
+        result = []
+        def _run():
+            try:
+                r = fn(*args)
+                result.append(r)
+            except Exception:
+                pass
+        t = _th.Thread(target=_run, daemon=True)
+        t.start()
+        return {"thread": t, "result": result}
+
+    def _sync(self, handle):
+        """Wait for a spawned thread to complete."""
+        if isinstance(handle, dict) and "thread" in handle:
+            handle["thread"].join()
+            if handle["result"]:
+                return handle["result"][0]
+        return None
+
+    def _channel(self):
+        """Create a communication channel."""
+        import queue as _q
+        q = _q.Queue()
+        return {"send": lambda v: q.put(v), "recv": lambda: q.get()}
 
     def run_source(self, source):
         lexer = ArcLexer(source)
@@ -2339,7 +2465,8 @@ class ArcLang:
             op_words = {"+": "plus", "-": "minus", "*": "times", "/": "divided by",
                         "==": "equals", "!=": "does not equal",
                         "<": "is less than", ">": "is greater than",
-                        "<=": "is less than or equal to", ">=": "is greater than or equal to"}
+                        "<=": "is less than or equal to", ">=": "is greater than or equal to",
+                        "and": "and", "or": "or"}
             lines.append(f"{prefix}  {op_words.get(node[1], node[1])}")
             self._explain_node(node[3], lines, indent)
         elif t == "NUMBER":

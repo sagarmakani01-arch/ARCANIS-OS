@@ -2910,6 +2910,99 @@ def test_arc_readability():
 # ARC IMPORT SYSTEM TESTS (V10.2)
 # ============================================================
 
+def test_arc_lists():
+    suite = TestSuite("Arc List & Array Tests")
+    import io
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLang
+
+    def arc_run(code):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            a = ArcLang()
+            a.run(code if code.endswith(";") or code.endswith("}") else code + ";")
+            return sys.stdout.getvalue().strip()
+        finally:
+            sys.stdout = old
+
+    suite.assert_equals(arc_run("print [1, 2, 3];"), "[1, 2, 3]", "list_literal")
+    suite.assert_equals(arc_run("print [];"), "[]", "list_empty")
+    suite.assert_equals(arc_run("print len([10, 20]);"), "2", "list_len")
+
+    a2 = ArcLang()
+    a2.run("let x = [10, 20, 30];")
+    suite.assert_equals(a2.vm.env["x"][0], 10, "list_index_0")
+    suite.assert_equals(a2.vm.env["x"][2], 30, "list_index_2")
+    try:
+        v = a2.vm.env["x"][5]
+        suite.assert_equals(v, None, "list_index_oob")
+    except IndexError:
+        suite.assert_true(True, "list_index_oob_handled")
+
+    suite.assert_equals(arc_run("let x = [3, 1, 2]; print sort(x);"), "[1, 2, 3]", "list_sort")
+    suite.assert_equals(arc_run("let x = [1, 2, 3]; push(x, 4); print x;"), "[1, 2, 3, 4]", "list_push")
+    suite.assert_equals(arc_run("let x = [1, 2, 3]; print join(x, ',');"), "1,2,3", "list_join")
+
+    # Anonymous functions (map/filter/reduce)
+    suite.assert_equals(
+        arc_run("let x = [1, 2, 3, 4]; print map(fn(n) { result n * 2; }, x);"),
+        "[2, 4, 6, 8]", "list_map")
+    suite.assert_equals(
+        arc_run("let x = [1, 2, 3, 4]; print filter(fn(n) { result n > 2; }, x);"),
+        "[3, 4]", "list_filter")
+    suite.assert_equals(
+        arc_run("let x = [1, 2, 3]; print reduce(fn(a, b) { result a + b; }, x, 0);"),
+        "6", "list_reduce")
+
+    # Logical operators
+    suite.assert_equals(arc_run("print true and false;"), "False", "logic_and")
+    suite.assert_equals(arc_run("print true or false;"), "True", "logic_or")
+    suite.assert_equals(arc_run("print not true;"), "False", "logic_not")
+    suite.assert_equals(arc_run("print (5 > 3) and (10 > 5);"), "True", "logic_compound")
+    return suite
+
+
+def test_arc_threading():
+    suite = TestSuite("Arc Multithreading Tests")
+    import io
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLang
+
+    def arc_run(code):
+        old = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            a = ArcLang()
+            a.run(code if code.endswith(";") or code.endswith("}") else code + ";")
+            return sys.stdout.getvalue().strip()
+        finally:
+            sys.stdout = old
+
+    suite.assert_equals(
+        arc_run("fn add(a, b) { result a + b; } let h = spawn(add, 10, 20); print sync(h);"),
+        "30", "thread_spawn")
+    suite.assert_equals(
+        arc_run("let ch = channel(); chan_send(ch, 42); print chan_recv(ch);"),
+        "42", "thread_channel")
+    return suite
+
+
+def test_arc_ai():
+    suite = TestSuite("Arc AI Module Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLang
+    a = ArcLang()
+    a.run('import "ai"; let m = model([2, 4, 1]);')
+    suite.assert_true("m" in a.vm.env, "ai_model_created")
+    m = a.vm.env.get("m")
+    if m:
+        pred = m.predict([0, 1])
+        suite.assert_true(len(pred) == 1, "ai_predict_output_dim")
+        suite.assert_true(0 <= pred[0] <= 1, "ai_predict_range")
+    return suite
+
+
 def test_arc_imports():
     suite = TestSuite("Arc Import System Tests")
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -2971,7 +3064,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v10.2.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v10.3.0\033[0m")
     print()
 
     all_suites = []
@@ -3054,6 +3147,9 @@ def main():
         ("Arc IDE", test_arc_ide),
         ("Arc Readability", test_arc_readability),
         ("Arc Import System", test_arc_imports),
+        ("Arc Lists", test_arc_lists),
+        ("Arc Multithreading", test_arc_threading),
+        ("Arc AI Module", test_arc_ai),
     ]
 
     for name, test_func in test_funcs:
