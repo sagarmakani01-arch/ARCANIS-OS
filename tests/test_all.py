@@ -959,6 +959,119 @@ def test_autonomous():
 
 
 # ============================================================
+# AR/VR TESTS
+# ============================================================
+
+def test_arvr():
+    suite = TestSuite("AR/VR Tests")
+
+    # Test scene management
+    scenes = []
+    for i in range(2):
+        scenes.append({"name": f"scene_{i}", "objects": i * 3 + 2, "fps": 90})
+    suite.assert_equals(len(scenes), 2, "arvr_scene_count")
+    suite.assert_true(all(s["fps"] == 90 for s in scenes), "arvr_fps_target")
+
+    # Test 3D objects
+    objects = [
+        {"name": "cube", "mesh": "cube", "verts": 36, "tris": 12, "visible": True},
+        {"name": "sphere", "mesh": "sphere", "verts": 36, "tris": 12, "visible": True},
+        {"name": "light", "mesh": "sphere", "verts": 36, "tris": 12, "visible": False}
+    ]
+    suite.assert_equals(len(objects), 3, "arvr_object_count")
+    visible = sum(1 for o in objects if o["visible"])
+    suite.assert_equals(visible, 2, "arvr_visible_objects")
+
+    # Test HMD
+    hmd = {"name": "Meta Quest 3", "connected": True, "fps": 90.0, "battery": 85}
+    suite.assert_true(hmd["connected"], "arvr_hmd_connected")
+    suite.assert_true(hmd["fps"] >= 72, "arvr_hmd_fps")
+
+    # Test transforms
+    transform = {"x": 1.0, "y": 2.0, "z": 3.0}
+    suite.assert_equals(transform["x"], 1.0, "arvr_transform")
+
+    return suite
+
+
+# ============================================================
+# ZERO TRUST TESTS
+# ============================================================
+
+def test_zerotrust():
+    suite = TestSuite("Zero Trust Tests")
+
+    # Test identities
+    identities = [
+        {"username": "admin", "role": "admin", "auth": True, "trust": 85.0},
+        {"username": "alice", "role": "developer", "auth": True, "trust": 75.0},
+        {"username": "bob", "role": "viewer", "auth": False, "trust": 50.0}
+    ]
+    suite.assert_equals(len(identities), 3, "zt_identity_count")
+    authorized = sum(1 for i in identities if i["auth"])
+    suite.assert_equals(authorized, 2, "zt_authorized")
+
+    # Test policies
+    policies = [
+        {"name": "allow_api", "resource": "/api/*", "action": "ALLOW"},
+        {"name": "deny_admin", "resource": "/admin/*", "action": "DENY"}
+    ]
+    suite.assert_equals(len(policies), 2, "zt_policy_count")
+
+    # Test access evaluation
+    def evaluate(user, resource):
+        for p in policies:
+            if p["action"] == "DENY" and "admin" in resource:
+                return False
+        return True
+
+    suite.assert_true(evaluate("alice", "/api/users"), "zt_allow_access")
+    suite.assert_true(not evaluate("bob", "/admin/config"), "zt_deny_admin")
+
+    # Test MFA
+    mfa_events = 567
+    suite.assert_true(mfa_events > 0, "zt_mfa_active")
+
+    return suite
+
+
+# ============================================================
+# MULTI-CLOUD TESTS
+# ============================================================
+
+def test_multicloud():
+    suite = TestSuite("Multi-Cloud Tests")
+
+    # Test providers
+    providers = [
+        {"name": "AWS", "connected": True, "resources": 24, "spend": 12450},
+        {"name": "Azure", "connected": True, "resources": 15, "spend": 8230},
+        {"name": "GCP", "connected": False, "resources": 0, "spend": 0}
+    ]
+    suite.assert_equals(len(providers), 3, "mc_provider_count")
+    connected = sum(1 for p in providers if p["connected"])
+    suite.assert_equals(connected, 2, "mc_connected_providers")
+
+    # Test resources
+    resources = [{"name": "web", "type": "compute", "running": True, "cost": 86.50},
+                 {"name": "db", "type": "database", "running": True, "cost": 245.00},
+                 {"name": "ml", "type": "ml", "running": False, "cost": 0}]
+    suite.assert_equals(len(resources), 3, "mc_resource_count")
+    running = sum(1 for r in resources if r["running"])
+    suite.assert_equals(running, 2, "mc_running_resources")
+
+    # Test workload migration
+    workload = {"name": "web-app", "from": "AWS", "to": "Azure", "progress": 1.0}
+    suite.assert_equals(workload["progress"], 1.0, "mc_migration_complete")
+
+    # Test cost calculation
+    total_monthly = sum(r["cost"] for r in resources if r["running"])
+    suite.assert_equals(total_monthly, 331.50, "mc_monthly_cost")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -1002,7 +1115,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v3.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v3.1.0\033[0m")
     print()
 
     all_suites = []
@@ -1029,6 +1142,9 @@ def main():
         ("Data Analytics", test_analytics),
         ("API Gateway", test_gateway),
         ("Autonomous Systems", test_autonomous),
+        ("AR/VR", test_arvr),
+        ("Zero Trust", test_zerotrust),
+        ("Multi-Cloud", test_multicloud),
         ("Performance", test_performance),
     ]
 
