@@ -397,6 +397,8 @@ class Shell:
             "edge": self.cmd_edge,
             "blockchain": self.cmd_blockchain,
             "chain": self.cmd_blockchain,
+            "quantum": self.cmd_quantum,
+            "qc": self.cmd_quantum,
         }
 
         handler = dispatch.get(command)
@@ -1434,6 +1436,10 @@ class Shell:
         print("║    blockchain [cmd] Blockchain ledger management            ║")
         print("║    chain [cmd]      Blockchain ledger (alias)               ║")
         print("║                                                              ║")
+        print("║  QUANTUM COMPUTING:                                         ║")
+        print("║    quantum [cmd]    Quantum simulator                       ║")
+        print("║    qc [cmd]         Quantum simulator (alias)               ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2080,6 +2086,47 @@ class Shell:
             print(f"\033[32mChain valid! 12 blocks, 847 transactions verified\033[0m")
         else:
             print("\033[33mblockchain: invalid usage\033[0m")
+
+    # ---- Quantum Computing ----
+    def cmd_quantum(self, args):
+        """Quantum computing simulator."""
+        if not args:
+            print("\033[33mquantum: usage: quantum [command] [args...]\033[0m")
+            print("  Commands: init, circuit, run, measure, state, bell, qft")
+            return
+        action = args[0]
+        if action == "init" and len(args) > 1:
+            n = args[1]
+            print(f"\033[33mInitializing {n}-qubit quantum simulator...\033[0m")
+            print(f"\033[32mSimulator ready with {n} qubits\033[0m")
+        elif action == "circuit" and len(args) > 1:
+            print(f"\033[33mCreating circuit '{args[1]}'...\033[0m")
+            print(f"  Qubits: {args[2] if len(args) > 2 else '3'}")
+            print(f"\033[32mCircuit created\033[0m")
+        elif action == "run" and len(args) > 1:
+            print(f"\033[33mRunning circuit '{args[1]}' with 1024 shots...\033[0m")
+            time.sleep(1)
+            print(f"\033[32mCircuit executed\033[0m")
+        elif action == "measure":
+            print(f"\033[1;36mMeasurement Results:\033[0m")
+            print(f"  |00>: 512 (0.5000)")
+            print(f"  |01>: 0 (0.0000)")
+            print(f"  |10>: 0 (0.0000)")
+            print(f"  |11>: 512 (0.5000)")
+        elif action == "state":
+            print(f"\033[1;36mStatevector:\033[0m")
+            print(f"  |00>: (0.7071 + 0.0000i)")
+            print(f"  |11>: (0.7071 + 0.0000i)")
+        elif action == "bell":
+            print(f"\033[33mCreating Bell state (|00> + |11>)/sqrt(2)...\033[0m")
+            print(f"  H(q0), CX(q0,q1)")
+            print(f"\033[32mBell state created! Entanglement verified\033[0m")
+        elif action == "qft":
+            print(f"\033[33mQuantum Fourier Transform on {args[1] if len(args) > 1 else '3'} qubits...\033[0m")
+            print(f"  Applying H and controlled rotation gates...")
+            print(f"\033[32mQFT complete\033[0m")
+        else:
+            print("\033[33mquantum: invalid usage\033[0m")
 
 
 # ============================================================
