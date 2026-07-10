@@ -401,6 +401,7 @@ class Shell:
             "qc": self.cmd_quantum,
             "monitor": self.cmd_monitor,
             "metrics": self.cmd_monitor,
+            "twin": self.cmd_digital_twin,
         }
 
         handler = dispatch.get(command)
@@ -1446,6 +1447,9 @@ class Shell:
         print("║    monitor [cmd]    Observability & metrics                 ║")
         print("║    metrics [cmd]    Metrics viewer (alias)                  ║")
         print("║                                                              ║")
+        print("║  DIGITAL TWIN:                                              ║")
+        print("║    twin [cmd]       Digital twin management                 ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2186,6 +2190,54 @@ class Shell:
             print(f"  {'worker':<20} {'127.0.0.1':<16} {'9090':<8} {'DOWN':<8} {'---'}")
         else:
             print("\033[33mmonitor: invalid usage\033[0m")
+
+    # ---- Digital Twin ----
+    def cmd_digital_twin(self, args):
+        """Digital twin management."""
+        if not args:
+            print("\033[33mtwin: usage: twin [command] [args...]\033[0m")
+            print("  Commands: list, create, simulate, sync, rules, health, analytics")
+            return
+        action = args[0]
+        if action == "list":
+            print(f"\033[1;36mDigital Twins:\033[0m")
+            print(f"  {'NAME':<20} {'TYPE':<12} {'STATE':<12} {'TEMP':<8} {'EFF'}")
+            print(f"  {'CNC_Machine_01':<20} {'machine':<12} {'running':<12} {'65.2C':<8} {'97.5%'}")
+            print(f"  {'Robot_Arm_02':<20} {'robot':<12} {'idle':<12} {'24.1C':<8} {'---'}")
+            print(f"  {'HVAC_System':<20} {'building':<12} {'running':<12} {'22.0C':<8} {'99.1%'}")
+        elif action == "create" and len(args) > 2:
+            print(f"\033[33mCreating twin '{args[1]}' (type={args[2]})...\033[0m")
+            print(f"\033[32mDigital twin created\033[0m")
+        elif action == "simulate":
+            print(f"\033[33mRunning simulation step...\033[0m")
+            print(f"  CNC_Machine_01: temp=65.2C, vibration=0.12mm/s")
+            print(f"  Robot_Arm_02: temp=24.1C, vibration=0.00mm/s")
+            print(f"\033[32mSimulation complete\033[0m")
+        elif action == "sync" and len(args) > 1:
+            print(f"\033[33mSyncing twin '{args[1]}' with physical asset...\033[0m")
+            print(f"\033[32mSync complete\033[0m")
+        elif action == "rules":
+            print(f"\033[1;36mAutomation Rules:\033[0m")
+            print(f"  {'NAME':<20} {'TWIN':<20} {'CONDITION':<20} {'ACTION'}")
+            print(f"  {'overheat':<20} {'CNC_Machine_01':<20} {'temp > 80C':<20} {'shutdown'}")
+            print(f"  {'low_efficiency':<20} {'Robot_Arm_02':<20} {'eff < 90%':<20} {'alert'}")
+        elif action == "health":
+            print(f"\033[1;36mHealth Summary:\033[0m")
+            print(f"  Total Twins: 3")
+            print(f"  Running: 2")
+            print(f"  Idle: 1")
+            print(f"  Faulted: 0")
+            print(f"  Total Syncs: 1,234")
+            print(f"  Total Events: 56")
+        elif action == "analytics" and len(args) > 1:
+            print(f"\033[1;36mAnalytics for {args[1]}:\033[0m")
+            print(f"  Operating Hours: 4,567")
+            print(f"  Temperature: 65.2C")
+            print(f"  Vibration: 0.12 mm/s")
+            print(f"  Efficiency: 97.5%")
+            print(f"  Last Sync: 2 minutes ago")
+        else:
+            print("\033[33mtwin: invalid usage\033[0m")
 
 
 # ============================================================
