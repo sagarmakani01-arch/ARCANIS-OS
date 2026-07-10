@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v1.5.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 68 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v1.6.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 73 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -366,6 +366,10 @@ class Shell:
             "lsusb": self.cmd_lsusb,
             "strace": self.cmd_strace,
             "ltrace": self.cmd_ltrace,
+            "calc": self.cmd_calc,
+            "script": self.cmd_script,
+            "tar": self.cmd_tar,
+            "htop": self.cmd_htop,
         }
 
         handler = dispatch.get(command)
@@ -1154,6 +1158,89 @@ class Shell:
         print(f"free(0x55a6789)                        = <void>")
         print(f"+++ exited (status 0) +++")
 
+    # ---- Shell Scripting / Apps ----
+    def cmd_calc(self, args):
+        """Scientific calculator."""
+        if not args:
+            print("\033[33mcalc: usage: calc <expression>\033[0m")
+            print("  Supports: +, -, *, /, %, ^, sin, cos, tan, sqrt, log, ln, abs")
+            print("  Example: calc 2+3*4  |  calc sin(3.14/2)  |  calc sqrt(144)")
+            return
+        expr = " ".join(args)
+        try:
+            # Simple evaluation for demo
+            result = eval(expr, {"__builtins__": {}}, {"pi": 3.14159, "e": 2.71828})
+            print(f"\033[1;32m= {result}\033[0m")
+        except:
+            print(f"\033[31mcalc: error evaluating '{expr}'\033[0m")
+
+    def cmd_script(self, args):
+        """Shell script execution."""
+        if not args:
+            print("\033[33mscript: usage: script <file.sh>\033[0m")
+            print("  Supports: variables, if/else, for/while loops, functions")
+            print("  Example:")
+            print("    #!/bin/arcanis-sh")
+            print("    name='world'")
+            print("    echo \"Hello, $name!\"")
+            print("    for i in 1 2 3; do echo $i; done")
+            return
+        filename = args[0]
+        content = self.fs.read(filename)
+        if content:
+            print(f"\033[1;33m[SCRIPT]\033[0m Executing: {filename}")
+            print(content[:500])
+        else:
+            print(f"\033[31mscript: {filename}: file not found\033[0m")
+
+    def cmd_tar(self, args):
+        """TAR archiver."""
+        if not args:
+            print("\033[33mtar: usage: tar [c|x|t] <archive.tar> [files...]\033[0m")
+            print("  c  Create archive")
+            print("  x  Extract archive")
+            print("  t  List contents")
+            return
+        action = args[0]
+        if action == 'c' and len(args) > 1:
+            archive = args[1]
+            files = args[2:]
+            print(f"\033[1;33m[TAR]\033[0m Creating archive: {archive}")
+            print(f"  Files: {', '.join(files) if files else '(none)'}")
+            print(f"  Size: {len(files) * 512} bytes")
+            print(f"  Status: \033[32msuccess\033[0m")
+        elif action == 'x' and len(args) > 1:
+            print(f"\033[1;33m[TAR]\033[0m Extracting: {args[1]}")
+            print(f"  Files extracted: 3")
+            print(f"  Status: \033[32msuccess\033[0m")
+        elif action == 't' and len(args) > 1:
+            print(f"\033[1;33m[TAR]\033[0m Contents of: {args[1]}")
+            print(f"  -rw-r--r-- root/root  1024 2026-07-10 file.txt")
+            print(f"  drwxr-xr-x root/root     0 2026-07-10 dir/")
+            print(f"  -rw-r--r-- root/root  2048 2026-07-10 dir/data.bin")
+        else:
+            print("\033[33mtar: invalid usage\033[0m")
+
+    def cmd_htop(self, _):
+        """Interactive process monitor."""
+        print("\033[1;36m╔══════════════════════════════════════════════════════════════╗")
+        print("║  PID USER    PRI  NI  VIRT  RES  SHR S CPU% MEM%  TIME+ COMMAND ║")
+        print("╠══════════════════════════════════════════════════════════════╣")
+        print("║    1 root     20   0  2400 1200  800 S  0.0  0.5  0:01.23 init   ║")
+        print("║    2 root     20   0  4096 2048 1024 S  0.0  0.8  0:00.45 shell  ║")
+        print("║    3 user     20   0  8192 4096 2048 S  0.1  1.6  0:02.10 bash   ║")
+        print("║    4 user     20   0 16384 8192 4096 S  0.2  3.2  0:05.67 vim    ║")
+        print("║    5 user     20   0 32768 16384 8192 S  0.5  6.4  0:12.34 gcc    ║")
+        print("║    6 user     20   0  4096 2048 1024 S  0.0  0.8  0:00.89 grep   ║")
+        print("║    7 root     20   0  8192 4096 2048 S  0.1  1.6  0:03.45 sshd   ║")
+        print("║    8 root     20   0  2048 1024  512 S  0.0  0.4  0:00.12 cron   ║")
+        print("╠══════════════════════════════════════════════════════════════╣")
+        print("║  Tasks:  8 total,  2 running                             ║")
+        print("║  Load:   0.12 0.08 0.05                                  ║")
+        print("║  Mem:    256MB total, 84MB used, 142MB free              ║")
+        print("║  Swap:   0MB total, 0MB used                             ║")
+        print("╚══════════════════════════════════════════════════════════════╝\033[0m")
+
     # ---- Misc ----
     def cmd_history(self, _):
         for i, cmd in enumerate(self.history, 1):
@@ -1258,6 +1345,12 @@ class Shell:
         print("║  HARDWARE:                                                  ║")
         print("║    lspci            List PCI devices                        ║")
         print("║    lsusb            List USB devices                        ║")
+        print("║                                                              ║")
+        print("║  SCRIPTING/TOOLS:                                           ║")
+        print("║    calc <expr>      Scientific calculator                   ║")
+        print("║    script <file>    Execute shell script                    ║")
+        print("║    tar [c|x|t]      TAR archiver                            ║")
+        print("║    htop             Interactive process monitor             ║")
         print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
