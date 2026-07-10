@@ -17,13 +17,38 @@ import json
 import hashlib
 import threading
 import socket
+import struct
 import urllib.request
 import urllib.parse
 import shutil
 import stat as stat_module
+import subprocess
+import ctypes
+import multiprocessing
+import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Optional
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
+
+try:
+    import tkinter as tk
+    from tkinter import scrolledtext, ttk, messagebox
+    _HAVE_TK = True
+except ImportError:
+    _HAVE_TK = False
+
+try:
+    import winsound
+    _HAVE_WINSOUND = True
+except ImportError:
+    _HAVE_WINSOUND = False
+
+try:
+    import wave
+    _HAVE_WAVE = True
+except ImportError:
+    _HAVE_WAVE = False
 
 # ============================================================
 # KERNEL SIMULATION
@@ -657,8 +682,906 @@ class NeuralNetwork:
 
 
 # ============================================================
-# SHELL
+# WIN32 API BRIDGE
 # ============================================================
+
+class Win32API:
+    """Real Windows API calls via ctypes. No-op fallback on non-Windows."""
+
+    _kernel32 = ctypes.windll.kernel32 if os.name == "nt" else None
+    _user32 = ctypes.windll.user32 if os.name == "nt" else None
+
+    @staticmethod
+    def system_info():
+        """Get real system info from Windows."""
+        if not Win32API._kernel32:
+            return {"Error": "Not Windows"}
+        class SYSTEM_INFO(ctypes.Structure):
+            _fields_ = [
+                ("wProcessorArchitecture", ctypes.c_ushort),
+                ("wReserved", ctypes.c_ushort),
+                ("dwPageSize", ctypes.c_ulong),
+                ("lpMinimumApplicationAddress", ctypes.c_void_p),
+                ("lpMaximumApplicationAddress", ctypes.c_void_p),
+                ("dwActiveProcessorMask", ctypes.c_void_p),
+                ("dwNumberOfProcessors", ctypes.c_ulong),
+                ("dwProcessorType", ctypes.c_ulong),
+                ("dwAllocationGranularity", ctypes.c_ulong),
+                ("wProcessorLevel", ctypes.c_ushort),
+                ("wProcessorRevision", ctypes.c_ushort),
+            ]
+        info = SYSTEM_INFO()
+        Win32API._kernel32.GetSystemInfo(ctypes.byref(info))
+        return {
+            "processors": info.dwNumberOfProcessors,
+            "page_size": info.dwPageSize,
+            "arch": info.wProcessorArchitecture,
+            "allocation_granularity": info.dwAllocationGranularity,
+        }
+
+    @staticmethod
+    def disk_free(path):
+        """Get real disk free space via GetDiskFreeSpaceEx."""
+        if not Win32API._kernel32:
+            return {"total": 0, "free": 0}
+        free = ctypes.c_ulonglong(0)
+        total = ctypes.c_ulonglong(0)
+        total_free = ctypes.c_ulonglong(0)
+        Win32API._kernel32.GetDiskFreeSpaceExW(
+            ctypes.c_wchar_p(path),
+            ctypes.byref(free),
+            ctypes.byref(total),
+            ctypes.byref(total_free),
+        )
+        return {"free": free.value, "total": total.value}
+
+    @staticmethod
+    def message_box(title, text, mb_type=0):
+        """Show a real Windows message box."""
+        if not Win32API._user32:
+            print(f"[MessageBox] {title}: {text}")
+            return 0
+        return Win32API._user32.MessageBoxW(0, ctypes.c_wchar_p(text), ctypes.c_wchar_p(title), mb_type)
+
+    @staticmethod
+    def clipboard_get():
+        """Get text from Windows clipboard."""
+        if not Win32API._user32:
+            return ""
+        if not Win32API._user32.OpenClipboard(0):
+            return ""
+        try:
+            handle = Win32API._user32.GetClipboardData(13)
+            if handle:
+                ptr = ctypes.windll.kernel32.GlobalLock(handle)
+                if ptr:
+                    text = ctypes.c_wchar_p(ptr).value
+                    ctypes.windll.kernel32.GlobalUnlock(handle)
+                    return text or ""
+            return ""
+        finally:
+            Win32API._user32.CloseClipboard()
+
+    @staticmethod
+    def clipboard_set(text):
+        """Set text on Windows clipboard."""
+        if not Win32API._user32:
+            return False
+        if not Win32API._user32.OpenClipboard(0):
+            return False
+        try:
+            Win32API._user32.EmptyClipboard()
+            buf = ctypes.create_unicode_buffer(text)
+            handle = ctypes.windll.kernel32.GlobalAlloc(0x42, len(buf) * 2 + 2)
+            if handle:
+                ptr = ctypes.windll.kernel32.GlobalLock(handle)
+                ctypes.memmove(ptr, buf, len(buf) * 2 + 2)
+                ctypes.windll.kernel32.GlobalUnlock(handle)
+                Win32API._user32.SetClipboardData(13, handle)
+            return True
+        finally:
+            Win32API._user32.CloseClipboard()
+
+    @staticmethod
+    def hostname():
+        """Get real Windows hostname."""
+        if not Win32API._kernel32:
+            return socket.gethostname()
+        size = ctypes.c_ulong(256)
+        buf = ctypes.create_unicode_buffer(256)
+        Win32API._kernel32.GetComputerNameW(buf, ctypes.byref(size))
+        return buf.value or socket.gethostname()
+
+    @staticmethod
+    def username():
+        """Get real Windows username."""
+        try:
+            advapi32 = ctypes.windll.advapi32
+            size = ctypes.c_ulong(256)
+            buf = ctypes.create_unicode_buffer(256)
+            if advapi32.GetUserNameW(buf, ctypes.byref(size)):
+                return buf.value
+        except Exception:
+            pass
+        return os.environ.get("USERNAME", "unknown")
+
+
+# ============================================================
+# NATIVE CODE JIT (x86_64)
+# ============================================================
+
+class NativeJIT:
+    """Allocate executable memory and run native x86_64 machine code."""
+
+    def __init__(self):
+        self._kernel32 = ctypes.windll.kernel32 if os.name == "nt" else None
+
+    def available(self):
+        return self._kernel32 is not None
+
+    def allocate(self, code: bytes):
+        """Allocate RWX memory and write code bytes."""
+        if not self._kernel32:
+            raise RuntimeError("Native JIT requires Windows")
+        self._kernel32.VirtualAlloc.restype = ctypes.c_void_p
+        self._kernel32.VirtualAlloc.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_ulong, ctypes.c_ulong]
+        ptr = self._kernel32.VirtualAlloc(
+            None, len(code), 0x1000, 0x40
+        )
+        if not ptr:
+            raise OSError(f"VirtualAlloc failed (error {ctypes.GetLastError()})")
+        ctypes.memmove(ptr, code, len(code))
+        return ptr
+
+    def free(self, ptr, size):
+        """Free executable memory."""
+        if self._kernel32:
+            self._kernel32.VirtualFree.restype = ctypes.c_bool
+            self._kernel32.VirtualFree.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_ulong]
+            self._kernel32.VirtualFree(ptr, 0, 0x8000)
+
+    def make_function(self, code: bytes, restype=ctypes.c_int64, argtypes=[]):
+        ptr = self.allocate(code)
+        func_type = ctypes.CFUNCTYPE(restype, *argtypes)
+        return func_type(ptr), ptr
+
+    def run_function(self, code: bytes, *args):
+        """Allocate, execute, and return result."""
+        func, ptr = self.make_function(code, argtypes=[ctypes.c_int64]*len(args))
+        result = func(*args)
+        self.free(ptr, len(code))
+        return result
+
+    def sample_code(self):
+        """Return example x86_64 code: return 42."""
+        return bytes([
+            0xB8, 0x2A, 0x00, 0x00, 0x00,  # mov eax, 42
+            0xC3,                           # ret
+        ])
+
+    def add_code(self, a: int, b: int):
+        """Try both calling conventions to find the right one."""
+        for abi in ["rcx_rdx", "rdi_rsi"]:
+            try:
+                if abi == "rcx_rdx":
+                    code = bytes([0x48, 0x89, 0xC8, 0x48, 0x01, 0xD0, 0xC3])
+                else:
+                    code = bytes([0x48, 0x89, 0xF8, 0x48, 0x01, 0xF0, 0xC3])
+                func, ptr = self.make_function(code, argtypes=[ctypes.c_int64, ctypes.c_int64])
+                result = func(a, b)
+                self.free(ptr, len(code))
+                if result == a + b:
+                    return result
+            except Exception:
+                pass
+            try:
+                self.free(ptr, len(code))
+            except Exception:
+                pass
+        return f"ABI detection failed (got {result})" if 'result' in dir() else 0
+
+    def xor_code(self, a: int, b: int):
+        for abi in ["rcx_rdx", "rdi_rsi"]:
+            try:
+                if abi == "rcx_rdx":
+                    code = bytes([0x48, 0x89, 0xC8, 0x48, 0x31, 0xD0, 0xC3])
+                else:
+                    code = bytes([0x48, 0x89, 0xF8, 0x48, 0x31, 0xF0, 0xC3])
+                func, ptr = self.make_function(code, argtypes=[ctypes.c_int64, ctypes.c_int64])
+                result = func(a, b)
+                self.free(ptr, len(code))
+                if result == a ^ b:
+                    return result
+            except Exception:
+                pass
+            try:
+                self.free(ptr, len(code))
+            except Exception:
+                pass
+        return 0
+
+    def syscall_demo(self):
+        """Demo: make a Windows syscall directly (NtCurrentTeb)."""
+        code = bytes([
+            0x65, 0x48, 0x8B, 0x04, 0x25,  # mov rax, gs:[0x30]
+            0x30, 0x00, 0x00, 0x00,
+            0xC3,
+        ])
+        return self.run_function(code)
+
+
+# ============================================================
+# PE LOADER
+# ============================================================
+
+class PELoader:
+    """Parse PE format and run Windows executables."""
+
+    def __init__(self):
+        self.processes = {}
+
+    # ---- PE Parsing ----
+
+    @staticmethod
+    def parse_pe(path: str):
+        """Parse a PE file and return header info."""
+        with open(path, "rb") as f:
+            data = f.read()
+
+        dos_magic = struct.unpack("<H", data[0:2])[0]
+        if dos_magic != 0x5A4D:
+            return {"error": f"Not a PE file (MZ magic = {dos_magic:#06x})"}
+
+        pe_offset = struct.unpack("<I", data[0x3C:0x40])[0]
+        pe_sig = struct.unpack("<I", data[pe_offset:pe_offset+4])[0]
+        if pe_sig != 0x00004550:
+            return {"error": "Invalid PE signature"}
+
+        off = pe_offset + 4
+        machine = struct.unpack("<H", data[off:off+2])[0]
+        sections_count = struct.unpack("<H", data[off+2:off+4])[0]
+
+        # Optional header
+        opt_hdr_size = struct.unpack("<H", data[off+16:off+18])[0]
+        opt_off = off + 20
+
+        # Data directories
+        subsys = struct.unpack("<H", data[opt_off+68:opt_off+70])[0]
+
+        # Image base
+        if machine == 0x8664:
+            image_base = struct.unpack("<Q", data[opt_off+24:opt_off+32])[0]
+        else:
+            image_base = struct.unpack("<I", data[opt_off+28:opt_off+32])[0]
+
+        # Entry point
+        entry = struct.unpack("<I", data[opt_off+16:opt_off+20])[0]
+
+        # Import directory
+        data_dir_off = opt_off + (112 if machine == 0x8664 else 96)
+        import_rva = struct.unpack("<I", data[data_dir_off:data_dir_off+4])[0]
+        import_size = struct.unpack("<I", data[data_dir_off+4:data_dir_off+8])[0]
+
+        # Section headers
+        sections = []
+        sec_off = opt_off + opt_hdr_size
+        for i in range(sections_count):
+            s = sec_off + i * 40
+            name = data[s:s+8].rstrip(b'\x00').decode('ascii', errors='replace')
+            virt_size = struct.unpack("<I", data[s+8:s+12])[0]
+            virt_addr = struct.unpack("<I", data[s+12:s+16])[0]
+            raw_size = struct.unpack("<I", data[s+16:s+20])[0]
+            raw_ptr = struct.unpack("<I", data[s+20:s+24])[0]
+            char = struct.unpack("<I", data[s+36:s+40])[0]
+            sections.append({
+                "name": name, "virt_size": virt_size, "virt_addr": virt_addr,
+                "raw_size": raw_size, "raw_ptr": raw_ptr, "characteristics": char,
+            })
+
+        subsystem_names = {1: "native", 2: "gui", 3: "console"}
+        return {
+            "machine": {0x8664: "x86_64", 0x14c: "x86", 0xaa64: "ARM64"}.get(machine, f"unknown({machine:#x})"),
+            "sections": sections_count,
+            "subsystem": subsystem_names.get(subsys, f"unknown({subsys})"),
+            "image_base": hex(image_base),
+            "entry_point": hex(entry),
+            "imports": {"rva": hex(import_rva), "size": import_size},
+        }
+
+    # ---- PE Execution ----
+
+    def run(self, path: str, args: str = ""):
+        """Run a Windows executable via CreateProcess."""
+        if not os.name == "nt":
+            return "PE execution requires Windows"
+
+        info = self.parse_pe(path)
+        if "error" in info:
+            return f"Cannot execute: {info['error']}"
+
+        kernel32 = ctypes.windll.kernel32
+        si = ctypes.create_string_buffer(68 + 16 * 2)
+        ctypes.memset(si, 0, len(si))
+        struct.pack_into("I", si, 0, len(si))
+
+        pi = ctypes.create_string_buffer(16 + 8 + 8)
+
+        cmd_line = f'"{path}" {args}'
+        ok = kernel32.CreateProcessW(
+            None, ctypes.c_wchar_p(cmd_line),
+            None, None, False, 0x00000010,
+            None, None, ctypes.byref(si), ctypes.byref(pi),
+        )
+        if not ok:
+            return f"CreateProcess failed (error {ctypes.GetLastError()})"
+
+        pid = struct.unpack_from("I", pi, 8)[0]
+        h_process = struct.unpack_from("Q", pi, 0)[0]
+        h_thread = struct.unpack_from("Q", pi, 16)[0] if struct.calcsize("Q") * 2 == len(pi) else 0
+        self.processes[pid] = {"handle": h_process, "path": path, "args": args}
+
+        # Wait briefly for the process to initialize
+        kernel32.WaitForInputIdle(h_process, 3000)
+        return f"Started PID {pid}: {os.path.basename(path)}"
+
+    def wait(self, pid: int, timeout_ms: int = -1):
+        """Wait for a launched process to exit."""
+        if pid not in self.processes:
+            return f"No such process {pid}"
+        kernel32 = ctypes.windll.kernel32
+        h = self.processes[pid]["handle"]
+        kernel32.WaitForSingleObject(h, timeout_ms)
+        exit_code = ctypes.c_ulong(0)
+        kernel32.GetExitCodeProcess(h, ctypes.byref(exit_code))
+        kernel32.CloseHandle(h)
+        del self.processes[pid]
+        return exit_code.value
+
+    def list_pe_imports(self, path: str):
+        """Parse and list imported DLLs and functions from a PE file."""
+        with open(path, "rb") as f:
+            data = f.read()
+
+        pe_offset = struct.unpack("<I", data[0x3C:0x40])[0]
+        off = pe_offset + 4 + 20
+
+        # Find import directory
+        machine = struct.unpack("<H", data[pe_offset+4:pe_offset+6])[0]
+        opt_hdr_size = struct.unpack("<H", data[pe_offset+4+16:pe_offset+4+18])[0]
+        data_dir_off = off + (112 if machine == 0x8664 else 96)
+        import_rva = struct.unpack("<I", data[data_dir_off:data_dir_off+4])[0]
+
+        if import_rva == 0:
+            return {"imports": []}
+
+        # Find which section contains the import data
+        sec_off = off + opt_hdr_size
+        sections = []
+        for i in range(struct.unpack("<H", data[pe_offset+4+2:pe_offset+4+4])[0]):
+            s = sec_off + i * 40
+            sections.append({
+                "virt_addr": struct.unpack("<I", data[s+12:s+16])[0],
+                "raw_ptr": struct.unpack("<I", data[s+20:s+24])[0],
+                "raw_size": struct.unpack("<I", data[s+16:s+20])[0],
+            })
+
+        def rva_to_offset(rva):
+            for sec in sections:
+                if sec["virt_addr"] <= rva < sec["virt_addr"] + sec["raw_size"]:
+                    return sec["raw_ptr"] + (rva - sec["virt_addr"])
+            return rva
+
+        import_offset = rva_to_offset(import_rva)
+        imports = []
+        while True:
+            thunk_rva = struct.unpack("<I", data[import_offset:import_offset+4])[0]
+            name_rva = struct.unpack("<I", data[import_offset+12:import_offset+16])[0]
+            if thunk_rva == 0:
+                break
+            dll_name_off = rva_to_offset(name_rva)
+            dll_name = data[dll_name_off:data.index(b'\x00', dll_name_off)].decode('ascii', errors='replace')
+            imports.append(dll_name)
+            import_offset += 20
+        return {"imports": imports}
+
+    def resolve_path(self, name: str):
+        """Resolve executable name using PATH or common locations."""
+        if os.path.isfile(name):
+            return name
+        for dir_ in os.environ.get("PATH", "").split(os.pathsep):
+            full = os.path.join(dir_, name)
+            if os.path.isfile(full):
+                return full
+        system32 = os.path.join(os.environ.get("SystemRoot", "C:\\Windows"), "System32")
+        full = os.path.join(system32, name)
+        if os.path.isfile(full):
+            return full
+        return None
+
+
+# ============================================================
+# MULTIPROCESSING KERNEL
+# ============================================================
+
+class MPProcess:
+    """Represents a real OS process via multiprocessing."""
+
+    def __init__(self, pid, name, process_obj, queue):
+        self.pid = pid
+        self.name = name
+        self.process = process_obj
+        self.queue = queue
+        self.start_time = time.time()
+        self.state = "running"
+
+    def is_alive(self):
+        return self.process.is_alive()
+
+    def join(self, timeout=None):
+        self.process.join(timeout)
+
+    def terminate(self):
+        if self.is_alive():
+            self.process.terminate()
+            self.state = "terminated"
+
+    def uptime(self):
+        return time.time() - self.start_time
+
+
+class ProcessManager:
+    """Real process scheduler using multiprocessing."""
+
+    def __init__(self):
+        self.processes = {}
+        self.next_pid = 1000
+        self._lock = threading.Lock()
+
+    def spawn(self, name, target, args=(), daemon=False):
+        """Create and start a real OS process."""
+        with self._lock:
+            pid = self.next_pid
+            self.next_pid += 1
+
+        queue = multiprocessing.Queue()
+        wrapped_target = self._wrap_target(target, queue, pid)
+        p = multiprocessing.Process(target=wrapped_target, args=args, daemon=daemon, name=name)
+        mp = MPProcess(pid, name, p, queue)
+        self.processes[pid] = mp
+        p.start()
+        return mp
+
+    @staticmethod
+    def _wrap_target(target, queue, pid):
+        def wrapper(*args):
+            sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+            print(f"\033[2m[PID {pid}] process started\033[0m")
+            try:
+                result = target(*args)
+                queue.put(("exit", 0, result))
+            except BaseException as e:
+                queue.put(("exit", 1, str(e)))
+        return wrapper
+
+    def list(self):
+        return list(self.processes.values())
+
+    def get(self, pid):
+        return self.processes.get(pid)
+
+    def kill(self, pid):
+        mp = self.processes.get(pid)
+        if mp:
+            mp.terminate()
+            return True
+        return False
+
+    def wait(self, pid, timeout=None):
+        mp = self.processes.get(pid)
+        if mp:
+            mp.join(timeout)
+            return True
+        return False
+
+    def cleanup(self):
+        dead = [pid for pid, mp in self.processes.items() if not mp.is_alive()]
+        for pid in dead:
+            del self.processes[pid]
+        return dead
+
+
+# ============================================================
+# GUI DESKTOP (tkinter)
+# ============================================================
+
+class DesktopManager:
+    """Real GUI desktop environment using tkinter."""
+
+    def __init__(self):
+        self.root = None
+        self.windows = []
+        self.running = False
+
+    def available(self):
+        return _HAVE_TK
+
+    def start(self):
+        """Launch the desktop in a separate thread."""
+        if not _HAVE_TK:
+            print("\033[31mTkinter not available on this system\033[0m")
+            return
+        if self.running:
+            print("\033[33mDesktop already running\033[0m")
+            return
+        self.running = True
+        t = threading.Thread(target=self._run_desktop, daemon=True)
+        t.start()
+        print("\033[32mDesktop environment launched\033[0m")
+
+    def _run_desktop(self):
+        self.root = tk.Tk()
+        self.root.title("Arcanis Desktop")
+        self.root.geometry("1024x768")
+        self.root.configure(bg="#1a1a2e")
+
+        # Taskbar
+        taskbar = tk.Frame(self.root, bg="#16213e", height=40)
+        taskbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        tk.Label(taskbar, text="Arc.OS", bg="#16213e", fg="#0f3460",
+                 font=("Consolas", 10, "bold")).pack(side=tk.LEFT, padx=10, pady=8)
+
+        clock = tk.Label(taskbar, bg="#16213e", fg="#e94560",
+                         font=("Consolas", 10))
+        clock.pack(side=tk.RIGHT, padx=15, pady=8)
+
+        def update_clock():
+            clock.config(text=time.strftime("%H:%M:%S"))
+            self.root.after(1000, update_clock)
+        update_clock()
+
+        # Desktop icons area
+        desktop = tk.Frame(self.root, bg="#1a1a2e")
+        desktop.pack(fill=tk.BOTH, expand=True)
+
+        icons = [
+            ("Terminal", ">_", self._open_terminal),
+            ("Notepad", "N", self._open_notepad),
+            ("Monitor", "M", self._open_monitor),
+            ("File Explorer", "FE", self._open_explorer),
+            ("Calculator", "C", self._open_calc),
+        ]
+        for i, (name, label, cmd) in enumerate(icons):
+            x = 30 + (i % 5) * 120
+            y = 30 + (i // 5) * 130
+            icon_frame = tk.Frame(desktop, bg="#1a1a2e", cursor="hand2")
+            icon_frame.place(x=x, y=y)
+            lbl = tk.Label(icon_frame, text=label, bg="#0f3460", fg="#e94560",
+                           font=("Consolas", 18, "bold"), width=4, height=2)
+            lbl.pack()
+            txt = tk.Label(icon_frame, text=name, bg="#1a1a2e", fg="#a0a0a0",
+                           font=("Consolas", 9))
+            txt.pack()
+            lbl.bind("<Button-1>", lambda e, c=cmd: c())
+            txt.bind("<Button-1>", lambda e, c=cmd: c())
+
+        self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.root.mainloop()
+        self.running = False
+
+    def _open_terminal(self):
+        win = tk.Toplevel(self.root, bg="#0d0d1a")
+        win.title("Terminal")
+        win.geometry("600x400")
+        text = scrolledtext.ScrolledText(win, bg="#0d0d1a", fg="#00ff41",
+                                          insertbackground="#00ff41",
+                                          font=("Consolas", 10))
+        text.pack(fill=tk.BOTH, expand=True)
+        text.insert(tk.END, "Arcanis OS Terminal\n> ")
+        text.config(state=tk.DISABLED)
+
+    def _open_notepad(self):
+        win = tk.Toplevel(self.root, bg="#1e1e2e")
+        win.title("Notepad")
+        win.geometry("500x400")
+        text = scrolledtext.ScrolledText(win, bg="#1e1e2e", fg="#cdd6f4",
+                                          insertbackground="#cdd6f4",
+                                          font=("Consolas", 11))
+        text.pack(fill=tk.BOTH, expand=True)
+        menu = tk.Menu(win)
+        win.config(menu=menu)
+        file_menu = tk.Menu(menu, tearoff=0)
+        menu.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Save", command=lambda: messagebox.showinfo("Save", "Saved!"))
+        file_menu.add_command(label="Exit", command=win.destroy)
+
+    def _open_monitor(self):
+        win = tk.Toplevel(self.root, bg="#0d1117")
+        win.title("System Monitor")
+        win.geometry("500x300")
+        tk.Label(win, text="Arcanis System Monitor", bg="#0d1117", fg="#58a6ff",
+                 font=("Consolas", 14, "bold")).pack(pady=10)
+        info = [
+            f"Uptime: {time.time() - START_TIME:.0f}s",
+            "Processes: 1",
+            "Memory: Python managed",
+            f"Platform: {sys.platform}",
+        ]
+        for line in info:
+            tk.Label(win, text=line, bg="#0d1117", fg="#8b949e",
+                     font=("Consolas", 11), anchor="w").pack(fill=tk.X, padx=20)
+
+    def _open_explorer(self):
+        win = tk.Toplevel(self.root, bg="#0d1117")
+        win.title("File Explorer")
+        win.geometry("600x400")
+        tree = ttk.Treeview(win, columns=("size", "modified"), show="tree headings")
+        tree.heading("#0", text="Name")
+        tree.heading("size", text="Size")
+        tree.heading("modified", text="Modified")
+        tree.pack(fill=tk.BOTH, expand=True)
+        home = os.path.expanduser("~")
+        try:
+            for entry in os.listdir(home)[:100]:
+                tree.insert("", tk.END, text=entry, values=("", ""))
+        except Exception:
+            pass
+
+    def _open_calc(self):
+        win = tk.Toplevel(self.root, bg="#1a1a2e")
+        win.title("Calculator")
+        win.geometry("250x300")
+
+        display = tk.Entry(win, bg="#0f3460", fg="#e94560",
+                           font=("Consolas", 16), justify="right")
+        display.pack(fill=tk.X, padx=5, pady=10)
+        display.insert(0, "0")
+
+        def press(key):
+            current = display.get()
+            if current == "0":
+                display.delete(0, tk.END)
+            display.insert(tk.END, key)
+
+        def evaluate():
+            try:
+                result = eval(display.get())
+                display.delete(0, tk.END)
+                display.insert(0, str(result))
+            except Exception:
+                display.delete(0, tk.END)
+                display.insert(0, "Error")
+
+        def clear():
+            display.delete(0, tk.END)
+            display.insert(0, "0")
+
+        buttons = [
+            ("7", "8", "9", "/"),
+            ("4", "5", "6", "*"),
+            ("1", "2", "3", "-"),
+            ("0", ".", "=", "+"),
+            ("C",),
+        ]
+        for row in buttons:
+            frame = tk.Frame(win, bg="#1a1a2e")
+            frame.pack(fill=tk.X)
+            for text in row:
+                if text == "=":
+                    btn = tk.Button(frame, text=text, command=evaluate, bg="#e94560", fg="white",
+                                    font=("Consolas", 12), width=4)
+                elif text == "C":
+                    btn = tk.Button(frame, text=text, command=clear, bg="#533483", fg="white",
+                                    font=("Consolas", 12), width=4)
+                else:
+                    btn = tk.Button(frame, text=text, command=lambda t=text: press(t),
+                                    bg="#0f3460", fg="#e94560", font=("Consolas", 12), width=4)
+                btn.pack(side=tk.LEFT, padx=2, pady=2)
+
+    def _on_close(self):
+        self.running = False
+        if self.root:
+            self.root.destroy()
+
+
+# ============================================================
+# SOUND SYSTEM
+# ============================================================
+
+class SoundSystem:
+    """Audio output using winsound."""
+
+    @staticmethod
+    def available():
+        return _HAVE_WINSOUND
+
+    @staticmethod
+    def beep(freq=440, duration=200):
+        """Play a beep at given frequency (Hz) for given duration (ms)."""
+        if _HAVE_WINSOUND:
+            try:
+                winsound.Beep(freq, duration)
+                return True
+            except Exception:
+                return False
+        return False
+
+    @staticmethod
+    def play_wav(path):
+        """Play a WAV file asynchronously."""
+        if not _HAVE_WINSOUND:
+            return False
+        if not os.path.isfile(path):
+            return False
+        try:
+            winsound.PlaySound(path, winsound.SND_ASYNC | winsound.SND_NOWAIT)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def stop():
+        """Stop any currently playing sound."""
+        if _HAVE_WINSOUND:
+            try:
+                winsound.PlaySound(None, winsound.SND_PURGE)
+            except Exception:
+                pass
+
+    @staticmethod
+    def generate_wav(filename, freq=440, duration=1.0, sample_rate=44100):
+        """Generate a simple sine wave WAV file and play it."""
+        if not _HAVE_WAVE:
+            return False
+        try:
+            n_samples = int(sample_rate * duration)
+            w = wave.open(filename, "w")
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(sample_rate)
+            import struct as _struct
+            for i in range(n_samples):
+                value = int(32767.0 * math.sin(2.0 * math.pi * freq * i / sample_rate))
+                w.writeframes(_struct.pack("<h", value))
+            w.close()
+            return True
+        except Exception:
+            return False
+
+
+# ============================================================
+# FAT32 DRIVER
+# ============================================================
+
+class FAT32Driver:
+    """Pure Python FAT32 filesystem reader."""
+
+    BPB_SIZE = 512
+
+    def __init__(self, device_path=None):
+        self.device = device_path
+        self.bytes_per_sector = 512
+        self.sectors_per_cluster = 1
+        self.reserved_sectors = 32
+        self.fat_count = 2
+        self.root_cluster = 2
+        self.fat_offset = 0
+        self.data_offset = 0
+
+    def mount(self, device_path):
+        """Mount a FAT32 volume (can be a physical drive or disk image)."""
+        self.device = device_path
+        try:
+            with open(device_path, "rb") as f:
+                bpb = f.read(512)
+            if len(bpb) < 512:
+                return "Not a valid volume"
+
+            self.bytes_per_sector = struct.unpack("<H", bpb[11:13])[0]
+            self.sectors_per_cluster = bpb[13]
+            self.reserved_sectors = struct.unpack("<H", bpb[14:16])[0]
+            self.fat_count = bpb[16]
+            sectors_per_fat = struct.unpack("<I", bpb[36:40])[0]
+            self.root_cluster = struct.unpack("<I", bpb[44:48])[0]
+
+            if self.bytes_per_sector == 0:
+                return "Invalid BPB"
+
+            self.fat_offset = self.reserved_sectors * self.bytes_per_sector
+            self.data_offset = self.fat_offset + (self.fat_count * sectors_per_fat * self.bytes_per_sector)
+
+            volume_label = bpb[71:82].rstrip(b'\x00\x20').decode('ascii', errors='replace') or "UNTITLED"
+            return f"Mounted: {volume_label} ({self._size_str()})"
+        except PermissionError:
+            return "Permission denied — run as Administrator for raw disk access"
+        except Exception as e:
+            return f"Mount failed: {e}"
+
+    def _size_str(self):
+        if not self.device or not os.path.exists(self.device):
+            return "unknown size"
+        try:
+            size = os.path.getsize(self.device)
+            if size > 1e9:
+                return f"{size/1e9:.1f} GB"
+            if size > 1e6:
+                return f"{size/1e6:.1f} MB"
+            return f"{size/1e3:.1f} KB"
+        except Exception:
+            return "unknown"
+
+    def read_cluster(self, cluster_num):
+        """Read raw data for a given cluster."""
+        if not self.device:
+            return b""
+        sector = (cluster_num - 2) * self.sectors_per_cluster + self.data_offset // self.bytes_per_sector
+        offset = sector * self.bytes_per_sector
+        with open(self.device, "rb") as f:
+            f.seek(offset)
+            return f.read(self.sectors_per_cluster * self.bytes_per_sector)
+
+    def read_fat_entry(self, cluster_num):
+        """Read a FAT32 entry (cluster chain)."""
+        if not self.device:
+            return 0x0FFFFFF8
+        fat_offset = cluster_num * 4
+        with open(self.device, "rb") as f:
+            f.seek(self.fat_offset + fat_offset)
+            entry = struct.unpack("<I", f.read(4))[0]
+        return entry & 0x0FFFFFFF
+
+    def walk_directory(self, cluster_num):
+        """List files and directories in a FAT32 directory cluster."""
+        if not self.device:
+            return []
+        entries = []
+        data = self.read_cluster(cluster_num)
+        while True:
+            if len(data) < 32:
+                break
+            for i in range(0, len(data), 32):
+                entry = data[i:i+32]
+                if len(entry) < 32:
+                    break
+                status = entry[0]
+                if status == 0x00:
+                    break
+                if status == 0xE5 or entry[11] & 0x0F == 0x0F:
+                    continue
+                attr = entry[11]
+                name = entry[0:8].rstrip(b'\x20').decode('ascii', errors='replace')
+                ext = entry[8:11].rstrip(b'\x20').decode('ascii', errors='replace')
+                full = f"{name}.{ext}" if ext else name
+                cluster_lo = struct.unpack("<H", entry[26:28])[0]
+                cluster_hi = struct.unpack("<H", entry[20:22])[0]
+                cluster = (cluster_hi << 16) | cluster_lo
+                size = struct.unpack("<I", entry[28:32])[0]
+                entries.append({
+                    "name": full,
+                    "size": size,
+                    "attr": attr,
+                    "cluster": cluster,
+                    "is_dir": bool(attr & 0x10),
+                    "is_readonly": bool(attr & 0x01),
+                    "is_hidden": bool(attr & 0x02),
+                    "is_system": bool(attr & 0x04),
+                })
+            break
+        return entries
+
+    def list_drives(self):
+        """List available Windows drive letters."""
+        drives = []
+        if os.name == "nt":
+            bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+            for i in range(26):
+                if bitmask & (1 << i):
+                    drives.append(f"{chr(65 + i)}:\\")
+        return drives
+
+
+# Global reference for Desktop manager
+START_TIME = time.time()
 
 THEMES = {
     "default": {"prompt": "1;32", "info": "1;36", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
@@ -693,6 +1616,14 @@ class Shell:
         self.theme = "default"
         self._load_config()
         self._script_vars = {}
+        self.win32 = Win32API()
+        self.jit = NativeJIT()
+        self.pe_loader = PELoader()
+        self.pm = ProcessManager()
+        self.desktop = DesktopManager()
+        self.sound = SoundSystem()
+        self.fat32 = FAT32Driver()
+        self.mp_processes = {}
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -932,6 +1863,13 @@ class Shell:
             "sync": self.cmd_sync_chain,
             "theme": self.cmd_theme,
             "config": self.cmd_config,
+            "winapi": self.cmd_winapi,
+            "jit": self.cmd_jit,
+            "pe": self.cmd_pe,
+            "mp": self.cmd_mp,
+            "desktop": self.cmd_desktop,
+            "sound": self.cmd_sound,
+            "fat32": self.cmd_fat32,
         }
 
         handler = dispatch.get(command)
@@ -2714,6 +3652,254 @@ class Shell:
         elif a=="metrics": print("cpu_usage: 45.2%, memory: 2048MB, requests: 12345")
         elif a=="logs": print("12:34:56 INFO  [web] Request completed\n12:34:53 ERROR [api] Timeout")
         else: print(f"\033[33m[MONITOR] {a}\033[0m")
+
+    # ======================== WIN32 API ========================
+
+    def cmd_winapi(self, args):
+        if not args:
+            print("Usage: winapi [sysinfo|diskfree|msgbox|clipboard|hostname|username]")
+            return
+        a = args[0]
+        if a == "sysinfo":
+            info = self.win32.system_info()
+            print(f"Processors: {info.get('processors', 'N/A')}")
+            print(f"Page size: {info.get('page_size', 0)} bytes")
+            print(f"Architecture: {info.get('arch', 'N/A')}")
+        elif a == "diskfree":
+            path = args[1] if len(args) > 1 else os.path.expanduser("~")
+            info = self.win32.disk_free(path)
+            print(f"Free: {info.get('free', 0) // (1024**3)} GB")
+            print(f"Total: {info.get('total', 0) // (1024**3)} GB")
+        elif a == "msgbox":
+            text = " ".join(args[1:]) if len(args) > 1 else "Hello from Arcanis!"
+            self.win32.message_box("Arcanis OS", text)
+        elif a == "clipboard":
+            if len(args) > 1 and args[1] == "set":
+                self.win32.clipboard_set(" ".join(args[2:]))
+                print("\033[32mClipboard updated\033[0m")
+            else:
+                text = self.win32.clipboard_get()
+                print(f"Clipboard: {text[:200] if text else '(empty)'}")
+        elif a == "hostname":
+            print(self.win32.hostname())
+        elif a == "username":
+            print(self.win32.username())
+        else:
+            print(f"\033[33mwinapi: unknown action '{a}'\033[0m")
+
+    # ======================== NATIVE JIT ========================
+
+    def cmd_jit(self, args):
+        if not args:
+            print("Usage: jit [demo|add <a> <b>|xor <a> <b>|syscall|sample]")
+            return
+        if not self.jit.available():
+            print("\033[31mNative JIT requires Windows x86_64\033[0m")
+            return
+        a = args[0]
+        if a == "demo":
+            result = self.jit.add_code(40, 2)
+            print(f"\033[1;36mJIT: native x86_64 code returned {result} (40+2)\033[0m")
+        elif a == "add" and len(args) >= 3:
+            result = self.jit.add_code(int(args[1]), int(args[2]))
+            print(f"\033[1;36mJIT: {args[1]} + {args[2]} = {result}\033[0m")
+        elif a == "xor" and len(args) >= 3:
+            result = self.jit.xor_code(int(args[1]), int(args[2]))
+            print(f"\033[1;36mJIT: {args[1]} XOR {args[2]} = {result}\033[0m")
+        elif a == "syscall":
+            result = self.jit.syscall_demo()
+            print(f"\033[1;36mJIT: gs:[0x30] (TEB) = {result:#018x}\033[0m")
+        elif a == "sample":
+            result = self.jit.run_function(self.jit.sample_code())
+            print(f"\033[1;36mJIT: sample code returned {result}\033[0m")
+        else:
+            print(f"\033[33mjit: unknown action '{a}'\033[0m")
+
+    # ======================== PE LOADER ========================
+
+    def cmd_pe(self, args):
+        if not args:
+            print("Usage: pe [info <file>|run <file> [args]|wait <pid>|imports <file>|resolve <name>]")
+            return
+        a = args[0]
+        if a == "info" and len(args) > 1:
+            info = self.pe_loader.parse_pe(args[1])
+            if "error" in info:
+                print(f"\033[31m{info['error']}\033[0m")
+            else:
+                print(f"Machine: {info.get('machine')}")
+                print(f"Sections: {info.get('sections')}")
+                print(f"Subsystem: {info.get('subsystem')}")
+                print(f"Image base: {info.get('image_base')}")
+                print(f"Entry point: {info.get('entry_point')}")
+                print(f"Import table: RVA {info.get('imports', {}).get('rva')}, size {info.get('imports', {}).get('size')}")
+        elif a == "run" and len(args) > 1:
+            exe = self.pe_loader.resolve_path(args[1])
+            if not exe:
+                print(f"\033[31mExecutable not found: {args[1]}\033[0m")
+                return
+            info = self.pe_loader.parse_pe(exe)
+            if "error" in info:
+                print(f"\033[31m{info['error']}\033[0m")
+                return
+            exe_args = " ".join(args[2:]) if len(args) > 2 else ""
+            result = self.pe_loader.run(exe, exe_args)
+            print(f"\033[32m{result}\033[0m")
+        elif a == "wait" and len(args) > 1:
+            pid = int(args[1])
+            code = self.pe_loader.wait(pid)
+            if isinstance(code, str):
+                print(f"\033[33m{code}\033[0m")
+            else:
+                print(f"Process {pid} exited with code {code}")
+        elif a == "imports" and len(args) > 1:
+            info = self.pe_loader.list_pe_imports(args[1])
+            if "error" in info:
+                print(f"\033[31m{info['error']}\033[0m")
+            else:
+                deps = info.get("imports", [])
+                print(f"\033[1;36mImported DLLs ({len(deps)}):\033[0m")
+                for dll in deps:
+                    print(f"  {dll}")
+        elif a == "resolve" and len(args) > 1:
+            path = self.pe_loader.resolve_path(args[1])
+            if path:
+                print(f"\033[32m{path}\033[0m")
+            else:
+                print(f"\033[31mNot found: {args[1]}\033[0m")
+        else:
+            print(f"\033[33mpe: unknown action '{a}'\033[0m")
+
+    # ======================== MULTIPROCESSING ========================
+
+    def cmd_mp(self, args):
+        if not args:
+            print("Usage: mp [spawn <name>|list|kill <pid>|wait <pid>|cleanup]")
+            return
+        a = args[0]
+        if a == "spawn" and len(args) > 1:
+            name = args[1]
+            def worker():
+                for i in range(5):
+                    print(f"[{name}] heartbeat {i}")
+                    time.sleep(1)
+                print(f"[{name}] done")
+            mp = self.pm.spawn(name, worker)
+            print(f"\033[32mSpawned PID {mp.pid}: {name}\033[0m")
+        elif a == "list":
+            procs = self.pm.list()
+            if not procs:
+                print("No processes running")
+                return
+            print(f"{'PID':<8} {'NAME':<20} {'STATE':<12} {'UPTIME':<10}")
+            print("-" * 50)
+            for mp in procs:
+                state = "\033[32mrunning\033[0m" if mp.is_alive() else "\033[31mdead\033[0m"
+                print(f"{mp.pid:<8} {mp.name:<20} {state:<20} {mp.uptime():<10.1f}s")
+        elif a == "kill" and len(args) > 1:
+            pid = int(args[1])
+            if self.pm.kill(pid):
+                print(f"\033[31mKilled PID {pid}\033[0m")
+            else:
+                print(f"\033[33mNo such process {pid}\033[0m")
+        elif a == "wait" and len(args) > 1:
+            pid = int(args[1])
+            if self.pm.wait(pid, timeout=5):
+                print(f"Process {pid} finished")
+            else:
+                print(f"Timed out waiting for {pid}")
+        elif a == "cleanup":
+            dead = self.pm.cleanup()
+            print(f"Cleaned up {len(dead)} dead processes")
+        else:
+            print(f"\033[33mmp: unknown action '{a}'\033[0m")
+
+    # ======================== GUI DESKTOP ========================
+
+    def cmd_desktop(self, args):
+        if not args:
+            print("Usage: desktop [start|apps]")
+            return
+        a = args[0]
+        if a == "start":
+            self.desktop.start()
+        elif a == "apps":
+            print("Available desktop apps: Terminal, Notepad, System Monitor, File Explorer, Calculator")
+        else:
+            print(f"\033[33mdesktop: unknown action '{a}'\033[0m")
+
+    # ======================== SOUND SYSTEM ========================
+
+    def cmd_sound(self, args):
+        if not args:
+            print("Usage: sound [beep [freq] [ms]|play <wav>|gen <file> [freq] [sec]|stop]")
+            return
+        a = args[0]
+        if a == "beep":
+            freq = int(args[1]) if len(args) > 1 else 440
+            dur = int(args[2]) if len(args) > 2 else 200
+            if self.sound.beep(freq, dur):
+                print(f"\033[32mBeep: {freq}Hz for {dur}ms\033[0m")
+            else:
+                print("\033[33mBeep not available\033[0m")
+        elif a == "play" and len(args) > 1:
+            if self.sound.play_wav(args[1]):
+                print(f"\033[32mPlaying: {args[1]}\033[0m")
+            else:
+                print(f"\033[33mCannot play {args[1]}\033[0m")
+        elif a == "gen" and len(args) > 1:
+            freq = int(args[2]) if len(args) > 2 else 440
+            dur = float(args[3]) if len(args) > 3 else 1.0
+            if self.sound.generate_wav(args[1], freq, dur):
+                print(f"\033[32mGenerated {args[1]} ({freq}Hz, {dur}s)\033[0m")
+                self.sound.play_wav(args[1])
+            else:
+                print("\033[33mGeneration failed\033[0m")
+        elif a == "stop":
+            self.sound.stop()
+            print("\033[33mSound stopped\033[0m")
+        else:
+            print(f"\033[33msound: unknown action '{a}'\033[0m")
+
+    # ======================== FAT32 DRIVER ========================
+
+    def cmd_fat32(self, args):
+        if not args:
+            print("Usage: fat32 [mount <device>|listdrives|ls|info]")
+            return
+        a = args[0]
+        if a == "mount" and len(args) > 1:
+            result = self.fat32.mount(args[1])
+            print(f"\033[32m{result}\033[0m")
+        elif a == "listdrives":
+            drives = self.fat32.list_drives()
+            if drives:
+                print("Available drives:")
+                for d in drives:
+                    print(f"  {d}")
+            else:
+                print("No drives found (run as Admin for raw access)")
+        elif a == "ls":
+            if self.fat32.device is None:
+                print("\033[33mNo volume mounted. Use 'fat32 mount <device>' first\033[0m")
+                return
+            entries = self.fat32.walk_directory(self.fat32.root_cluster)
+            if entries:
+                for e in entries:
+                    prefix = "\033[1;34m[D]\033[0m" if e['is_dir'] else "   "
+                    print(f"{prefix} {e['name']:<20} {e['size']:>8} bytes")
+            else:
+                print("(empty directory)")
+        elif a == "info":
+            if self.fat32.device is None:
+                print("\033[33mNo volume mounted\033[0m")
+                return
+            print(f"Device: {self.fat32.device}")
+            print(f"Bytes/sector: {self.fat32.bytes_per_sector}")
+            print(f"Sectors/cluster: {self.fat32.sectors_per_cluster}")
+            print(f"Root cluster: {self.fat32.root_cluster}")
+        else:
+            print(f"\033[33mfat32: unknown action '{a}'\033[0m")
 
 
 # ============================================================
