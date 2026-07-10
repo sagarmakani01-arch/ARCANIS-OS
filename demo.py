@@ -404,6 +404,7 @@ class Shell:
             "twin": self.cmd_digital_twin,
             "edgeai": self.cmd_edgeai,
             "sdn": self.cmd_sdn,
+            "hpc": self.cmd_hpc,
         }
 
         handler = dispatch.get(command)
@@ -1458,6 +1459,9 @@ class Shell:
         print("║  SOFTWARE-DEFINED NETWORKING:                                ║")
         print("║    sdn [cmd]        SDN controller & flow management        ║")
         print("║                                                              ║")
+        print("║  HIGH PERFORMANCE COMPUTING:                                 ║")
+        print("║    hpc [cmd]        HPC cluster & job management            ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2352,6 +2356,55 @@ class Shell:
             print(f"    port 2-24: access [UP] -> workstations")
         else:
             print("\033[33msdn: invalid usage\033[0m")
+
+    # ---- HPC ----
+    def cmd_hpc(self, args):
+        """High Performance Computing."""
+        if not args:
+            print("\033[33mhpc: usage: hpc [command] [args...]\033[0m")
+            print("  Commands: nodes, jobs, submit, schedule, mpi, stats")
+            return
+        action = args[0]
+        if action == "nodes":
+            print(f"\033[1;36mHPC Cluster Nodes:\033[0m")
+            print(f"  {'ID':<10} {'HOSTNAME':<18} {'CORES':<6} {'MEMORY':<10} {'STATE':<10} {'LOAD'}")
+            print(f"  {'node-0':<10} {'compute-01':<18} {'64':<6} {'512 GB':<10} {'ONLINE':<10} {'45%'}")
+            print(f"  {'node-1':<10} {'compute-02':<18} {'64':<6} {'512 GB':<10} {'BUSY':<10} {'82%'}")
+            print(f"  {'node-2':<10} {'gpu-01':<18} {'32':<6} {'256 GB':<10} {'ONLINE':<10} {'12%'}")
+            print(f"  {'node-3':<10} {'storage-01':<18} {'16':<6} {'128 GB':<10} {'ONLINE':<10} {'8%'}")
+        elif action == "jobs":
+            print(f"\033[1;36mHPC Jobs:\033[0m")
+            print(f"  {'ID':<10} {'NAME':<18} {'STATE':<10} {'PRIO':<6} {'RANKS':<8} {'PROGRESS'}")
+            print(f"  {'job-0':<10} {'simulation':<18} {'RUNNING':<10} {'1':<6} {'128':<8} {'45%'}")
+            print(f"  {'job-1':<10} {'rendering':<18} {'PENDING':<10} {'2':<6} {'64':<8} {'---'}")
+            print(f"  {'job-2':<10} {'analysis':<18} {'COMPLETED':<10} {'1':<6} {'32':<8} {'100%'}")
+        elif action == "submit" and len(args) > 1:
+            print(f"\033[33mSubmitting job '{args[1]}'...\033[0m")
+            print(f"  Ranks: {args[2] if len(args) > 2 else '64'}")
+            print(f"  Priority: {args[3] if len(args) > 3 else '1'}")
+            print(f"\033[32mJob submitted: job-3\033[0m")
+        elif action == "schedule":
+            print(f"\033[33mRunning scheduler...\033[0m")
+            print(f"  Using: FCFS scheduling")
+            print(f"  Found 1 pending job, 3 available nodes")
+            print(f"  Job 'rendering' scheduled on compute-02")
+            print(f"\033[32mScheduling complete\033[0m")
+        elif action == "mpi":
+            print(f"\033[1;36mMPI Status:\033[0m")
+            print(f"  MPI initialized: yes")
+            print(f"  Total ranks: 176")
+            print(f"  Operations: Send, Recv, Barrier, Reduce")
+            print(f"  Active communicators: 4")
+        elif action == "stats":
+            print(f"\033[1;36mHPC Cluster Statistics:\033[0m")
+            print(f"  Scheduler: FCFS")
+            print(f"  Nodes: 4 (3 online, 1 busy)")
+            print(f"  Total Cores: 176")
+            print(f"  Total Memory: 1,408 GB")
+            print(f"  Total FLOPS: 1,760 GFLOPS")
+            print(f"  Jobs: 3 (1 running, 1 pending, 1 completed)")
+        else:
+            print("\033[33mhpc: invalid usage\033[0m")
 
 
 # ============================================================
