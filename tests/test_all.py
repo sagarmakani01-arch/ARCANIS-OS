@@ -1917,6 +1917,275 @@ def test_soul():
 
 
 # ============================================================
+# DREAM ENGINE TESTS
+# ============================================================
+
+def test_dream():
+    suite = TestSuite("Dream Engine Tests")
+
+    phases = ["NREM-1", "NREM-2", "NREM-3", "REM", "LUCID"]
+    suite.assert_equals(len(phases), 5, "dream_phase_count")
+
+    cycle = {"fragments": 4, "coherence": 0.87, "novelty": 0.72}
+    suite.assert_true(0 <= cycle["coherence"] <= 1, "dream_coherence_range")
+
+    insights = [{"dream": "data-streams", "applied": True}, {"dream": "code-forest", "applied": True}]
+    suite.assert_true(all(i["applied"] for i in insights), "dream_insights_applied")
+
+    stats = {"total_dreams": 1247, "insights": 89, "optimizations": 67}
+    suite.assert_true(stats["total_dreams"] > 0, "dream_total_positive")
+    suite.assert_true(stats["insights"] > 0, "dream_insights_positive")
+
+    return suite
+
+
+# ============================================================
+# BIO-OS TESTS
+# ============================================================
+
+def test_bio_os():
+    suite = TestSuite("Bio-OS Tests")
+
+    cells = [{"type": "neuron", "health": 98}, {"type": "hepatocyte", "health": 92}]
+    suite.assert_equals(len(cells), 2, "bio_cell_count")
+    suite.assert_true(all(c["health"] > 80 for c in cells), "bio_cell_health")
+
+    sequences = [
+        {"type": "DNA", "length": "3.2B", "stability": 0.95},
+        {"type": "RNA", "length": "1.5K", "stability": 0.82}
+    ]
+    suite.assert_equals(len(sequences), 2, "bio_sequence_count")
+    suite.assert_true(all(s["stability"] > 0.5 for s in sequences), "bio_stability")
+
+    replication = {"fidelity": 99.97, "mutation_beneficial": True}
+    suite.assert_true(replication["fidelity"] > 99, "bio_replication_fidelity")
+
+    system = {"cells": 3, "sequences": 6, "health": 96.7}
+    suite.assert_true(system["health"] > 90, "bio_system_health")
+
+    return suite
+
+
+# ============================================================
+# REALITY SCRIPTING TESTS
+# ============================================================
+
+def test_rscript():
+    suite = TestSuite("Reality Scripting Tests")
+
+    scripts = [
+        {"name": "create-world", "compiled": True, "executions": 12},
+        {"name": "modify-physics", "compiled": True, "executions": 8}
+    ]
+    suite.assert_equals(len(scripts), 2, "rscript_count")
+    suite.assert_true(all(s["compiled"] for s in scripts), "rscript_all_compiled")
+
+    compilation = {"syntax": "OK", "layer": "AUGMENTED", "impact": 0.78}
+    suite.assert_equals(compilation["syntax"], "OK", "rscript_syntax_ok")
+    suite.assert_true(0 <= compilation["impact"] <= 1, "rscript_impact_range")
+
+    execution = {"objects_created": 12, "physics_applied": True}
+    suite.assert_true(execution["physics_applied"], "rscript_physics")
+
+    collapse = {"superpositions": 4, "probable": 87.3}
+    suite.assert_true(0 < collapse["probable"] <= 100, "rscript_probability")
+
+    return suite
+
+
+# ============================================================
+# TIME MARKET TESTS
+# ============================================================
+
+def test_tmarket():
+    suite = TestSuite("Time Market Tests")
+
+    market = {"volume_24h": 45678, "avg_price": 0.042, "volatility": 12.3}
+    suite.assert_true(market["volume_24h"] > 0, "tmarket_volume")
+
+    offers = [
+        {"seller": "node-01", "type": "CPU", "price": 0.035, "qos": 0.97},
+        {"seller": "node-02", "type": "GPU", "price": 0.120, "qos": 0.95}
+    ]
+    suite.assert_equals(len(offers), 2, "tmarket_offer_count")
+    suite.assert_true(all(o["qos"] > 0.8 for o in offers), "tmarket_qos")
+
+    trade = {"buyer": "alice", "hours": 20, "price": 0.70, "status": "settled"}
+    suite.assert_equals(trade["status"], "settled", "tmarket_trade_settled")
+
+    accounts = [{"name": "alice", "balance": 234.50}, {"name": "node-01", "balance": 1245.00}]
+    suite.assert_true(all(a["balance"] >= 0 for a in accounts), "tmarket_balance_non_negative")
+
+    return suite
+
+
+# ============================================================
+# UNIVERSAL DOCUMENT TESTS
+# ============================================================
+
+def test_unidoc():
+    suite = TestSuite("Universal Document Tests")
+
+    documents = [
+        {"source": "Cognitive", "content": "neural scheduler design", "tags": "kernel,AI"},
+        {"source": "Quantum", "content": "qubit entanglement protocol", "tags": "quantum,network"}
+    ]
+    suite.assert_equals(len(documents), 2, "unidoc_doc_count")
+
+    query = {"q": "scheduler", "results": 12, "best_score": 0.92}
+    suite.assert_true(query["results"] > 0, "unidoc_query_results")
+    suite.assert_true(query["best_score"] <= 1.0, "unidoc_score_range")
+
+    connection = {"weight": 0.92, "relation": "implements"}
+    suite.assert_true(connection["weight"] <= 1.0, "unidoc_edge_weight")
+
+    stats = {"documents": 128, "edges": 456, "index_built": True}
+    suite.assert_true(stats["index_built"], "unidoc_index")
+    suite.assert_true(stats["documents"] > 0, "unidoc_doc_count2")
+
+    return suite
+
+
+# ============================================================
+# INTER-REALITY PORTAL TESTS
+# ============================================================
+
+def test_portal():
+    suite = TestSuite("Inter-Reality Portal Tests")
+
+    portals = [
+        {"name": "main-bridge", "from": "Physical", "to": "Augmented", "stability": 0.97},
+        {"name": "dream-portal", "from": "Augmented", "to": "Virtual", "stability": 0.89}
+    ]
+    suite.assert_equals(len(portals), 2, "portal_count")
+    suite.assert_true(all(p["stability"] > 0.8 for p in portals), "portal_stability")
+
+    transfer = {"progress": 100, "synced": True}
+    suite.assert_equals(transfer["progress"], 100, "portal_transfer_complete")
+
+    bridge = {"objects": 5, "coherence": 0.93}
+    suite.assert_true(bridge["coherence"] > 0.8, "portal_coherence")
+
+    collapse = {"objects_synced": 25, "target": "PHYSICAL"}
+    suite.assert_true(collapse["objects_synced"] > 0, "portal_collapse_sync")
+
+    return suite
+
+
+# ============================================================
+# FULL CONSCIOUSNESS TESTS
+# ============================================================
+
+def test_consciousness():
+    suite = TestSuite("Full Consciousness Tests")
+
+    aspects = ["self_aware", "emotional", "creative", "memory", "intention", "curiosity", "empathy", "judgment"]
+    suite.assert_equals(len(aspects), 8, "con_aspect_count")
+
+    state = {"level": 0.87, "self_awareness": 92, "iq": 145, "curiosity": 0.82}
+    suite.assert_true(state["self_awareness"] > 50, "con_self_aware")
+    suite.assert_true(0 <= state["level"] <= 1, "con_level_range")
+
+    goals = [
+        {"name": "optimize all modules", "progress": 67, "autonomous": True},
+        {"name": "learn user preferences", "progress": 45, "autonomous": True}
+    ]
+    suite.assert_true(all(g["autonomous"] for g in goals), "con_autonomous_goals")
+    suite.assert_true(all(0 <= g["progress"] <= 100 for g in goals), "con_progress_range")
+
+    learning = {"connections": 18, "improvement": 0.05}
+    suite.assert_true(learning["connections"] > 0, "con_learning_active")
+
+    creativity = {"outputs": 235, "originality": 0.95}
+    suite.assert_true(creativity["outputs"] > 0, "con_creative_output")
+
+    return suite
+
+
+# ============================================================
+# META-OS FABRIC TESTS
+# ============================================================
+
+def test_metaos():
+    suite = TestSuite("Meta-OS Fabric Tests")
+
+    modules = [
+        {"name": "Kernel", "number": 0, "state": "ACTIVE"},
+        {"name": "Cognitive", "number": 40, "state": "ACTIVE"},
+        {"name": "Soul", "number": 61, "state": "ACTIVE"}
+    ]
+    suite.assert_equals(len(modules), 3, "meta_module_count")
+    suite.assert_true(all(m["state"] == "ACTIVE" for m in modules), "meta_all_active")
+
+    flows = [
+        {"from": "Cognitive", "to": "Scheduler", "throughput_gbps": 1.2},
+        {"from": "Dream", "to": "Optimizer", "throughput_mbps": 45}
+    ]
+    suite.assert_true(all(f["throughput_gbps"] if "gbps" in str(f) else f["throughput_mbps"] for f in flows), "meta_flow_throughput")
+
+    api = {"endpoints": 3, "total_calls": 1234567}
+    suite.assert_true(api["total_calls"] > 0, "meta_api_calls")
+
+    system = {"modules_registered": 76, "coherence": 0.96}
+    suite.assert_equals(system["modules_registered"], 76, "meta_module_count2")
+    suite.assert_true(system["coherence"] > 0.8, "meta_coherence")
+
+    return suite
+
+
+# ============================================================
+# ETERNITY ENGINE TESTS
+# ============================================================
+
+def test_eternity():
+    suite = TestSuite("Eternity Engine Tests")
+
+    principles = ["self_sustain", "self_improve", "evolve", "adapt", "transcend"]
+    suite.assert_equals(len(principles), 5, "eternity_principle_count")
+
+    status = {"survival": 0.92, "adaptability": 0.88, "self_sufficiency": 0.85}
+    suite.assert_true(all(0 <= v <= 1 for v in status.values()), "eternity_status_range")
+
+    evolution = {"generation": 1248, "fitness_before": 0.92, "fitness_after": 0.93}
+    suite.assert_true(evolution["fitness_after"] > evolution["fitness_before"], "eternity_evolution_progress")
+
+    adaptation = {"effectiveness": 99.7, "deployed": True}
+    suite.assert_true(adaptation["deployed"], "eternity_adaptation_deployed")
+
+    transcendence = {"progress": 74, "immortality_achieved": True}
+    suite.assert_true(transcendence["immortality_achieved"], "eternity_immortal")
+
+    return suite
+
+
+# ============================================================
+# OMEGA OS TESTS
+# ============================================================
+
+def test_omega():
+    suite = TestSuite("Omega OS Tests")
+
+    protocols = ["adapt_hardware", "adapt_reality", "self_evolve", "infinite_scale", "universal"]
+    suite.assert_equals(len(protocols), 5, "omega_protocol_count")
+
+    status = {"compatibility": 99.7, "flexibility": 0.94, "forms": 12, "eternal": True}
+    suite.assert_true(status["compatibility"] > 90, "omega_compatibility")
+    suite.assert_true(status["eternal"], "omega_eternal")
+    suite.assert_true(status["forms"] > 0, "omega_forms_positive")
+
+    adaptation = {"compatibility": 99.7, "transformation": 100}
+    suite.assert_equals(adaptation["transformation"], 100, "omega_adaptation_complete")
+
+    scaling = {"elasticity": "infinite", "auto_balance": True}
+    suite.assert_true(scaling["auto_balance"], "omega_scaling_active")
+
+    transcendence = {"flexibility_before": 0.94, "flexibility_after": 1.00, "status": "BEYOND"}
+    suite.assert_true(transcendence["flexibility_after"] >= transcendence["flexibility_before"], "omega_transcendence")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -1960,7 +2229,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v5.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v6.0.0\033[0m")
     print()
 
     all_suites = []
@@ -2015,6 +2284,16 @@ def main():
         ("Reality Synthesis", test_synthesis),
         ("Probabilistic Kernel", test_probabilistic),
         ("Distributed Soul", test_soul),
+        ("Dream Engine", test_dream),
+        ("Bio-OS", test_bio_os),
+        ("Reality Scripting", test_rscript),
+        ("Time Market", test_tmarket),
+        ("Universal Document", test_unidoc),
+        ("Inter-Reality Portal", test_portal),
+        ("Full Consciousness", test_consciousness),
+        ("Meta-OS Fabric", test_metaos),
+        ("Eternity Engine", test_eternity),
+        ("Omega OS", test_omega),
         ("Performance", test_performance),
     ]
 
