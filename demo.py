@@ -137,7 +137,7 @@ class FileSystem:
         # Create some files
         self.write("/etc/hostname", "arcanis")
         self.write("/etc/version", "1.1.0")
-        self.write("/etc/motd", "Welcome to Arcanis OS v1.1.0\nAI-Native Operating System\nType 'help' for commands.")
+        self.write("/etc/motd", "Welcome to Arcanis OS v2.3.0\nAI-Native Operating System\nType 'help' for commands.")
         self.write("/home/user/.profile", "export PATH=/bin:/usr/bin\nexport PS1='arcanis> '")
         self.write("/home/user/notes.txt", "TODO: Finish kernel modules\nTODO: Write tests\nTODO: Deploy to hardware")
         self.write("/var/log/kernel.log", "[BOOT] Kernel initialized\n[BOOT] PMM: 256MB detected\n[BOOT] VMM: paging enabled\n[BOOT] Scheduler: ready\n[BOOT] VFS: mounted root\n[BOOT] Init: starting")
@@ -395,6 +395,8 @@ class Shell:
             "rt": self.cmd_rt,
             "cluster": self.cmd_cluster,
             "edge": self.cmd_edge,
+            "blockchain": self.cmd_blockchain,
+            "chain": self.cmd_blockchain,
         }
 
         handler = dispatch.get(command)
@@ -1428,6 +1430,10 @@ class Shell:
         print("║  EDGE COMPUTING:                                            ║")
         print("║    edge [cmd]       Edge computing management               ║")
         print("║                                                              ║")
+        print("║  BLOCKCHAIN:                                                ║")
+        print("║    blockchain [cmd] Blockchain ledger management            ║")
+        print("║    chain [cmd]      Blockchain ledger (alias)               ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1440,7 +1446,7 @@ class Shell:
         """Show ASCII art help."""
         print("\033[1;33m")
         print("    ╔═══════════════════════════════════╗")
-        print("    ║    ARC A N I S   O S   v1.7.0     ║")
+        print("    ║    ARC A N I S   O S   v2.3.0     ║")
         print("    ║    AI-Native Operating System      ║")
         print("    ╚═══════════════════════════════════╝")
         print("\033[0m")
@@ -2006,6 +2012,74 @@ class Shell:
             print(f"\033[32mSync complete\033[0m")
         else:
             print("\033[33medge: invalid usage\033[0m")
+
+    # ---- Blockchain/Web3 ----
+    def cmd_blockchain(self, args):
+        """Blockchain ledger management."""
+        if not args:
+            print("\033[33mblockchain: usage: blockchain [command] [args...]\033[0m")
+            print("  Commands: info, blocks, accounts, contracts, mine, mempool, tx, deploy, transfer, validate")
+            return
+        action = args[0]
+        if action == "info":
+            print(f"\033[1;36mBlockchain Status:\033[0m")
+            print(f"  Chain Length: 12 blocks")
+            print(f"  Difficulty: 4")
+            print(f"  Block Time: 10 seconds")
+            print(f"  Pending Tx: 3")
+            print(f"  Total Supply: 21,000,000 ARC")
+            print(f"  Total Transactions: 847")
+        elif action == "blocks":
+            print(f"\033[1;36mRecent Blocks:\033[0m")
+            print(f"  {'#':<5} {'HASH':<20} {'TX':<6} {'NONCE':<10} {'DIFF'}")
+            print(f"  {'12':<5} {'a3f8c9e2b1d4...':<20} {'3':<6} {'84291':<10} {'4'}")
+            print(f"  {'11':<5} {'7b2e4d1f8a3c...':<20} {'1':<6} {'123456':<10} {'4'}")
+            print(f"  {'10':<5} {'e5c1a9f3d8b2...':<20} {'5':<6} {'567890':<10} {'4'}")
+        elif action == "accounts":
+            print(f"\033[1;36mAccounts:\033[0m")
+            print(f"  {'ADDRESS':<25} {'NAME':<15} {'BALANCE':<12} {'NONCE'}")
+            print(f"  {'0x0000...0001':<25} {'genesis':<15} {'50 ARC':<12} {'0'}")
+            print(f"  {'0x0000...0002':<25} {'miner':<15} {'150 ARC':<12} {'3'}")
+            print(f"  {'0x0000...0003':<25} {'user1':<15} {'75 ARC':<12} {'1'}")
+        elif action == "contracts":
+            print(f"\033[1;36mSmart Contracts:\033[0m")
+            print(f"  {'ADDRESS':<25} {'NAME':<15} {'OWNER':<15} {'GAS USED'}")
+            print(f"  {'0x0000...0064':<25} {'Token':<15} {'genesis':<15} {'2,345,678'}")
+            print(f"  {'0x0000...0065':<25} {'DEX':<15} {'miner':<15} {'1,234,567'}")
+        elif action == "mine":
+            print(f"\033[33mMining block with difficulty 4...\033[0m")
+            time.sleep(1)
+            print(f"\033[32mBlock mined! Nonce: 84291, Hash: a3f8c9e2b1d4\033[0m")
+        elif action == "mempool":
+            print(f"\033[1;36mMempool (3 pending):\033[0m")
+            print(f"  {'HASH':<20} {'FROM':<15} {'TO':<15} {'AMOUNT'}")
+            print(f"  {'tx1a2b3c...':<20} {'miner':<15} {'user1':<15} {'10 ARC'}")
+            print(f"  {'tx4d5e6f...':<20} {'user1':<15} {'user2':<15} {'5 ARC'}")
+            print(f"  {'tx7g8h9i...':<20} {'genesis':<15} {'miner':<15} {'25 ARC'}")
+        elif action == "tx" and len(args) > 1:
+            print(f"\033[1;36mTransaction {args[1]}:\033[0m")
+            print(f"  Hash: {args[1]}")
+            print(f"  From: 0x0000...0002 (miner)")
+            print(f"  To: 0x0000...0003 (user1)")
+            print(f"  Amount: 10 ARC")
+            print(f"  Fee: 0.1 ARC")
+            print(f"  Nonce: 3")
+            print(f"  Status: confirmed")
+        elif action == "deploy" and len(args) > 1:
+            print(f"\033[33mDeploying contract '{args[1]}'...\033[0m")
+            print(f"  Bytecode size: 4,096 bytes")
+            print(f"  Gas estimate: 1,234,567")
+            print(f"\033[32mContract deployed at 0x0000...0066\033[0m")
+        elif action == "transfer" and len(args) > 3:
+            print(f"\033[33mTransferring {args[1]} from {args[2]} to {args[3]}...\033[0m")
+            print(f"  Transaction hash: tx_new_hash...")
+            print(f"\033[32mTransfer confirmed\033[0m")
+        elif action == "validate":
+            print(f"\033[33mValidating blockchain...\033[0m")
+            time.sleep(1)
+            print(f"\033[32mChain valid! 12 blocks, 847 transactions verified\033[0m")
+        else:
+            print("\033[33mblockchain: invalid usage\033[0m")
 
 
 # ============================================================
