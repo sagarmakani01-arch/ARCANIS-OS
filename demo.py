@@ -402,6 +402,7 @@ class Shell:
             "monitor": self.cmd_monitor,
             "metrics": self.cmd_monitor,
             "twin": self.cmd_digital_twin,
+            "edgeai": self.cmd_edgeai,
         }
 
         handler = dispatch.get(command)
@@ -1450,6 +1451,9 @@ class Shell:
         print("║  DIGITAL TWIN:                                              ║")
         print("║    twin [cmd]       Digital twin management                 ║")
         print("║                                                              ║")
+        print("║  EDGE AI:                                                   ║")
+        print("║    edgeai [cmd]     Edge AI & federated learning            ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2238,6 +2242,52 @@ class Shell:
             print(f"  Last Sync: 2 minutes ago")
         else:
             print("\033[33mtwin: invalid usage\033[0m")
+
+    # ---- Edge AI / Federated Learning ----
+    def cmd_edgeai(self, args):
+        """Edge AI and federated learning."""
+        if not args:
+            print("\033[33medgeai: usage: edgeai [command] [args...]\033[0m")
+            print("  Commands: models, infer, deploy, federated, clients, round")
+            return
+        action = args[0]
+        if action == "models":
+            print(f"\033[1;36mEdge AI Models:\033[0m")
+            print(f"  {'NAME':<20} {'TYPE':<12} {'PREC':<8} {'ACCURACY':<10} {'SIZE':<10} {'DEPLOYED'}")
+            print(f"  {'image_classifier':<20} {'CNN':<12} {'INT8':<8} {'94.5%':<10} {'2.3 MB':<10} {'yes'}")
+            print(f"  {'text_sentiment':<20} {'Transformer':<12} {'FP16':<8} {'89.2%':<10} {'15.6 MB':<10} {'yes'}")
+            print(f"  {'anomaly_detect':<20} {'MLP':<12} {'FP32':<8} {'91.8%':<10} {'0.8 MB':<10} {'no'}")
+        elif action == "infer" and len(args) > 1:
+            print(f"\033[33mRunning inference on '{args[1]}'...\033[0m")
+            print(f"  Input: [0.1, 0.2, 0.3, ...]")
+            print(f"  Output: [0.85, 0.12, 0.03]")
+            print(f"  Latency: 12ms")
+            print(f"\033[32mInference complete\033[0m")
+        elif action == "deploy" and len(args) > 1:
+            print(f"\033[33mDeploying model '{args[1]}' to edge nodes...\033[0m")
+            print(f"  Nodes: 3 (edge-nyc, fog-london, cloud-aws)")
+            print(f"\033[32mModel deployed\033[0m")
+        elif action == "federated":
+            print(f"\033[1;36mFederated Learning Status:\033[0m")
+            print(f"  Round: 15/50")
+            print(f"  Global Loss: 0.2345")
+            print(f"  Global Accuracy: 87.3%")
+            print(f"  Clients: 8 (active: 6)")
+            print(f"  Privacy: enabled (epsilon=1.0)")
+        elif action == "clients":
+            print(f"\033[1;36mFederated Clients:\033[0m")
+            print(f"  {'ID':<12} {'NAME':<15} {'HOST':<16} {'STATUS':<10} {'SAMPLES'}")
+            print(f"  {'client-0':<12} {'hospital_nyc':<15} {'10.0.0.1':<16} {'training':<10} {'5,000'}")
+            print(f"  {'client-1':<12} {'hospital_la':<15} {'10.0.0.2':<16} {'idle':<10} {'3,200'}")
+            print(f"  {'client-2':<12} {'hospital_chi':<15} {'10.0.0.3':<16} {'training':<10} {'4,100'}")
+        elif action == "round":
+            print(f"\033[33mStarting federated round...\033[0m")
+            print(f"  Collecting gradients from 6 clients...")
+            print(f"  Aggregating with FedAvg...")
+            print(f"  Global accuracy improved: 87.3% -> 88.1%")
+            print(f"\033[32mRound complete\033[0m")
+        else:
+            print("\033[33medgeai: invalid usage\033[0m")
 
 
 # ============================================================
