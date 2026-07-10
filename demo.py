@@ -409,6 +409,12 @@ class Shell:
             "gateway": self.cmd_gateway,
             "gw": self.cmd_gateway,
             "autonomous": self.cmd_autonomous,
+            "arvr": self.cmd_arvr,
+            "xr": self.cmd_arvr,
+            "zerotrust": self.cmd_zerotrust,
+            "zt": self.cmd_zerotrust,
+            "multicloud": self.cmd_multicloud,
+            "mcloud": self.cmd_multicloud,
         }
 
         handler = dispatch.get(command)
@@ -1476,6 +1482,18 @@ class Shell:
         print("║  AUTONOMOUS SYSTEMS:                                        ║")
         print("║    autonomous [cmd] Self-healing & auto-scaling             ║")
         print("║                                                              ║")
+        print("║  AR/VR:                                                     ║")
+        print("║    arvr [cmd]       AR/VR framework                         ║")
+        print("║    xr [cmd]         AR/VR framework (alias)                 ║")
+        print("║                                                              ║")
+        print("║  ZERO TRUST SECURITY:                                       ║")
+        print("║    zerotrust [cmd]  Zero Trust security                     ║")
+        print("║    zt [cmd]         Zero Trust (alias)                      ║")
+        print("║                                                              ║")
+        print("║  MULTI-CLOUD:                                               ║")
+        print("║    multicloud [cmd] Multi-cloud orchestration               ║")
+        print("║    mcloud [cmd]     Multi-cloud (alias)                     ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -2539,6 +2557,141 @@ class Shell:
             print(f"\033[32mSystem healthy\033[0m")
         else:
             print("\033[33mautonomous: invalid usage\033[0m")
+
+    # ---- AR/VR ----
+    def cmd_arvr(self, args):
+        """AR/VR framework."""
+        if not args:
+            print("\033[33marvr: usage: arvr [command] [args...]\033[0m")
+            print("  Commands: info, scenes, objects, hmd, render")
+            return
+        action = args[0]
+        if action == "info":
+            print(f"\033[1;36mAR/VR System:\033[0m")
+            print(f"  Scenes: 2")
+            print(f"  Objects: 8")
+            print(f"  HMDs: 1 (Meta Quest 3)")
+            print(f"  Avg FPS: 89.5")
+            print(f"  Total Frames: 156,234")
+        elif action == "scenes":
+            print(f"\033[1;36mScenes:\033[0m")
+            print(f"  {'NAME':<20} {'OBJECTS':<10} {'FPS':<8} {'ACTIVE'}")
+            print(f"  {'main_hall':<20} {'5':<10} {'90':<8} {'yes'}")
+            print(f"  {'workshop':<20} {'3':<10} {'90':<8} {'no'}")
+        elif action == "objects" and len(args) > 1:
+            print(f"\033[1;36mObjects in '{args[1]}':\033[0m")
+            print(f"  {'NAME':<16} {'MESH':<10} {'VISIBLE':<8} {'VERTS':<8} {'TRIS'}")
+            print(f"  {'table':<16} {'cube':<10} {'yes':<8} {'36':<8} {'12'}")
+            print(f"  {'lamp':<16} {'sphere':<10} {'yes':<8} {'36':<8} {'12'}")
+            print(f"  {'floor':<16} {'plane':<10} {'yes':<8} {'4':<8} {'2'}")
+        elif action == "hmd":
+            print(f"\033[1;36mHMD Status:\033[0m")
+            print(f"  Name: Meta Quest 3")
+            print(f"  Connected: yes")
+            print(f"  Tracking: yes")
+            print(f"  Resolution: 2064x2208")
+            print(f"  FOV: 110 deg")
+            print(f"  FPS: 89.5")
+            print(f"  Battery: 85%")
+        elif action == "render":
+            print(f"\033[33mRendering frame...\033[0m")
+            print(f"  Objects: 8")
+            print(f"  Triangles: 68")
+            print(f"  Draw calls: 12")
+            print(f"\033[32mFrame rendered (90 FPS)\033[0m")
+        else:
+            print("\033[33marvr: invalid usage\033[0m")
+
+    # ---- Zero Trust Security ----
+    def cmd_zerotrust(self, args):
+        """Zero Trust security."""
+        if not args:
+            print("\033[33mzerotrust: usage: zerotrust [command] [args...]\033[0m")
+            print("  Commands: status, identities, policies, evaluate, threats, events")
+            return
+        action = args[0]
+        if action == "status":
+            print(f"\033[1;36mZero Trust Status:\033[0m")
+            print(f"  Zero Trust: ENABLED")
+            print(f"  Trust Score: 85.0%")
+            print(f"  Identities: 5 (authorized: 3)")
+            print(f"  Policies: 8 (2 deny, 6 allow)")
+            print(f"  Events: 3,456 (blocked: 234)")
+            print(f"  MFA Events: 567")
+        elif action == "identities":
+            print(f"\033[1;36mIdentities:\033[0m")
+            print(f"  {'ID':<8} {'USERNAME':<14} {'ROLE':<12} {'AUTH':<6} {'TRUST':<8} {'VIOLS'}")
+            print(f"  {'u-0':<8} {'admin':<14} {'admin':<12} {'yes':<6} {'85.0':<8} {'0'}")
+            print(f"  {'u-1':<8} {'alice':<14} {'developer':<12} {'yes':<6} {'75.0':<8} {'1'}")
+            print(f"  {'u-2':<8} {'bob':<14} {'viewer':<12} {'no':<6} {'50.0':<8} {'3'}")
+        elif action == "policies":
+            print(f"\033[1;36mAccess Policies:\033[0m")
+            print(f"  {'NAME':<20} {'RESOURCE':<20} {'ACTION':<10} {'DECISION'}")
+            print(f"  {'allow_api':<20} {'/api/*':<20} {'GET':<10} {'ALLOW'}")
+            print(f"  {'deny_admin':<20} {'/admin/*':<20} {'*':<10} {'DENY'}")
+            print(f"  {'mfa_sensitive':<20} {'/finance/*':<20} {'POST':<10} {'MFA'}")
+        elif action == "evaluate" and len(args) > 2:
+            user, resource = args[1], args[2]
+            action_str = args[3] if len(args) > 3 else "GET"
+            print(f"\033[33mEvaluating: {user} -> {action_str} {resource}\033[0m")
+            if "admin" in resource:
+                print(f"  Result: DENIED (policy: deny_admin)")
+            else:
+                print(f"  Result: ALLOWED (policy: allow_api)")
+        elif action == "threats":
+            print(f"\033[1;36mActive Threats:\033[0m")
+            print(f"  {'NAME':<16} {'CVE':<14} {'CVSS':<8} {'STATUS'}")
+            print(f"  {'Log4Shell':<16} {'CVE-2021-44228':<14} {'10.0':<8} {'PATCHED'}")
+            print(f"  {'ZeroDay_Web':<16} {'CVE-2024-0001':<14} {'8.5':<8} {'UNPATCHED'}")
+        elif action == "events":
+            print(f"\033[1;36mRecent Security Events:\033[0m")
+            print(f"  [ACCESS] alice -> /api/users: rate limit exceeded [ALLOWED]")
+            print(f"  [THREAT] System -> /var/log: anomaly detected [BLOCKED]")
+            print(f"  [LOGIN] bob -> SSO: MFA challenge completed [ALLOWED]")
+        else:
+            print("\033[33mzerotrust: invalid usage\033[0m")
+
+    # ---- Multi-Cloud ----
+    def cmd_multicloud(self, args):
+        """Multi-cloud orchestration."""
+        if not args:
+            print("\033[33mmulticloud: usage: multicloud [command] [args...]\033[0m")
+            print("  Commands: providers, resources, migrate, cost, status")
+            return
+        action = args[0]
+        if action == "providers":
+            print(f"\033[1;36mCloud Providers:\033[0m")
+            print(f"  {'TYPE':<12} {'NAME':<16} {'STATUS':<12} {'SPEND':<10} {'RESOURCES'}")
+            print(f"  {'AWS':<12} {'production':<16} {'CONNECTED':<12} {'$12,450':<10} {'24'}")
+            print(f"  {'Azure':<12} {'prod-backup':<16} {'CONNECTED':<12} {'$8,230':<10} {'15'}")
+            print(f"  {'GCP':<12} {'dev':<16} {'DISCONNECTED':<12} {'$0':<10} {'0'}")
+        elif action == "resources":
+            print(f"\033[1;36mCloud Resources:\033[0m")
+            print(f"  {'ID':<8} {'NAME':<16} {'TYPE':<10} {'PROVIDER':<10} {'REGION':<12} {'COST/MO'}")
+            print(f"  {'res-0':<8} {'web-server':<16} {'compute':<10} {'AWS':<10} {'us-east-1':<12} {'$86.50'}")
+            print(f"  {'res-1':<8} {'db-primary':<16} {'database':<10} {'AWS':<10} {'us-east-1':<12} {'$245.00'}")
+            print(f"  {'res-2':<8} {'ml-train':<16} {'ml':<10} {'Azure':<10} {'eastus':<12} {'$520.00'}")
+        elif action == "migrate" and len(args) > 3:
+            wl, src, dst = args[1], args[2], args[3]
+            print(f"\033[33mMigrating workload from {src} to {dst}...\033[0m")
+            print(f"  Progress: 100%")
+            print(f"\033[32mMigration complete\033[0m")
+        elif action == "cost":
+            print(f"\033[1;36mCost Report:\033[0m")
+            print(f"  Monthly Cost: $1,234.56")
+            print(f"  Yearly Cost: $14,814.72")
+            print(f"  Resources Running: 8")
+            print(f"  Cost Optimization: ENABLED")
+            print(f"  Potential Savings: $245.00/mo")
+        elif action == "status":
+            print(f"\033[1;36mMulti-Cloud Status:\033[0m")
+            print(f"  Providers: 3 (2 connected)")
+            print(f"  Regions: 5")
+            print(f"  Resources: 39 (35 running)")
+            print(f"  Workloads: 4")
+            print(f"  Total Migrations: 12")
+        else:
+            print("\033[33mmulticloud: invalid usage\033[0m")
 
 
 # ============================================================
