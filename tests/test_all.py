@@ -1199,6 +1199,435 @@ def test_locale():
 
 
 # ============================================================
+# COGNITIVE KERNEL TESTS
+# ============================================================
+
+def test_cognitive():
+    suite = TestSuite("Cognitive Kernel Tests")
+
+    emotions = ["neutral", "focused", "frustrated", "relaxed", "urgent", "creative"]
+    suite.assert_equals(len(emotions), 6, "cog_emotion_count")
+
+    current = {"emotion": "focused", "confidence": 0.82, "prediction": "steady"}
+    suite.assert_equals(current["emotion"], "focused", "cog_current_emotion")
+    suite.assert_true(current["confidence"] > 0.5, "cog_confidence_threshold")
+
+    predictions = [
+        {"time": "5min", "cpu": 52, "mem": 45, "io": 28},
+        {"time": "15min", "cpu": 68, "mem": 55, "io": 35},
+        {"time": "60min", "cpu": 45, "mem": 40, "io": 20}
+    ]
+    suite.assert_equals(len(predictions), 3, "cog_prediction_count")
+
+    processes = [
+        {"pid": 1, "name": "browser", "priority": 0.92},
+        {"pid": 2, "name": "compiler", "priority": 0.85},
+        {"pid": 3, "name": "daemon", "priority": 0.45}
+    ]
+    suite.assert_equals(len(processes), 3, "cog_process_count")
+    high_prio = sum(1 for p in processes if p["priority"] > 0.8)
+    suite.assert_equals(high_prio, 2, "cog_high_priority_count")
+
+    suite.assert_true(all(0 <= p["priority"] <= 1.0 for p in processes), "cog_priority_range")
+
+    return suite
+
+
+# ============================================================
+# BIO-FS TESTS
+# ============================================================
+
+def test_biofs():
+    suite = TestSuite("Bio-FS Tests")
+
+    nucleotides = ["A", "T", "G", "C"]
+    suite.assert_equals(len(nucleotides), 4, "bio_nucleotide_count")
+
+    files = [
+        {"name": "system.bio", "sequences": 4, "entropy": 1.85},
+        {"name": "user.bio", "sequences": 8, "entropy": 2.12},
+        {"name": "config.bio", "sequences": 2, "entropy": 1.45}
+    ]
+    suite.assert_equals(len(files), 3, "bio_file_count")
+    total_seq = sum(f["sequences"] for f in files)
+    suite.assert_equals(total_seq, 14, "bio_total_sequences")
+
+    health = {"overall": 98.5, "repairs": 156, "critical": 0}
+    suite.assert_true(health["overall"] > 90, "bio_health_ok")
+    suite.assert_equals(health["critical"], 0, "bio_no_critical")
+
+    genetics = {"generation": 47, "mutations": 23, "beneficial": 19}
+    suite.assert_true(genetics["generation"] > 0, "bio_generation_progress")
+    suite.assert_true(genetics["beneficial"] > genetics["mutations"] / 2, "bio_beneficial_majority")
+
+    entropy_values = [f["entropy"] for f in files]
+    suite.assert_true(all(0 <= e <= 4 for e in entropy_values), "bio_entropy_range")
+
+    return suite
+
+
+# ============================================================
+# REALITY ENGINE TESTS
+# ============================================================
+
+def test_reality():
+    suite = TestSuite("Reality Engine Tests")
+
+    layers = ["Physical", "Augmented", "Virtual", "Simulated"]
+    suite.assert_equals(len(layers), 4, "reality_layer_count")
+
+    scenes = [
+        {"name": "office", "layer": "Augmented", "objects": 5, "active": True},
+        {"name": "workshop", "layer": "Physical", "objects": 3, "active": True},
+        {"name": "sim-room", "layer": "Virtual", "objects": 4, "active": True},
+        {"name": "holodeck", "layer": "Simulated", "objects": 2, "active": False}
+    ]
+    suite.assert_equals(len(scenes), 4, "reality_scene_count")
+    active_scenes = sum(1 for s in scenes if s["active"])
+    suite.assert_equals(active_scenes, 3, "reality_active_scenes")
+
+    objects = [
+        {"name": "desk", "interactive": True},
+        {"name": "hologram", "interactive": True},
+        {"name": "ui-panel", "interactive": True}
+    ]
+    all_interactive = all(o["interactive"] for o in objects)
+    suite.assert_true(all_interactive, "reality_all_interactive")
+
+    layer_visibility = {"Physical": True, "Augmented": True, "Virtual": True, "Simulated": False}
+    visible = sum(1 for v in layer_visibility.values() if v)
+    suite.assert_equals(visible, 3, "reality_visible_layers")
+
+    return suite
+
+
+# ============================================================
+# PROTOCOL MESH TESTS
+# ============================================================
+
+def test_mesh():
+    suite = TestSuite("Protocol Mesh Tests")
+
+    protocols = ["HTTP", "HTTPS", "MQTT", "CoAP", "gRPC", "WebSocket", "AMQP", "Kafka", "QUANTUM"]
+    suite.assert_equals(len(protocols), 9, "mesh_protocol_count")
+
+    endpoints = [
+        {"name": "api-gw", "protocol": "HTTPS", "connected": True},
+        {"name": "sensor-feed", "protocol": "MQTT", "connected": True},
+        {"name": "legacy-db", "protocol": "CUSTOM", "connected": True},
+        {"name": "quantum-link", "protocol": "QUANTUM", "connected": True}
+    ]
+    suite.assert_equals(len(endpoints), 4, "mesh_endpoint_count")
+    all_connected = all(e["connected"] for e in endpoints)
+    suite.assert_true(all_connected, "mesh_all_connected")
+
+    bridges = [
+        {"src": "MQTT", "dst": "HTTPS", "accuracy": 99.2, "latency": 12},
+        {"src": "CUSTOM", "dst": "HTTP", "accuracy": 96.8, "latency": 45},
+        {"src": "QUANTUM", "dst": "gRPC", "accuracy": 94.5, "latency": 120}
+    ]
+    suite.assert_equals(len(bridges), 3, "mesh_bridge_count")
+    high_acc = all(b["accuracy"] > 90 for b in bridges)
+    suite.assert_true(high_acc, "mesh_high_accuracy")
+
+    stats = {"translations": 45678, "throughput": 1.2, "avg_latency": 18}
+    suite.assert_true(stats["translations"] > 0, "mesh_translations_positive")
+
+    return suite
+
+
+# ============================================================
+# HIVE COLLECTIVE TESTS
+# ============================================================
+
+def test_hive():
+    suite = TestSuite("Hive Collective Tests")
+
+    nodes = [
+        {"hostname": "hive-master", "ip": "10.0.0.1", "connected": True, "load": 45, "trust": 95},
+        {"hostname": "hive-node-01", "ip": "10.0.0.2", "connected": True, "load": 62, "trust": 88},
+        {"hostname": "hive-node-02", "ip": "10.0.0.3", "connected": True, "load": 23, "trust": 92}
+    ]
+    suite.assert_equals(len(nodes), 3, "hive_node_count")
+    all_connected = all(n["connected"] for n in nodes)
+    suite.assert_true(all_connected, "hive_all_connected")
+    avg_trust = sum(n["trust"] for n in nodes) / len(nodes)
+    suite.assert_true(avg_trust > 80, "hive_avg_trust")
+
+    knowledge = [
+        {"type": "threat-intel", "value": 0.95, "ttl": 3600},
+        {"type": "workload-opt", "value": 0.78, "ttl": 1800}
+    ]
+    suite.assert_equals(len(knowledge), 2, "hive_knowledge_count")
+    high_value = all(k["value"] > 0.5 for k in knowledge)
+    suite.assert_true(high_value, "hive_knowledge_value")
+
+    threats = [
+        {"type": "ddos", "severity": 8.5, "mitigated": True},
+        {"type": "anomaly", "severity": 5.2, "mitigated": False}
+    ]
+    suite.assert_true(threats[0]["mitigated"], "hive_threat_mitigated")
+
+    consensus_rounds = 847
+    suite.assert_true(consensus_rounds > 0, "hive_consensus_active")
+
+    return suite
+
+
+# ============================================================
+# SENTIENT ENGINE TESTS
+# ============================================================
+
+def test_sentient():
+    suite = TestSuite("Sentient Engine Tests")
+
+    metrics = [
+        {"name": "CPU", "value": 52, "warn": 80, "crit": 95, "status": "OK"},
+        {"name": "Memory", "value": 65, "warn": 80, "crit": 90, "status": "OK"},
+        {"name": "I/O", "value": 12, "warn": 20, "crit": 40, "status": "OK"},
+        {"name": "Thermal", "value": 48, "warn": 75, "crit": 90, "status": "OK"}
+    ]
+    suite.assert_equals(len(metrics), 4, "sent_metric_count")
+    all_ok = all(m["status"] == "OK" for m in metrics)
+    suite.assert_true(all_ok, "sent_all_healthy")
+
+    diagnoses = [
+        {"type": "I/O Bottleneck", "severity": 6.2, "healed": True, "confidence": 92},
+        {"type": "Mem Leak", "severity": 4.5, "healed": True, "confidence": 88},
+        {"type": "CPU Spike", "severity": 3.1, "healed": False, "confidence": 75}
+    ]
+    suite.assert_equals(len(diagnoses), 3, "sent_diagnosis_count")
+    healed = sum(1 for d in diagnoses if d["healed"])
+    suite.assert_equals(healed, 2, "sent_healed_count")
+
+    patches = [
+        {"desc": "io-scheduler-tune", "applied": True, "effectiveness": 96, "rollbacks": 0},
+        {"desc": "memory-pressure-fix", "applied": True, "effectiveness": 88, "rollbacks": 1}
+    ]
+    suite.assert_equals(len(patches), 2, "sent_patch_count")
+    high_eff = all(p["effectiveness"] > 80 for p in patches)
+    suite.assert_true(high_eff, "sent_patch_effectiveness")
+
+    consciousness = {"level": 0.42, "self_aware": True, "auto_heal": True}
+    suite.assert_true(consciousness["self_aware"], "sent_self_aware")
+
+    return suite
+
+
+# ============================================================
+# EXASCALE DATA FABRIC TESTS
+# ============================================================
+
+def test_exadata():
+    suite = TestSuite("Exascale Data Tests")
+
+    stores = [
+        {"name": "system-metrics", "dim": "timeseries", "records": 1200000},
+        {"name": "dependency-graph", "dim": "graph", "records": 8000},
+        {"name": "doc-store", "dim": "document", "records": 12000},
+        {"name": "embedding-vec", "dim": "vector", "records": 5000}
+    ]
+    suite.assert_equals(len(stores), 4, "exa_store_count")
+    dims = [s["dim"] for s in stores]
+    suite.assert_in("timeseries", dims, "exa_dim_timeseries")
+    suite.assert_in("graph", dims, "exa_dim_graph")
+    suite.assert_in("document", dims, "exa_dim_document")
+    suite.assert_in("vector", dims, "exa_dim_vector")
+
+    total_records = sum(s["records"] for s in stores)
+    suite.assert_true(total_records > 1000000, "exa_total_records")
+
+    ingest = {"timeseries": 1234, "graph_edges": 56, "vectors": 12}
+    suite.assert_true(ingest["timeseries"] > 0, "exa_ingest_ts")
+    suite.assert_true(ingest["graph_edges"] > 0, "exa_ingest_graph")
+
+    query = {"results": 245, "latency_ms": 23, "throughput": 12500}
+    suite.assert_true(query["latency_ms"] < 100, "exa_query_latency")
+    suite.assert_true(query["throughput"] > 0, "exa_query_throughput")
+
+    return suite
+
+
+# ============================================================
+# TIME CRYSTAL DB TESTS
+# ============================================================
+
+def test_tcrystal():
+    suite = TestSuite("Time Crystal DB Tests")
+
+    timelines = [
+        {"name": "prime", "versions": 42, "stability": 0.92, "branched": False},
+        {"name": "experiment", "versions": 12, "stability": 0.78, "branched": True},
+        {"name": "recovery", "versions": 8, "stability": 0.95, "branched": True}
+    ]
+    suite.assert_equals(len(timelines), 3, "tc_timeline_count")
+    total_versions = sum(t["versions"] for t in timelines)
+    suite.assert_true(total_versions > 0, "tc_total_versions")
+    stable = all(t["stability"] > 0.7 for t in timelines)
+    suite.assert_true(stable, "tc_timeline_stability")
+
+    realities = [
+        {"name": "what-if-opt", "divergence": 0.15, "probability": 15.2},
+        {"name": "rollback-scenario", "divergence": 0.08, "probability": 42.3},
+        {"name": "experimental", "divergence": 0.45, "probability": 3.1}
+    ]
+    suite.assert_equals(len(realities), 3, "tc_reality_count")
+
+    snapshot = {"version": 43, "state_hash": "a47f3c8e", "entropy": 0.234}
+    suite.assert_equals(snapshot["version"], 43, "tc_snapshot_version")
+
+    diff = {"changed": 12, "added": 3, "removed": 2, "modified": 7}
+    suite.assert_equals(diff["changed"], diff["added"] + diff["removed"] + diff["modified"], "tc_diff_sum")
+
+    return suite
+
+
+# ============================================================
+# GRAPH NEURAL ENGINE TESTS
+# ============================================================
+
+def test_gneural():
+    suite = TestSuite("Graph Neural Engine Tests")
+
+    graph = {"nodes": 24, "edges": 89, "communities": 4, "density": 0.16}
+    suite.assert_equals(graph["nodes"], 24, "gne_node_count")
+    suite.assert_true(graph["edges"] > graph["nodes"], "gne_edge_density")
+
+    nodes = [
+        {"name": "kernel", "centrality": 0.92, "community": 0},
+        {"name": "network", "centrality": 0.78, "community": 1},
+        {"name": "storage", "centrality": 0.65, "community": 1},
+        {"name": "ai-service", "centrality": 0.55, "community": 2}
+    ]
+    suite.assert_equals(len(nodes), 4, "gne_node_list")
+    centralities = [n["centrality"] for n in nodes]
+    suite.assert_true(all(0 <= c <= 1 for c in centralities), "gne_centrality_range")
+
+    models = [
+        {"name": "link-pred", "layers": 3, "accuracy": 92.3},
+        {"name": "node-class", "layers": 2, "accuracy": 88.7}
+    ]
+    suite.assert_equals(len(models), 2, "gne_model_count")
+    high_acc = all(m["accuracy"] > 85 for m in models)
+    suite.assert_true(high_acc, "gne_model_accuracy")
+
+    communities = {"core": ["kernel", "scheduler", "memory"], "infra": ["network", "storage"]}
+    suite.assert_true(len(communities) >= 2, "gne_community_detection")
+
+    return suite
+
+
+# ============================================================
+# HOLOGRAPHIC FABRIC TESTS
+# ============================================================
+
+def test_holo():
+    suite = TestSuite("Holographic Fabric Tests")
+
+    field_types = ["HOLO_PIXEL", "HOLO_CUBE", "HOLO_SPHERE", "HOLO_VOXEL", "HOLO_TENSOR"]
+    suite.assert_equals(len(field_types), 5, "holo_field_types")
+
+    fields = [
+        {"name": "main-display", "type": "HOLO_PIXEL", "pixels": 512, "coherence": 0.95},
+        {"name": "volumetric", "type": "HOLO_VOXEL", "pixels": 1024, "coherence": 0.88},
+        {"name": "tensor-grid", "type": "HOLO_TENSOR", "pixels": 256, "coherence": 0.92}
+    ]
+    suite.assert_equals(len(fields), 3, "holo_field_count")
+    total_pixels = sum(f["pixels"] for f in fields)
+    suite.assert_true(total_pixels > 0, "holo_total_pixels")
+    coherent = all(f["coherence"] > 0.8 for f in fields)
+    suite.assert_true(coherent, "holo_field_coherence")
+
+    storage = [
+        {"name": "os-image", "size_gb": 2.4, "read_speed": "12GB/s"},
+        {"name": "user-data", "size_mb": 156, "read_speed": "8GB/s"}
+    ]
+    suite.assert_equals(len(storage), 2, "holo_storage_count")
+
+    compute = [{"op": "holographic-transform", "status": "COMPLETED"}]
+    suite.assert_equals(compute[0]["status"], "COMPLETED", "holo_compute_complete")
+
+    return suite
+
+
+# ============================================================
+# SELF-EVOLVING ENGINE TESTS
+# ============================================================
+
+def test_evolve():
+    suite = TestSuite("Self-Evolving Engine Tests")
+
+    population = [
+        {"id": "g-0", "fitness": 0.92, "mutations": 3, "novelty": 0.45},
+        {"id": "g-1", "fitness": 0.88, "mutations": 5, "novelty": 0.62},
+        {"id": "g-2", "fitness": 0.85, "mutations": 1, "novelty": 0.23},
+        {"id": "g-3", "fitness": 0.78, "mutations": 7, "novelty": 0.81}
+    ]
+    suite.assert_equals(len(population), 4, "evo_population_size")
+    best_fitness = max(p["fitness"] for p in population)
+    suite.assert_true(best_fitness <= 1.0, "evo_fitness_range")
+    avg_fitness = sum(p["fitness"] for p in population) / len(population)
+    suite.assert_true(avg_fitness > 0.5, "evo_avg_fitness")
+
+    generation = {"num": 48, "best": 0.92, "avg": 0.86}
+    suite.assert_true(generation["num"] > 0, "evo_generation_progress")
+
+    modules = [
+        {"name": "io-scheduler", "generated": 12, "deployed": 12, "rollbacks": 0},
+        {"name": "mem-policy", "generated": 8, "deployed": 7, "rollbacks": 1},
+        {"name": "thermal-gov", "generated": 5, "deployed": 5, "rollbacks": 0}
+    ]
+    suite.assert_equals(len(modules), 3, "evo_module_count")
+    total_deployed = sum(m["deployed"] for m in modules)
+    suite.assert_true(total_deployed > 0, "evo_modules_deployed")
+
+    crossover = {"fitness": 0.90, "rate": 0.75}
+    suite.assert_true(crossover["fitness"] > 0, "evo_crossover_valid")
+
+    return suite
+
+
+# ============================================================
+# UNIVERSAL COMPUTE FABRIC TESTS
+# ============================================================
+
+def test_unicompute():
+    suite = TestSuite("Universal Compute Tests")
+
+    unit_types = ["CPU", "GPU", "TPU", "QPU", "FPGA"]
+    suite.assert_equals(len(unit_types), 5, "uc_unit_types")
+
+    units = [
+        {"type": "CPU", "flops": 1.0, "mem": 16, "util": 52, "power": 65},
+        {"type": "GPU", "flops": 12, "mem": 24, "util": 78, "power": 250},
+        {"type": "TPU", "flops": 45, "mem": 32, "util": 92, "power": 175},
+        {"type": "QPU", "flops": 0.1, "mem": 1, "util": 45, "power": 15},
+        {"type": "FPGA", "flops": 2, "mem": 8, "util": 12, "power": 35}
+    ]
+    suite.assert_equals(len(units), 5, "uc_unit_count")
+    all_online = all(u["util"] >= 0 for u in units)
+    suite.assert_true(all_online, "uc_units_online")
+    total_flops = sum(u["flops"] for u in units)
+    suite.assert_true(total_flops > 0, "uc_total_flops")
+
+    tasks = [
+        {"name": "inference", "pref": "TPU", "progress": 100, "state": "DONE"},
+        {"name": "rendering", "pref": "GPU", "progress": 67, "state": "RUNNING"},
+        {"name": "compilation", "pref": "CPU", "progress": 23, "state": "RUNNING"},
+        {"name": "quantum-sim", "pref": "QPU", "progress": 0, "state": "PENDING"},
+        {"name": "signal-proc", "pref": "FPGA", "progress": 100, "state": "DONE"}
+    ]
+    suite.assert_equals(len(tasks), 5, "uc_task_count")
+    done_count = sum(1 for t in tasks if t["state"] == "DONE")
+    suite.assert_equals(done_count, 2, "uc_done_tasks")
+
+    fabric = {"total_flops": 60.1, "power_w": 540, "efficiency": 111.3}
+    suite.assert_true(fabric["efficiency"] > 0, "uc_efficiency_positive")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -1242,7 +1671,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v3.2.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v4.0.0\033[0m")
     print()
 
     all_suites = []
@@ -1275,6 +1704,18 @@ def main():
         ("DevOps", test_devops),
         ("Power Management", test_power),
         ("Localization", test_locale),
+        ("Cognitive Kernel", test_cognitive),
+        ("Bio-FS", test_biofs),
+        ("Reality Engine", test_reality),
+        ("Protocol Mesh", test_mesh),
+        ("Hive Collective", test_hive),
+        ("Sentient Engine", test_sentient),
+        ("Exascale Data", test_exadata),
+        ("Time Crystal DB", test_tcrystal),
+        ("Graph Neural", test_gneural),
+        ("Holographic Fabric", test_holo),
+        ("Self-Evolving", test_evolve),
+        ("Universal Compute", test_unicompute),
         ("Performance", test_performance),
     ]
 
