@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v2.1.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 92 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v2.2.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 100 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -391,6 +391,10 @@ class Shell:
             "agent": self.cmd_agent,
             "gpu": self.cmd_gpu,
             "fpga": self.cmd_fpga,
+            "mobile": self.cmd_mobile,
+            "rt": self.cmd_rt,
+            "cluster": self.cmd_cluster,
+            "edge": self.cmd_edge,
         }
 
         handler = dispatch.get(command)
@@ -1412,6 +1416,18 @@ class Shell:
         print("║    gpu [cmd]        GPU device management                   ║")
         print("║    fpga [cmd]       FPGA device management                  ║")
         print("║                                                              ║")
+        print("║  MOBILE/EMBEDDED:                                           ║")
+        print("║    mobile [cmd]     Mobile device management                ║")
+        print("║                                                              ║")
+        print("║  REAL-TIME:                                                 ║")
+        print("║    rt [cmd]         Real-time processing                    ║")
+        print("║                                                              ║")
+        print("║  DISTRIBUTED:                                               ║")
+        print("║    cluster [cmd]    Distributed cluster management          ║")
+        print("║                                                              ║")
+        print("║  EDGE COMPUTING:                                            ║")
+        print("║    edge [cmd]       Edge computing management               ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1863,6 +1879,133 @@ class Shell:
             print(f"\033[32mFPGA configured successfully\033[0m")
         else:
             print("\033[33mfpga: invalid usage\033[0m")
+
+    # ---- Mobile/Embedded ----
+    def cmd_mobile(self, args):
+        """Mobile device management."""
+        if not args:
+            print("\033[33mmobile: usage: mobile [command] [args...]\033[0m")
+            print("  Commands: list, sensors, battery, gesture")
+            return
+        action = args[0]
+        if action == "list":
+            print(f"\033[1;36mMobile Devices:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<15} {'TYPE':<10} {'BATTERY':<10} {'SCREEN'}")
+            print(f"  {'1':<4} {'Pixel 8':<15} {'Phone':<10} {'85%':<10} {'1080x1920'}")
+            print(f"  {'2':<4} {'iPad Pro':<15} {'Tablet':<10} {'72%':<10} {'2048x2732'}")
+        elif action == "sensors":
+            print(f"\033[1;36mSensors:\033[0m")
+            print(f"  Accelerometer: (0.12, -9.81, 0.05)")
+            print(f"  Gyroscope: (0.02, 0.01, -0.03)")
+            print(f"  Light: 450 lux")
+            print(f"  Temperature: 24.5 C")
+        elif action == "battery":
+            print(f"\033[1;36mBattery Status:\033[0m")
+            print(f"  Level: 85%")
+            print(f"  Status: Discharging")
+            print(f"  Temperature: 28 C")
+            print(f"  Health: Good")
+        elif action == "gesture":
+            print(f"\033[1;36mGesture Recognition:\033[0m")
+            print(f"  Supported: tap, swipe, pinch, rotate")
+            print(f"  Touch points: 10")
+            print(f"  Report rate: 120 Hz")
+        else:
+            print("\033[33mmobile: invalid usage\033[0m")
+
+    # ---- Real-time ----
+    def cmd_rt(self, args):
+        """Real-time processing."""
+        if not args:
+            print("\033[33mrt: usage: rt [command] [args...]\033[0m")
+            print("  Commands: tasks, streams, buffers")
+            return
+        action = args[0]
+        if action == "tasks":
+            print(f"\033[1;36mReal-time Tasks:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<20} {'STATE':<10} {'PRI':<6} {'PERIOD'}")
+            print(f"  {'1':<4} {'motor_control':<20} {'running':<10} {'90':<6} {'1 ms'}")
+            print(f"  {'2':<4} {'sensor_read':<20} {'ready':<10} {'80':<6} {'10 ms'}")
+            print(f"  {'3':<4} {'display':<20} {'ready':<10} {'50':<6} {'16 ms'}")
+        elif action == "streams":
+            print(f"\033[1;36mReal-time Streams:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<20} {'TYPE':<10} {'ELEMENTS':<10} {'DROPPED'}")
+            print(f"  {'1':<4} {'sensor_data':<20} {'source':<10} {'1024':<10} {'0'}")
+            print(f"  {'2':<4} {'motor_cmd':<20} {'sink':<10} {'512':<10} {'0'}")
+        elif action == "buffers":
+            print(f"\033[1;36mReal-time Buffers:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<20} {'SIZE':<10} {'LOCKED'}")
+            print(f"  {'1':<4} {'shared_mem':<20} {'4096':<10} {'no'}")
+            print(f"  {'2':<4} {'ipc_buf':<20} {'8192':<10} {'no'}")
+        else:
+            print("\033[33mrt: invalid usage\033[0m")
+
+    # ---- Distributed Systems ----
+    def cmd_cluster(self, args):
+        """Distributed cluster management."""
+        if not args:
+            print("\033[33mcluster: usage: cluster [command] [args...]\033[0m")
+            print("  Commands: status, nodes, shards, kv")
+            return
+        action = args[0]
+        if action == "status":
+            print(f"\033[1;36mCluster Status:\033[0m")
+            print(f"  Nodes: 5 (4 online, 1 down)")
+            print(f"  Leader: node-1")
+            print(f"  Term: 12")
+            print(f"  Shards: 4")
+            print(f"  Data: 1,234 entries")
+        elif action == "nodes":
+            print(f"\033[1;36mCluster Nodes:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<12} {'STATE':<10} {'TERM':<8} {'LOG'}")
+            print(f"  {'1':<4} {'node-1':<12} {'leader':<10} {'12':<8} {'1234'}")
+            print(f"  {'2':<4} {'node-2':<12} {'follower':<10} {'12':<8} {'1234'}")
+            print(f"  {'3':<4} {'node-3':<12} {'follower':<10} {'12':<8} {'1234'}")
+            print(f"  {'4':<4} {'node-4':<12} {'follower':<10} {'12':<8} {'1234'}")
+            print(f"  {'5':<4} {'node-5':<12} {'down':<10} {'11':<8} {'1230'}")
+        elif action == "shards":
+            print(f"\033[1;36mShards:\033[0m")
+            print(f"  {'ID':<4} {'STATE':<12} {'LEADER':<8} {'KEY RANGE'}")
+            print(f"  {'1':<4} {'active':<12} {'1':<8} {'0-999'}")
+            print(f"  {'2':<4} {'active':<12} {'2':<8} {'1000-1999'}")
+            print(f"  {'3':<4} {'active':<12} {'3':<8} {'2000-2999'}")
+        elif action == "kv":
+            print(f"\033[1;36mKey-Value Store:\033[0m")
+            print(f"  {'KEY':<20} {'VALUE':<20} {'VERSION'}")
+            print(f"  {'user:1':<20} {'{'name': 'john'}':<20} {'1'}")
+            print(f"  {'config:db':<20} {'{'host': 'localhost'}':<20} {'3'}")
+        else:
+            print("\033[33mcluster: invalid usage\033[0m")
+
+    # ---- Edge Computing ----
+    def cmd_edge(self, args):
+        """Edge computing management."""
+        if not args:
+            print("\033[33medge: usage: edge [command] [args...]\033[0m")
+            print("  Commands: nodes, workloads, policies, sync")
+            return
+        action = args[0]
+        if action == "nodes":
+            print(f"\033[1;36mEdge Nodes:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<15} {'TYPE':<8} {'STATE':<10} {'CPU':<8} {'LATENCY'}")
+            print(f"  {'1':<4} {'edge-nyc':<15} {'edge':<8} {'online':<10} {'45%':<8} {'5 ms'}")
+            print(f"  {'2':<4} {'fog-london':<15} {'fog':<8} {'online':<10} {'32%':<8} {'25 ms'}")
+            print(f"  {'3':<4} {'cloud-aws':<15} {'cloud':<8} {'online':<10} {'12%':<8} {'50 ms'}")
+        elif action == "workloads":
+            print(f"\033[1;36mWorkloads:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<20} {'STATE':<10} {'NODE':<8} {'DEADLINE'}")
+            print(f"  {'1':<4} {'video_analytics':<20} {'running':<10} {'1':<8} {'100 ms'}")
+            print(f"  {'2':<4} {'iot_processing':<20} {'running':<10} {'2':<8} {'50 ms'}")
+        elif action == "policies":
+            print(f"\033[1;36mPlacement Policies:\033[0m")
+            print(f"  {'ID':<4} {'NAME':<15} {'TYPE':<10} {'WEIGHT':<8} {'ENABLED'}")
+            print(f"  {'1':<4} {'low_latency':<15} {'latency':<10} {'100':<8} {'yes'}")
+            print(f"  {'2':<4} {'low_cost':<15} {'cost':<10} {'50':<8} {'yes'}")
+        elif action == "sync":
+            print(f"\033[33mSyncing data to edge nodes...\033[0m")
+            print(f"\033[32mSync complete\033[0m")
+        else:
+            print("\033[33medge: invalid usage\033[0m")
 
 
 # ============================================================
