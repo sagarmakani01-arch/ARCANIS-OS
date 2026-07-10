@@ -2907,6 +2907,58 @@ def test_arc_readability():
 
 
 # ============================================================
+# ARC IMPORT SYSTEM TESTS (V10.2)
+# ============================================================
+
+def test_arc_imports():
+    suite = TestSuite("Arc Import System Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLang
+
+    # Test import of built-in stdlib modules
+    a = ArcLang()
+    a.run('import "math";')
+    suite.assert_true("pi" in a.vm.env, "import_math_pi")
+    suite.assert_true("sin" in a.vm.env, "import_math_sin")
+    suite.assert_equals(a.vm.env["pi"], 3.141592653589793, "import_math_pi_value")
+
+    a2 = ArcLang()
+    a2.run('import "random";')
+    suite.assert_true("randint" in a2.vm.env, "import_random_randint")
+    r = a2.vm.env["randint"](1, 100)
+    suite.assert_true(1 <= r <= 100, "import_random_randint_works")
+
+    a3 = ArcLang()
+    a3.run('import "time";')
+    suite.assert_true("now" in a3.vm.env, "import_time_now")
+    t = a3.vm.env["now"]()
+    suite.assert_true(t > 0, "import_time_now_works")
+
+    a4 = ArcLang()
+    a4.run('import "fs";')
+    suite.assert_true("exists" in a4.vm.env, "import_fs_exists")
+    suite.assert_true(a4.vm.env["exists"]("demo.py"), "import_fs_exists_works")
+
+    # Test export keyword
+    a5 = ArcLang()
+    a5.run("export myvar; myvar = 42;")
+    suite.assert_true("myvar" in a5.vm.exports, "export_keyword")
+    suite.assert_true("myvar" in a5.vm.env, "export_env_has_var")
+
+    # Test import with namespace
+    a6 = ArcLang()
+    a6.run('import "math" as m;')
+    suite.assert_true("m" in a6.vm.env, "import_namespace")
+    suite.assert_equals(a6.vm.env["m"]["pi"], 3.141592653589793, "import_namespace_value")
+
+    # Test explain handles import
+    a7 = ArcLang()
+    explanation = a7.explain('import "math";')
+    suite.assert_true("module" in explanation, "explain_import")
+    return suite
+
+
+# ============================================================
 # MAIN
 # ============================================================
 
@@ -2919,7 +2971,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v10.1.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v10.2.0\033[0m")
     print()
 
     all_suites = []
@@ -3001,6 +3053,7 @@ def main():
         ("Arc Native Compiler", test_arc_compiler),
         ("Arc IDE", test_arc_ide),
         ("Arc Readability", test_arc_readability),
+        ("Arc Import System", test_arc_imports),
     ]
 
     for name, test_func in test_funcs:

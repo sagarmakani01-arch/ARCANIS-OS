@@ -1612,6 +1612,7 @@ class ArcLexer:
         "nil": "NIL", "nothing": "NIL", "none": "NIL",
         "print": "PRINT", "display": "PRINT", "show": "PRINT", "say": "PRINT",
         "input": "INPUT",
+        "import": "IMPORT", "export": "EXPORT", "as": "AS",
     }
 
     def __init__(self, source):
@@ -1643,7 +1644,13 @@ class ArcLexer:
                 start = self.pos
                 while self.pos < len(self.source) and self.source[self.pos].isdigit():
                     self.pos += 1
-                self.tokens.append(("NUMBER", int(self.source[start:self.pos])))
+                if self.pos < len(self.source) and self.source[self.pos] == ".":
+                    self.pos += 1
+                    while self.pos < len(self.source) and self.source[self.pos].isdigit():
+                        self.pos += 1
+                    self.tokens.append(("NUMBER", float(self.source[start:self.pos])))
+                else:
+                    self.tokens.append(("NUMBER", int(self.source[start:self.pos])))
                 continue
             if c.isalpha() or c == "_":
                 start = self.pos
@@ -1710,6 +1717,10 @@ class ArcParser:
             expr = self._expr()
             self.consume("SEMI")
             return ("PRINT", expr)
+        if tok[0] == "IMPORT":
+            return self._import_stmt()
+        if tok[0] == "EXPORT":
+            return self._export_stmt()
         if tok[0] == "LBRACE":
             return self._block()
         return self._expr_stmt()
@@ -1764,6 +1775,22 @@ class ArcParser:
         expr = self._expr()
         self.consume("SEMI")
         return ("RETURN", expr)
+
+    def _import_stmt(self):
+        self.consume("IMPORT")
+        module = self.consume("STRING")[1]
+        ns = None
+        if self.peek()[0] == "AS":
+            self.consume("AS")
+            ns = self.consume("IDENT")[1]
+        self.consume("SEMI")
+        return ("IMPORT", module, ns)
+
+    def _export_stmt(self):
+        self.consume("EXPORT")
+        name = self.consume("IDENT")[1]
+        self.consume("SEMI")
+        return ("EXPORT", name)
 
     def _block(self):
         self.consume("LBRACE")
@@ -1872,6 +1899,9 @@ class ArcVM:
         self.functions = {}
         self.jit = jit
         self.return_val = None
+        self.exports = set()
+        self.loaded_modules = {}
+        self.arc_lang = None
         self._builtins()
 
     def _builtins(self):
@@ -1920,6 +1950,20 @@ class ArcVM:
         if t == "PROGRAM":
             for stmt in node[1]:
                 self._eval(stmt)
+            return None
+
+        if t == "IMPORT":
+            module = node[1]
+            ns = node[2]
+            cache_key = f"{module}:{ns}" if ns else module
+            if cache_key in self.loaded_modules:
+                return self.loaded_modules[cache_key]
+            result = self._load_module(module, ns)
+            self.loaded_modules[cache_key] = result
+            return result
+
+        if t == "EXPORT":
+            self.exports.add(node[1])
             return None
 
         if t == "BLOCK":
@@ -2037,6 +2081,147 @@ class ArcVM:
 
         return None
 
+    def _load_module(self, module, ns):
+        """Load a module from file or built-in stdlib."""
+        # Built-in stdlib modules
+        stdlib_modules = {
+            "math": """
+                export pi;
+                export e;
+                export sin;
+                export cos;
+                export sqrt;
+                export pow;
+                export log;
+                export floor;
+                export ceil;
+                pi = 3.141592653589793;
+                e = 2.718281828459045;
+                fn sin(x) { return call_native("math_sin", x); }
+                fn cos(x) { return call_native("math_cos", x); }
+                fn sqrt(x) { return call_native("math_sqrt", x); }
+                fn pow(x, y) { return call_native("math_pow", x, y); }
+                fn log(x) { return call_native("math_log", x); }
+                fn floor(x) { return call_native("math_floor", x); }
+                fn ceil(x) { return call_native("math_ceil", x); }
+                print "[stdlib/math loaded]";
+            """,
+            "random": """
+                export rand;
+                export randint;
+                export seed;
+                fn rand() { return call_native("random_rand"); }
+                fn randint(lo, hi) { return call_native("random_randint", lo, hi); }
+                fn seed(s) { return call_native("random_seed", s); }
+                print "[stdlib/random loaded]";
+            """,
+            "time": """
+                export now;
+                export sleep;
+                export clock;
+                fn now() { return call_native("time_now"); }
+                fn sleep(ms) { return call_native("time_sleep", ms); }
+                fn clock() { return call_native("time_clock"); }
+                print "[stdlib/time loaded]";
+            """,
+            "json": """
+                export parse;
+                export stringify;
+                fn parse(s) { return call_native("json_parse", s); }
+                fn stringify(v) { return call_native("json_stringify", v); }
+                print "[stdlib/json loaded]";
+            """,
+            "fs": """
+                export read;
+                export write;
+                export exists;
+                export list;
+                export size;
+                fn read(path) { return call_native("fs_read", path); }
+                fn write(path, content) { return call_native("fs_write", path, content); }
+                fn exists(path) { return call_native("fs_exists", path); }
+                fn list(path) { return call_native("fs_list", path); }
+                fn size(path) { return call_native("fs_size", path); }
+                print "[stdlib/fs loaded]";
+            """,
+        }
+
+        if module in stdlib_modules:
+            # Register native callbacks
+            native_cbs = {
+                "math_sin": lambda x: math.sin(x),
+                "math_cos": lambda x: math.cos(x),
+                "math_sqrt": lambda x: math.sqrt(x),
+                "math_pow": lambda x, y: math.pow(x, y),
+                "math_log": lambda x: math.log(x),
+                "math_floor": lambda x: math.floor(x),
+                "math_ceil": lambda x: math.ceil(x),
+                "random_rand": lambda: __import__('random').random(),
+                "random_randint": lambda lo, hi: __import__('random').randint(lo, hi),
+                "random_seed": lambda s: __import__('random').seed(s),
+                "time_now": lambda: __import__('time').time(),
+                "time_sleep": lambda ms: __import__('time').sleep(ms / 1000.0),
+                "time_clock": lambda: __import__('time').clock() if hasattr(__import__('time'), 'clock') else __import__('time').perf_counter(),
+                "json_parse": lambda s: __import__('json').loads(s),
+                "json_stringify": lambda v: __import__('json').dumps(v),
+                "fs_read": lambda p: open(p).read() if os.path.isfile(p) else "",
+                "fs_write": lambda p, c: (open(p, "w").write(c), c)[1],
+                "fs_exists": lambda p: os.path.isfile(p),
+                "fs_list": lambda p: os.listdir(p) if os.path.isdir(p) else [],
+                "fs_size": lambda p: os.path.getsize(p) if os.path.isfile(p) else 0,
+            }
+            self.env["call_native"] = lambda fn, *a: native_cbs.get(fn, lambda *_: None)(*a)
+
+            # Save exports before loading
+            old_exports = set(self.exports)
+            # Run the module code
+            old_stdout = sys.stdout
+            sys.stdout = __import__('io').StringIO()
+            lexer = ArcLexer(stdlib_modules[module])
+            parser = ArcParser(lexer.tokens)
+            ast = parser.parse()
+            self._eval(ast)
+            sys.stdout = old_stdout
+
+            # Collect exported vars
+            mod_exports = {}
+            for var in self.exports - old_exports:
+                if var in self.env:
+                    mod_exports[var] = self.env[var]
+
+            if ns:
+                # Store under namespace
+                self.env[ns] = mod_exports
+            else:
+                # Merge into global scope
+                for k, v in mod_exports.items():
+                    if k not in self.env:
+                        self.env[k] = v
+
+            return mod_exports
+
+        # File import
+        if os.path.isfile(module):
+            old_exports = set(self.exports)
+            with open(module) as f:
+                code = f.read()
+            lexer = ArcLexer(code)
+            parser = ArcParser(lexer.tokens)
+            ast = parser.parse()
+            self._eval(ast)
+
+            mod_exports = {}
+            for var in self.exports - old_exports:
+                if var in self.env:
+                    mod_exports[var] = self.env[var]
+
+            if ns:
+                self.env[ns] = mod_exports
+            return mod_exports
+
+        print(f"\033[33mWarning: module '{module}' not found\033[0m")
+        return {}
+
     def _call_fn(self, fn_node, args):
         old_env = dict(self.env)
         params = fn_node[2]
@@ -2046,7 +2231,6 @@ class ArcVM:
         self._eval(fn_node[3])
         rv = self.return_val
         self.return_val = None
-        # Fully restore old environment
         self.env.clear()
         self.env.update(old_env)
         return rv
@@ -2175,6 +2359,11 @@ class ArcLang:
         elif t == "ASSIGN":
             lines.append(f"{prefix}Update '{node[1][1] if isinstance(node[1], tuple) and node[1][0] == 'VAR' else '?'}' to:")
             self._explain_node(node[2], lines, indent + 1)
+        elif t == "IMPORT":
+            ns = f" as '{node[2]}'" if node[2] else ""
+            lines.append(f"{prefix}Load the module '{node[1]}'{ns}")
+        elif t == "EXPORT":
+            lines.append(f"{prefix}Make '{node[1]}' available to other files")
         elif t == "INPUT":
             lines.append(f"{prefix}Ask the user to type something")
         else:
@@ -2711,6 +2900,7 @@ class ArcIDE:
         "nil": "#4EC9B0", "nothing": "#4EC9B0", "none": "#4EC9B0",
         "print": "#DCDCAA", "display": "#DCDCAA", "show": "#DCDCAA", "say": "#DCDCAA",
         "input": "#DCDCAA",
+        "import": "#C586C0", "export": "#C586C0", "as": "#C586C0",
     }
 
     def __init__(self, jit=None):
