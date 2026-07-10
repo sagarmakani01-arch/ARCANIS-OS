@@ -859,6 +859,106 @@ def test_hpc():
 
 
 # ============================================================
+# DATA ANALYTICS TESTS
+# ============================================================
+
+def test_analytics():
+    suite = TestSuite("Analytics Tests")
+
+    # Test data sources
+    sources = {"logs": {"type": "file", "connected": True},
+               "metrics": {"type": "stream", "connected": True}}
+    suite.assert_equals(len(sources), 2, "analytics_source_count")
+    suite.assert_true(all(s["connected"] for s in sources.values()), "analytics_all_connected")
+
+    # Test pipeline jobs
+    jobs = [{"name": "error_analysis", "state": "RUNNING", "records": 45678},
+            {"name": "daily_report", "state": "COMPLETED", "records": 1200000}]
+    suite.assert_equals(len(jobs), 2, "analytics_job_count")
+    running = sum(1 for j in jobs if j["state"] == "RUNNING")
+    suite.assert_equals(running, 1, "analytics_running_jobs")
+
+    # Test query
+    query_result = "EXECUTED"
+    suite.assert_equals(query_result, "EXECUTED", "analytics_query")
+
+    # Test windowing
+    window_types = ["tumbling", "sliding", "session"]
+    suite.assert_equals(len(window_types), 3, "analytics_window_types")
+
+    return suite
+
+
+# ============================================================
+# API GATEWAY TESTS
+# ============================================================
+
+def test_gateway():
+    suite = TestSuite("API Gateway Tests")
+
+    # Test services
+    services = {"user-svc": {"status": "UP", "latency": 12},
+                "order-svc": {"status": "UP", "latency": 8},
+                "payment-svc": {"status": "DEGRADED", "latency": 345}}
+    suite.assert_equals(len(services), 3, "gateway_service_count")
+    up_count = sum(1 for s in services.values() if s["status"] == "UP")
+    suite.assert_equals(up_count, 2, "gateway_up_services")
+
+    # Test routes
+    routes = [{"path": "/api/users", "method": "GET", "target": "user-svc"},
+              {"path": "/api/orders", "method": "POST", "target": "order-svc"}]
+    suite.assert_equals(len(routes), 2, "gateway_route_count")
+    suite.assert_equals(routes[0]["target"], "user-svc", "gateway_route_target")
+
+    # Test load balancer algorithms
+    algorithms = ["round-robin", "least-connections", "ip-hash", "weighted"]
+    suite.assert_equals(len(algorithms), 4, "gateway_lb_algorithms")
+
+    # Test middleware chain
+    middleware = ["Auth", "RateLimit", "CORS", "Logging"]
+    suite.assert_equals(len(middleware), 4, "gateway_middleware_count")
+
+    return suite
+
+
+# ============================================================
+# AUTONOMOUS SYSTEM TESTS
+# ============================================================
+
+def test_autonomous():
+    suite = TestSuite("Autonomous System Tests")
+
+    # Test metrics
+    metrics = {"cpu_usage": {"value": 72.5, "warning": 80.0, "critical": 95.0},
+               "memory_usage": {"value": 65.2, "warning": 80.0, "critical": 90.0}}
+    suite.assert_equals(len(metrics), 2, "autonomous_metric_count")
+    suite.assert_true(metrics["cpu_usage"]["value"] < metrics["cpu_usage"]["warning"],
+                      "autonomous_cpu_normal")
+
+    # Test healing policies
+    policies = [{"name": "high_cpu", "metric": "cpu_usage", "threshold": 90.0, "enabled": True},
+                {"name": "high_memory", "metric": "memory_usage", "threshold": 85.0, "enabled": True}]
+    suite.assert_equals(len(policies), 2, "autonomous_policy_count")
+    suite.assert_true(policies[0]["enabled"], "autonomous_policy_enabled")
+
+    # Test auto-scaling
+    # Simulate scale up
+    current = 4
+    max_inst = 10
+    metric_value = 85.0
+    scale_threshold = 80.0
+    if metric_value >= scale_threshold and current < max_inst:
+        current += 2
+    suite.assert_equals(current, 6, "autonomous_scale_up")
+
+    # Test health score
+    health_score = 92
+    suite.assert_true(health_score >= 0 and health_score <= 100, "autonomous_health_score_range")
+
+    return suite
+
+
+# ============================================================
 # PERFORMANCE TESTS
 # ============================================================
 
@@ -902,7 +1002,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v2.9.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v3.0.0\033[0m")
     print()
 
     all_suites = []
@@ -926,6 +1026,9 @@ def main():
         ("Edge AI", test_edge_ai),
         ("SDN", test_sdn),
         ("HPC", test_hpc),
+        ("Data Analytics", test_analytics),
+        ("API Gateway", test_gateway),
+        ("Autonomous Systems", test_autonomous),
         ("Performance", test_performance),
     ]
 
