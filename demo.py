@@ -267,8 +267,8 @@ class Shell:
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
         """ + "\033[0m")
-        print("\033[90m  AI-Native Operating System v1.7.0\033[0m")
-        print("\033[90m  49 modules | 46 syscalls | 80 shell commands\033[0m")
+        print("\033[90m  AI-Native Operating System v2.0.0\033[0m")
+        print("\033[90m  49 modules | 46 syscalls | 84 shell commands\033[0m")
         print("\033[90m  Type 'help' for available commands\033[0m")
         print()
 
@@ -380,6 +380,10 @@ class Shell:
             "passwd": self.cmd_passwd,
             "make": self.cmd_make,
             "awk": self.cmd_awk,
+            "docker": self.cmd_docker,
+            "podman": self.cmd_podman,
+            "iptables": self.cmd_iptables,
+            "vpn": self.cmd_vpn,
         }
 
         handler = dispatch.get(command)
@@ -1380,6 +1384,14 @@ class Shell:
         print("║    make [target]    Build automation                        ║")
         print("║    awk '<pat> {a}'  Text processing                         ║")
         print("║                                                              ║")
+        print("║  VIRTUALIZATION:                                            ║")
+        print("║    docker [cmd]     Container runtime (Docker-compatible)   ║")
+        print("║    podman [cmd]     Container runtime (rootless)            ║")
+        print("║                                                              ║")
+        print("║  ADVANCED NETWORK:                                          ║")
+        print("║    iptables [opt]   Firewall management                     ║")
+        print("║    vpn [cmd]        VPN tunnel management                   ║")
+        print("║                                                              ║")
         print("║  MISC:                                                      ║")
         print("║    history          Show command history                    ║")
         print("║    clear            Clear screen                            ║")
@@ -1524,6 +1536,112 @@ class Shell:
         print(f"  1 line 1")
         print(f"  2 line 2")
         print(f"  3 line 3")
+
+    # ---- Virtualization ----
+    def cmd_docker(self, args):
+        """Docker-compatible container runtime."""
+        if not args:
+            print("\033[33mdocker: usage: docker [command] [args...]\033[0m")
+            print("  Commands: run, ps, images, pull, stop, rm, exec, logs, inspect")
+            return
+        action = args[0]
+        if action == "run" and len(args) > 1:
+            name = args[1] if len(args) > 2 else "container_" + str(hash(args[1]) % 1000)
+            print(f"\033[1;33m[DOCKER]\033[0m Running container: {name}")
+            print(f"  Image: {args[1]}")
+            print(f"  Status: \033[32mstarted\033[0m")
+            print(f"  ID: {hash(name) % 0xFFFFFF:012x}")
+        elif action == "ps":
+            print(f"{'CONTAINER ID':<14} {'IMAGE':<20} {'STATUS':<12} {'NAMES'}")
+            print("-" * 60)
+            print(f"a1b2c3d4e5f6   arcanis-base:latest   Up 5 min     my_container")
+        elif action == "images":
+            print(f"{'REPOSITORY':<20} {'TAG':<10} {'SIZE':<10}")
+            print("-" * 40)
+            print(f"arcanis-base      latest     128MB")
+            print(f"arcanis-kernel    1.7.0      64MB")
+            print(f"arcanis-shell     1.0.0      32MB")
+        elif action == "pull" and len(args) > 1:
+            print(f"\033[33mPulling {args[1]}...\033[0m")
+            print(f"Status: Downloaded newer image")
+        elif action == "stop" and len(args) > 1:
+            print(f"\033[31mStopping {args[1]}...\033[0m")
+            print(f"Container stopped")
+        elif action == "rm" and len(args) > 1:
+            print(f"\033[31mRemoving {args[1]}...\033[0m")
+            print(f"Container removed")
+        elif action == "exec" and len(args) > 2:
+            print(f"Executing '{' '.join(args[2:])}' in {args[1]}...")
+        elif action == "logs" and len(args) > 1:
+            print(f"\033[90m[LOG:{args[1]}]\033[0m Container started")
+            print(f"\033[90m[LOG:{args[1]}]\033[0m PID: 1234")
+        elif action == "inspect" and len(args) > 1:
+            print(f"{{\"State\": \"running\", \"Image\": \"{args[1]}\", \"Pid\": 1234}}")
+        else:
+            print("\033[33mdocker: invalid usage\033[0m")
+
+    def cmd_podman(self, args):
+        """Podman-compatible container runtime."""
+        if not args:
+            print("\033[33mpodman: usage: podman [command] [args...]\033[0m")
+            print("  Commands: run, ps, images, pull, stop, rm")
+            return
+        print(f"\033[1;33m[PODMAN]\033[0m {args[0]} (rootless mode)")
+
+    # ---- Advanced Networking ----
+    def cmd_iptables(self, args):
+        """Firewall management."""
+        if not args:
+            print("\033[33miptables: usage: iptables [options] [chain] [rule]\033[0m")
+            print("  Options: -L (list), -A (append), -D (delete), -F (flush)")
+            print("  Chains: INPUT, OUTPUT, FORWARD")
+            return
+        if "-L" in args:
+            chain = args[args.index("-L") + 1] if args.index("-L") + 1 < len(args) else "INPUT"
+            print(f"\033[1;36mChain {chain} (policy ACCEPT)\033[0m")
+            print(f"  {'num':<6} {'target':<10} {'proto':<8} {'source':<16} {'destination':<16} {'extra'}")
+            print(f"  {'---':<6} {'------':<10} {'-----':<8} {'------':<16} {'-----------':<16} {'-----'}")
+            print(f"  {'1':<6} {'ACCEPT':<10} {'tcp':<8} {'0.0.0.0/0':<16} {'0.0.0.0/0':<16} {'tcp dpt:22'}")
+            print(f"  {'2':<6} {'ACCEPT':<10} {'tcp':<8} {'0.0.0.0/0':<16} {'0.0.0.0/0':<16} {'tcp dpt:80'}")
+            print(f"  {'3':<6} {'DROP':<10} {'all':<8} {'0.0.0.0/0':<16} {'0.0.0.0/0':<16} {''}")
+        elif "-A" in args:
+            print(f"\033[32mRule appended\033[0m")
+        elif "-D" in args:
+            print(f"\033[31mRule deleted\033[0m")
+        elif "-F" in args:
+            print(f"\033[33mFlushing all rules...\033[0m")
+            print(f"\033[32mAll rules flushed\033[0m")
+        else:
+            print("\033[33miptables: invalid usage\033[0m")
+
+    def cmd_vpn(self, args):
+        """VPN management."""
+        if not args:
+            print("\033[33mvpn: usage: vpn [command] [args...]\033[0m")
+            print("  Commands: connect, disconnect, status, list, create")
+            return
+        action = args[0]
+        if action == "create" and len(args) > 1:
+            print(f"\033[32mVPN tunnel '{args[1]}' created\033[0m")
+        elif action == "connect" and len(args) > 1:
+            print(f"\033[1;33m[VPN]\033[0m Connecting to {args[1]}...")
+            print(f"  Performing handshake...")
+            print(f"  Establishing encrypted tunnel...")
+            print(f"  \033[32mConnected\033[0m")
+        elif action == "disconnect" and len(args) > 1:
+            print(f"\033[31mDisconnected from {args[1]}\033[0m")
+        elif action == "status" and len(args) > 1:
+            print(f"VPN Tunnel: {args[1]}")
+            print(f"  Type: WireGuard")
+            print(f"  State: connected")
+            print(f"  Remote: vpn.arcanis.io:51820")
+            print(f"  Cipher: AES-256-GCM")
+        elif action == "list":
+            print(f"{'NAME':<20} {'TYPE':<12} {'STATE':<12} {'REMOTE'}")
+            print("-" * 60)
+            print(f"{'office-vpn':<20} {'WireGuard':<12} {'connected':<12} {'vpn.arcanis.io'}")
+        else:
+            print("\033[33mvpn: invalid usage\033[0m")
 
 
 # ============================================================
