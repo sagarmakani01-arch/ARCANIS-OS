@@ -2997,54 +2997,98 @@ def test_arc_v12():
 
 
 # ============================================================
-# ARC V13.0.0 TESTS - Desktop Environment
+# ARC V13.0.0 TESTS — Cognitive Operating System
 # ============================================================
 
 def test_arc_v13():
-    suite = TestSuite("Arc v13.0.0 Desktop Tests")
+    suite = TestSuite("Arc v13.0.0 Cognitive OS Tests")
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from demo import ArcDesktop, _DesktopWindow, _HAVE_TK
+    from demo import ArcDesktop, _HAVE_TK
 
-    # Test Desktop class exists and has required methods
-    suite.assert_true(hasattr(ArcDesktop, "launch"), "v13_desktop_has_launch")
-    suite.assert_true(hasattr(ArcDesktop, "open_window"), "v13_desktop_has_open_window")
-    suite.assert_true(hasattr(ArcDesktop, "available"), "v13_desktop_has_available")
+    # Test Desktop class exists and has cognitive OS methods
+    suite.assert_true(hasattr(ArcDesktop, "launch"), "v13_has_launch")
+    suite.assert_true(hasattr(ArcDesktop, "available"), "v13_has_available")
 
-    # Test _DesktopWindow class
-    suite.assert_true(hasattr(_DesktopWindow, "_minimize"), "v13_win_has_minimize")
-    suite.assert_true(hasattr(_DesktopWindow, "_maximize"), "v13_win_has_maximize")
-    suite.assert_true(hasattr(_DesktopWindow, "_close"), "v13_win_has_close")
-    suite.assert_true(hasattr(_DesktopWindow, "destroy"), "v13_win_has_destroy")
-
-    # Test DesktopManager availability
+    # Test Tkinter availability
     suite.assert_equals(_HAVE_TK, True, "v13_tk_available")
 
-    # Verify desktop icons exist
+    # Test that old desktop artifacts are removed (no taskbar, icons, windows)
+    suite.assert_false(hasattr(ArcDesktop, "open_window"), "v13_no_open_window")
+    suite.assert_false(hasattr(ArcDesktop, "_DesktopWindow"), "v13_no_desktop_window")
+
     d = ArcDesktop()
-    suite.assert_equals(len(d.app_icons), 0, "v13_icons_pending_launch")
 
-    # Test built-in app functions exist
-    suite.assert_true(hasattr(d, "_open_file_manager"), "v13_app_file_manager")
-    suite.assert_true(hasattr(d, "_open_terminal"), "v13_app_terminal")
-    suite.assert_true(hasattr(d, "_open_ide"), "v13_app_ide")
-    suite.assert_true(hasattr(d, "_open_settings"), "v13_app_settings")
-    suite.assert_true(hasattr(d, "_open_calculator"), "v13_app_calculator")
+    # Test first screen methods (the calm canvas)
+    suite.assert_true(hasattr(d, "_render_first_screen"), "v13_first_screen")
+    suite.assert_true(hasattr(d, "_animate_logo"), "v13_animate_logo")
+    suite.assert_true(hasattr(d, "_on_intent"), "v13_on_intent")
 
-    # Test taskbar exists
-    suite.assert_true(hasattr(d, "_create_taskbar"), "v13_desktop_taskbar")
-    suite.assert_true(hasattr(d, "_update_clock"), "v13_desktop_clock")
+    # Test mission workspace methods
+    suite.assert_true(hasattr(d, "_render_mission"), "v13_render_mission")
+    suite.assert_true(hasattr(d, "_generate_spaces"), "v13_generate_spaces")
+    suite.assert_true(hasattr(d, "_render_spaces"), "v13_render_spaces")
+    suite.assert_true(hasattr(d, "_activate_space"), "v13_activate_space")
+    suite.assert_true(hasattr(d, "_show_space_detail"), "v13_show_space_detail")
 
-    # Test context menu
-    suite.assert_true(hasattr(d, "_context_menu"), "v13_desktop_context_menu")
+    # Test knowledge graph
+    suite.assert_true(hasattr(d, "_render_knowledge_graph"), "v13_knowledge_graph")
 
-    # Test wallpaper cycling
-    suite.assert_true(hasattr(d, "_cycle_wallpaper"), "v13_desktop_wallpaper")
+    # Test memory timeline
+    suite.assert_true(hasattr(d, "_render_timeline"), "v13_timeline")
 
-    # Test start menu
-    suite.assert_true(hasattr(d, "_toggle_start_menu"), "v13_desktop_start_menu")
+    # Test AI panel
+    suite.assert_true(hasattr(d, "_render_ai_panel"), "v13_ai_panel")
 
-    # Test shutdown
-    suite.assert_true(hasattr(d, "_shutdown"), "v13_desktop_shutdown")
+    # Test system methods
+    suite.assert_true(hasattr(d, "_shutdown"), "v13_shutdown")
+    suite.assert_true(hasattr(d, "_truncate"), "v13_truncate")
+
+    # Verify NO old desktop artifacts remain
+    suite.assert_false(hasattr(d, "app_icons"), "v13_no_app_icons")
+    suite.assert_false(hasattr(d, "_create_taskbar"), "v13_no_taskbar")
+    suite.assert_false(hasattr(d, "_update_clock"), "v13_no_clock")
+    suite.assert_false(hasattr(d, "_context_menu"), "v13_no_context_menu")
+    suite.assert_false(hasattr(d, "_cycle_wallpaper"), "v13_no_wallpaper")
+    suite.assert_false(hasattr(d, "_toggle_start_menu"), "v13_no_start_menu")
+    suite.assert_false(hasattr(d, "_open_file_manager"), "v13_no_file_manager")
+    suite.assert_false(hasattr(d, "_open_terminal"), "v13_no_terminal")
+    suite.assert_false(hasattr(d, "_open_ide"), "v13_no_ide")
+    suite.assert_false(hasattr(d, "_open_settings"), "v13_no_settings")
+    suite.assert_false(hasattr(d, "_open_calculator"), "v13_no_calculator")
+
+    # Test _truncate method
+    suite.assert_equals(d._truncate("hello world", 5), "he...", "v13_truncate_short")
+    suite.assert_equals(d._truncate("hello", 10), "hello", "v13_truncate_full")
+    suite.assert_equals(d._truncate("hello world", 11), "hello world", "v13_truncate_exact")
+
+    # Test _generate_spaces — always includes Research, Knowledge, Create
+    spaces = d._generate_spaces("build a web app")
+    space_names = [s[0] for s in spaces]
+    suite.assert_true("Research" in space_names, "v13_spaces_research")
+    suite.assert_true("Knowledge" in space_names, "v13_spaces_knowledge")
+    suite.assert_true("Create" in space_names, "v13_spaces_create")
+    suite.assert_true("Build" in space_names, "v13_spaces_build")
+
+    # Test _generate_spaces — learn intent
+    spaces = d._generate_spaces("learn quantum computing")
+    space_names = [s[0] for s in spaces]
+    suite.assert_true("Learn" in space_names, "v13_spaces_learn")
+
+    # Test _generate_spaces — document intent
+    spaces = d._generate_spaces("write documentation")
+    space_names = [s[0] for s in spaces]
+    suite.assert_true("Document" in space_names, "v13_spaces_document")
+
+    # Test _generate_spaces — simulate intent
+    spaces = d._generate_spaces("simulate weather patterns")
+    space_names = [s[0] for s in spaces]
+    suite.assert_true("Simulation" in space_names, "v13_spaces_simulation")
+
+    # Test initial state
+    suite.assert_equals(d.mission, None, "v13_initial_mission")
+    suite.assert_equals(len(d.mission_spaces), 0, "v13_initial_spaces")
+    suite.assert_equals(d.mission_mode, False, "v13_initial_mode")
+    suite.assert_equals(d.capability_active, None, "v13_initial_capability")
 
     return suite
 
@@ -3495,7 +3539,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS")
+    print(f"  OVERALL RESULTS — v13.0.0 Cognitive OS")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")
