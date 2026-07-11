@@ -2997,98 +2997,140 @@ def test_arc_v12():
 
 
 # ============================================================
-# ARC V13.0.0 TESTS — Cognitive Operating System
+# ARC V14.0.0 TESTS — Mission Space (AI-Native OS)
 # ============================================================
 
-def test_arc_v13():
-    suite = TestSuite("Arc v13.0.0 Cognitive OS Tests")
+def test_arc_v14():
+    suite = TestSuite("Arc v14.0.0 Mission Space Tests")
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from demo import ArcDesktop, _HAVE_TK
 
-    # Test Desktop class exists and has cognitive OS methods
-    suite.assert_true(hasattr(ArcDesktop, "launch"), "v13_has_launch")
-    suite.assert_true(hasattr(ArcDesktop, "available"), "v13_has_available")
+    # Test class exists and has mission space methods
+    suite.assert_true(hasattr(ArcDesktop, "launch"), "v14_has_launch")
+    suite.assert_true(hasattr(ArcDesktop, "available"), "v14_has_available")
 
     # Test Tkinter availability
-    suite.assert_equals(_HAVE_TK, True, "v13_tk_available")
-
-    # Test that old desktop artifacts are removed (no taskbar, icons, windows)
-    suite.assert_false(hasattr(ArcDesktop, "open_window"), "v13_no_open_window")
-    suite.assert_false(hasattr(ArcDesktop, "_DesktopWindow"), "v13_no_desktop_window")
+    suite.assert_equals(_HAVE_TK, True, "v14_tk_available")
 
     d = ArcDesktop()
 
-    # Test first screen methods (the calm canvas)
-    suite.assert_true(hasattr(d, "_render_first_screen"), "v13_first_screen")
-    suite.assert_true(hasattr(d, "_animate_logo"), "v13_animate_logo")
-    suite.assert_true(hasattr(d, "_on_intent"), "v13_on_intent")
+    # Test first screen (What future do you want to create?)
+    suite.assert_true(hasattr(d, "_render_first_screen"), "v14_first_screen")
+    suite.assert_true(hasattr(d, "_animate_ambient"), "v14_animate_ambient")
+    suite.assert_true(hasattr(d, "_on_intent"), "v14_on_intent")
 
-    # Test mission workspace methods
-    suite.assert_true(hasattr(d, "_render_mission"), "v13_render_mission")
-    suite.assert_true(hasattr(d, "_generate_spaces"), "v13_generate_spaces")
-    suite.assert_true(hasattr(d, "_render_spaces"), "v13_render_spaces")
-    suite.assert_true(hasattr(d, "_activate_space"), "v13_activate_space")
-    suite.assert_true(hasattr(d, "_show_space_detail"), "v13_show_space_detail")
+    # Test agent system — 7 specialized autonomous agents
+    suite.assert_true(hasattr(d, "_init_agents"), "v14_init_agents")
+    suite.assert_true(hasattr(d, "_render_agents_panel"), "v14_agents_panel")
+    suite.assert_true(hasattr(d, "_activate_agent"), "v14_activate_agent")
+    suite.assert_true(hasattr(d, "_show_agent_detail"), "v14_agent_detail")
+    suite.assert_true(hasattr(ArcDesktop, "AGENT_DEFS"), "v14_agent_defs")
+    suite.assert_equals(len(ArcDesktop.AGENT_DEFS), 7, "v14_agent_count")
 
-    # Test knowledge graph
-    suite.assert_true(hasattr(d, "_render_knowledge_graph"), "v13_knowledge_graph")
+    # Verify all 7 agents exist
+    agent_names = [a[1] for a in ArcDesktop.AGENT_DEFS]
+    for key in ["researcher", "engineer", "coder", "learner", "designer", "planner", "critic"]:
+        suite.assert_true(key in agent_names, f"v14_agent_{key}")
 
-    # Test memory timeline
-    suite.assert_true(hasattr(d, "_render_timeline"), "v13_timeline")
+    # Test agent initialization produces 7 agents with correct state
+    d._init_agents()
+    suite.assert_equals(len(d.agents), 7, "v14_agents_init_count")
+    for key, agent in d.agents.items():
+        suite.assert_true("name" in agent, f"v14_agent_{key}_has_name")
+        suite.assert_true("role" in agent, f"v14_agent_{key}_has_role")
+        suite.assert_true("status" in agent, f"v14_agent_{key}_has_status")
+        suite.assert_equals(agent["status"], "idle", f"v14_agent_{key}_status_idle")
 
-    # Test AI panel
-    suite.assert_true(hasattr(d, "_render_ai_panel"), "v13_ai_panel")
+    # Test knowledge graph system
+    suite.assert_true(hasattr(d, "_init_knowledge"), "v14_init_knowledge")
+    suite.assert_true(hasattr(d, "_render_knowledge_graph"), "v14_knowledge_graph")
+
+    # Test knowledge graph generation with different missions
+    d.mission = "build a humanoid robot"
+    d._init_knowledge()
+    suite.assert_true(len(d.knowledge_nodes) > 3, "v14_knowledge_nodes_count")
+    root_node = d.knowledge_nodes[0]
+    suite.assert_equals(root_node["id"], "root", "v14_knowledge_root")
+    suite.assert_equals(root_node["parent"], None, "v14_knowledge_root_parent")
+
+    # Test knowledge includes mission-specific nodes
+    node_ids = [n["id"] for n in d.knowledge_nodes]
+    suite.assert_true("research" in node_ids, "v14_knowledge_research")
+    suite.assert_true("design" in node_ids, "v14_knowledge_design")
+    suite.assert_true("build" in node_ids, "v14_knowledge_build")
+
+    # Test robot mission adds mechanical node
+    suite.assert_true("mechanical" in node_ids, "v14_knowledge_mechanical")
+
+    # Test software mission adds software node
+    d.mission = "build a web app"
+    d._init_knowledge()
+    node_ids = [n["id"] for n in d.knowledge_nodes]
+    suite.assert_true("software" in node_ids, "v14_knowledge_software")
+
+    # Test AI mission adds AI node
+    d.mission = "research artificial intelligence"
+    d._init_knowledge()
+    node_ids = [n["id"] for n in d.knowledge_nodes]
+    suite.assert_true("ai" in node_ids, "v14_knowledge_ai")
+
+    # Test learning mission adds learning path node
+    d.mission = "learn quantum physics"
+    d._init_knowledge()
+    node_ids = [n["id"] for n in d.knowledge_nodes]
+    suite.assert_true("learning" in node_ids, "v14_knowledge_learning")
+
+    # Test timeline system
+    suite.assert_true(hasattr(d, "_init_timeline"), "v14_init_timeline")
+    suite.assert_true(hasattr(d, "_render_timeline"), "v14_timeline")
+    d.mission = "test mission"
+    d._init_timeline()
+    suite.assert_true(len(d.timeline_entries) > 0, "v14_timeline_entries")
+
+    # Test agent chat system
+    suite.assert_true(hasattr(d, "_render_agent_chat"), "v14_agent_chat")
+    suite.assert_true(hasattr(d, "_on_chat"), "v14_on_chat")
+
+    # Test mission rendering
+    suite.assert_true(hasattr(d, "_render_mission"), "v14_render_mission")
 
     # Test system methods
-    suite.assert_true(hasattr(d, "_shutdown"), "v13_shutdown")
-    suite.assert_true(hasattr(d, "_truncate"), "v13_truncate")
-
-    # Verify NO old desktop artifacts remain
-    suite.assert_false(hasattr(d, "app_icons"), "v13_no_app_icons")
-    suite.assert_false(hasattr(d, "_create_taskbar"), "v13_no_taskbar")
-    suite.assert_false(hasattr(d, "_update_clock"), "v13_no_clock")
-    suite.assert_false(hasattr(d, "_context_menu"), "v13_no_context_menu")
-    suite.assert_false(hasattr(d, "_cycle_wallpaper"), "v13_no_wallpaper")
-    suite.assert_false(hasattr(d, "_toggle_start_menu"), "v13_no_start_menu")
-    suite.assert_false(hasattr(d, "_open_file_manager"), "v13_no_file_manager")
-    suite.assert_false(hasattr(d, "_open_terminal"), "v13_no_terminal")
-    suite.assert_false(hasattr(d, "_open_ide"), "v13_no_ide")
-    suite.assert_false(hasattr(d, "_open_settings"), "v13_no_settings")
-    suite.assert_false(hasattr(d, "_open_calculator"), "v13_no_calculator")
+    suite.assert_true(hasattr(d, "_shutdown"), "v14_shutdown")
+    suite.assert_true(hasattr(d, "_truncate"), "v14_truncate")
 
     # Test _truncate method
-    suite.assert_equals(d._truncate("hello world", 5), "he...", "v13_truncate_short")
-    suite.assert_equals(d._truncate("hello", 10), "hello", "v13_truncate_full")
-    suite.assert_equals(d._truncate("hello world", 11), "hello world", "v13_truncate_exact")
+    suite.assert_equals(d._truncate("hello world", 5), "he...", "v14_truncate_short")
+    suite.assert_equals(d._truncate("hello", 10), "hello", "v14_truncate_full")
+    suite.assert_equals(d._truncate("hello world", 11), "hello world", "v14_truncate_exact")
 
-    # Test _generate_spaces — always includes Research, Knowledge, Create
-    spaces = d._generate_spaces("build a web app")
-    space_names = [s[0] for s in spaces]
-    suite.assert_true("Research" in space_names, "v13_spaces_research")
-    suite.assert_true("Knowledge" in space_names, "v13_spaces_knowledge")
-    suite.assert_true("Create" in space_names, "v13_spaces_create")
-    suite.assert_true("Build" in space_names, "v13_spaces_build")
+    # Test mission state
+    suite.assert_equals(d.mission, "test mission", "v14_mission_set")
+    suite.assert_equals(d.mission_mode, False, "v14_initial_mode")
+    suite.assert_equals(d.active_agent, None, "v14_initial_active_agent")
+    suite.assert_equals(len(d._conversation), 0, "v14_initial_conversation")
 
-    # Test _generate_spaces — learn intent
-    spaces = d._generate_spaces("learn quantum computing")
-    space_names = [s[0] for s in spaces]
-    suite.assert_true("Learn" in space_names, "v13_spaces_learn")
+    # Verify NO old v13 cognitive OS artifacts remain
+    suite.assert_false(hasattr(d, "mission_spaces"), "v14_no_mission_spaces")
+    suite.assert_false(hasattr(d, "capability_active"), "v14_no_capability_active")
+    suite.assert_false(hasattr(d, "_generate_spaces"), "v14_no_generate_spaces")
+    suite.assert_false(hasattr(d, "_render_spaces"), "v14_no_render_spaces")
+    suite.assert_false(hasattr(d, "_activate_space"), "v14_no_activate_space")
+    suite.assert_false(hasattr(d, "_show_space_detail"), "v14_no_space_detail")
+    suite.assert_false(hasattr(d, "_render_ai_panel"), "v14_no_ai_panel")
+    suite.assert_false(hasattr(d, "_animate_logo"), "v14_no_animate_logo")
 
-    # Test _generate_spaces — document intent
-    spaces = d._generate_spaces("write documentation")
-    space_names = [s[0] for s in spaces]
-    suite.assert_true("Document" in space_names, "v13_spaces_document")
-
-    # Test _generate_spaces — simulate intent
-    spaces = d._generate_spaces("simulate weather patterns")
-    space_names = [s[0] for s in spaces]
-    suite.assert_true("Simulation" in space_names, "v13_spaces_simulation")
-
-    # Test initial state
-    suite.assert_equals(d.mission, None, "v13_initial_mission")
-    suite.assert_equals(len(d.mission_spaces), 0, "v13_initial_spaces")
-    suite.assert_equals(d.mission_mode, False, "v13_initial_mode")
-    suite.assert_equals(d.capability_active, None, "v13_initial_capability")
+    # Verify NO old v12/v11 desktop artifacts remain
+    suite.assert_false(hasattr(d, "app_icons"), "v14_no_app_icons")
+    suite.assert_false(hasattr(d, "_create_taskbar"), "v14_no_taskbar")
+    suite.assert_false(hasattr(d, "_update_clock"), "v14_no_clock")
+    suite.assert_false(hasattr(d, "_context_menu"), "v14_no_context_menu")
+    suite.assert_false(hasattr(d, "_cycle_wallpaper"), "v14_no_wallpaper")
+    suite.assert_false(hasattr(d, "_toggle_start_menu"), "v14_no_start_menu")
+    suite.assert_false(hasattr(d, "_open_file_manager"), "v14_no_file_manager")
+    suite.assert_false(hasattr(d, "_open_terminal"), "v14_no_terminal")
+    suite.assert_false(hasattr(d, "_open_ide"), "v14_no_ide")
+    suite.assert_false(hasattr(d, "_open_settings"), "v14_no_settings")
+    suite.assert_false(hasattr(d, "_open_calculator"), "v14_no_calculator")
 
     return suite
 
@@ -3520,7 +3562,7 @@ def main():
         ("Arc Multithreading", test_arc_threading),
         ("Arc AI Module", test_arc_ai),
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
-        ("Arc v13.0.0 Desktop", test_arc_v13),
+        ("Arc v14.0.0 Mission Space", test_arc_v14),
     ]
 
     for name, test_func in test_funcs:
@@ -3539,7 +3581,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v13.0.0 Cognitive OS")
+    print(f"  OVERALL RESULTS — v14.0.0 Mission Space")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")

@@ -3952,59 +3952,76 @@ print "sum(0..9) = " + sum;
 
 
 # ============================================================
-# ARCANIS COGNITIVE OS — World's First Cognitive Operating System
+# ARCANIS MISSION SPACE — The Future of Computing Interface
 # ============================================================
-# No desktop. No icons. No taskbar. No windows. No files. No folders.
-# Organized around human intent, goals, knowledge, context, creation, learning.
+# An AI-native operating environment built around human intention.
+# No apps. No files. No folders. No desktop.
+# Agents, knowledge, creation, and collaboration around your mission.
 
 class ArcDesktop:
-    """Cognitive Operating System — first screen with intent input, mission workspace."""
+    """ARCANIS Mission Space — AI-native OS. Agents collaborate around your intent."""
 
-    BG_DEEP = "#07070a"
-    BG_MID = "#0a0a12"
-    BG_CARD = "#0f0f1a"
-    FG_SOFT = "#8888aa"
-    FG_BRIGHT = "#c0c0e0"
-    FG_GLOW = "#6666ff"
-    ACCENT = "#4444cc"
-    FONT_LIGHT = ("Segoe UI", 11)
-    FONT_MED = ("Segoe UI", 14)
-    FONT_LARGE = ("Segoe UI", 28)
-    FONT_XL = ("Segoe UI", 60)
-    FONT_MONO = ("Consolas", 11)
+    BG_SPACE = "#05050a"
+    BG_DEEP = "#0a0a14"
+    BG_MID = "#0d0d1a"
+    BG_CARD = "#10101e"
+    FG_SOFT = "#8888bb"
+    FG_BRIGHT = "#ccccff"
+    FG_GLOW = "#7744ff"
+    FG_CYAN = "#33bbcc"
+    FG_PINK = "#cc44aa"
+    ACCENT = "#5533cc"
+    ACCENT2 = "#3366dd"
+    FONT_LIGHT = ("Segoe UI", 10)
+    FONT_MED = ("Segoe UI", 13)
+    FONT_LARGE = ("Segoe UI", 24)
+    FONT_XL = ("Segoe UI", 52)
+    FONT_MONO = ("Consolas", 10)
+
+    AGENT_DEFS = [
+        ("Research", "researcher", "Gathers knowledge, finds papers, maps domains", "#33bbcc"),
+        ("Engineering", "engineer", "Designs architecture, plans systems", "#5533cc"),
+        ("Coding", "coder", "Writes, tests, and refines code", "#7744ff"),
+        ("Learning", "learner", "Creates learning paths, tracks progress", "#3366dd"),
+        ("Design", "designer", "Visualizes, prototypes, creates UI/UX", "#cc44aa"),
+        ("Planning", "planner", "Defines milestones, manages timeline", "#8888bb"),
+        ("Critic", "critic", "Reviews, finds gaps, suggests improvements", "#ff6644"),
+    ]
 
     def __init__(self):
         self.root = None
         self.canvas = None
         self.mission = None
-        self.mission_spaces = []
+        self.agents = {}
         self.knowledge_nodes = []
         self.timeline_entries = []
-        self.capability_active = None
+        self.active_agent = None
         self.mission_mode = False
+        self._conversation = []
+        self._conversation_lines = []
 
     def available(self):
         return _HAVE_TK
 
     def launch(self):
         if not _HAVE_TK:
-            print("\033[31mDesktop requires Tkinter\033[0m")
+            print("\033[31mMission Space requires Tkinter\033[0m")
             return
         self.root = tk.Tk()
-        self.root.title("Arcanis Cognitive OS")
+        self.root.title("ARCANIS Mission Space")
         self.root.attributes("-fullscreen", True)
-        self.root.configure(bg=self.BG_DEEP)
+        self.root.configure(bg=self.BG_SPACE)
         self.root.bind("<Escape>", lambda e: self._shutdown())
 
-        self.canvas = tk.Canvas(self.root, bg=self.BG_DEEP, highlightthickness=0)
+        self.canvas = tk.Canvas(self.root, bg=self.BG_SPACE, highlightthickness=0)
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         self._render_first_screen()
-        self._animate_logo()
+        self._animate_ambient()
         self.root.mainloop()
 
     # ================================================================
-    # FIRST SCREEN — The Calm Canvas
+    # FIRST SCREEN — What Future Do You Want to Create?
     # ================================================================
 
     def _render_first_screen(self):
@@ -4013,24 +4030,40 @@ class ArcDesktop:
 
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
-        cx, cy = w // 2, h // 2
+        self._cx, self._cy = w // 2, h // 2
+        cx, cy = self._cx, self._cy
 
-        # Subtle ambient glow
-        self.canvas.create_oval(cx - 200, cy - 250, cx + 200, cy + 150,
-                                fill="", outline=self.ACCENT, width=1, tags="logo_ring")
-        self.canvas.create_oval(cx - 4, cy - 50, cx + 4, cy - 42,
-                                fill=self.FG_GLOW, outline="", tags="logo_dot")
+        # Star field background
+        self._star_field = []
+        for i in range(80):
+            sx = __import__('random').randint(0, w)
+            sy = __import__('random').randint(0, h)
+            sr = __import__('random').randint(1, 2)
+            self._star_field.append((sx, sy, sr))
+            self.canvas.create_oval(sx, sy, sx + sr, sy + sr,
+                                    fill="#222244", outline="", tags=f"star_{i}")
 
-        # ARCANIS text
-        self.canvas.create_text(cx, cy + 30, text="ARCANIS",
-                                fill=self.FG_BRIGHT, font=self.FONT_XL, tags="logo_text", letter_spacing=12)
+        # Outer rings
+        for i, r in enumerate([300, 280, 260, 240, 220]):
+            alpha = max(5, 30 - i * 5)
+            color = f"#{alpha:02x}{alpha:02x}{60 + i * 10:02x}"
+            self.canvas.create_oval(cx - r, cy - r - 60, cx + r, cy + r - 60,
+                                    fill="", outline=color, width=1, tags=f"ambient_ring_{i}")
+
+        # Core glow
+        self.canvas.create_oval(cx - 3, cy - 63, cx + 3, cy - 57,
+                                fill=self.FG_GLOW, outline="", tags="core_dot")
+
+        # ARCANIS title
+        self.canvas.create_text(cx, cy + 20, text="ARCANIS",
+                                fill=self.FG_BRIGHT, font=self.FONT_XL, tags="main_title")
 
         # Tagline
-        self.canvas.create_text(cx, cy + 90, text="What shall we create today?",
+        self.canvas.create_text(cx, cy + 85, text="What future do you want to create?",
                                 fill=self.FG_SOFT, font=("Segoe UI", 16, "italic"), tags="tagline")
 
-        # Intent input — embedded in canvas
-        self.intent_entry = tk.Entry(self.root, bg=self.BG_MID, fg=self.FG_BRIGHT,
+        # Intent input
+        self.intent_entry = tk.Entry(self.root, bg=self.BG_DEEP, fg=self.FG_BRIGHT,
                                      font=self.FONT_MED, insertbackground=self.FG_GLOW,
                                      relief=tk.FLAT, bd=0, highlightthickness=0,
                                      width=50, justify="center")
@@ -4039,25 +4072,40 @@ class ArcDesktop:
         self.intent_entry.bind("<Return>", self._on_intent)
         self.intent_entry.focus()
 
-        # Subtle bottom info
-        self.canvas.create_text(cx, h - 40, text="Press Escape to return  ·  Type your intent to begin",
-                                fill="#333355", font=("Segoe UI", 10))
+        # Example hints
+        examples = "e.g. Build a humanoid robot  ·  Learn quantum physics  ·  Create a game  ·  Design a company"
+        self.canvas.create_text(cx, cy + 200, text=examples,
+                                fill="#333355", font=("Segoe UI", 9), tags="examples")
 
-    def _animate_logo(self):
+        self.canvas.create_text(cx, h - 40, text="Escape to exit  ·  Your intent becomes your world",
+                                fill="#222244", font=("Segoe UI", 10))
+
+    def _animate_ambient(self):
         try:
             import math as _m
-            t = getattr(self, "_logo_t", 0) + 1
-            self._logo_t = t
-            phase = _m.sin(t * 0.02) * 0.3 + 0.7
+            t = getattr(self, "_ambient_t", 0) + 1
+            self._ambient_t = t
+            cx, cy = getattr(self, "_cx", 800), getattr(self, "_cy", 450)
+
+            # Pulsing core
+            phase = _m.sin(t * 0.025) * 0.3 + 0.7
             r = int(100 + 55 * phase)
             g = int(100 + 55 * phase)
             b = int(200 + 55 * phase)
-            color = f"#{r:02x}{g:02x}{b:02x}"
-            self.canvas.itemconfig("logo_dot", fill=color)
-            pulse = 1.0 + _m.sin(t * 0.015) * 0.02
-            if t % 30 == 0:
-                self.canvas.itemconfig("tagline", fill=self.FG_SOFT)
-            self.root.after(30, self._animate_logo)
+            self.canvas.itemconfig("core_dot", fill=f"#{r:02x}{g:02x}{b:02x}")
+
+            # Twinkle stars
+            sf = getattr(self, "_star_field", [])
+            for i in range(min(20, len(sf))):
+                bright = int(30 + 60 * _m.sin(t * 0.03 + i * 1.7))
+                self.canvas.itemconfig(f"star_{i}", fill=f"#{bright:02x}{bright:02x}{bright + 20:02x}")
+
+            # Pulse rings
+            for i in range(5):
+                pr = 220 + 20 * _m.sin(t * 0.01 + i)
+                self.canvas.coords(f"ambient_ring_{i}", cx - pr, cy - pr - 60, cx + pr, cy + pr - 60)
+
+            self.root.after(40, self._animate_ambient)
         except Exception:
             pass
 
@@ -4065,11 +4113,68 @@ class ArcDesktop:
         intent = self.intent_entry.get().strip()
         if intent:
             self.mission = intent
+            self._init_agents()
+            self._init_knowledge()
+            self._init_timeline()
             self.intent_entry.place_forget()
             self._render_mission()
 
     # ================================================================
-    # MISSION WORKSPACE — The Intent Becomes the Interface
+    # AGENT SYSTEM — Specialized Autonomous Collaborators
+    # ================================================================
+
+    def _init_agents(self):
+        self.agents = {}
+        for name, key, desc, color in self.AGENT_DEFS:
+            self.agents[key] = {
+                "name": name,
+                "role": desc,
+                "color": color,
+                "status": "idle",
+                "icon": "◎",
+                "active": False,
+                "tasks": [],
+            }
+
+    def _init_knowledge(self):
+        """Build hierarchical knowledge graph from mission."""
+        ml = self.mission.lower()
+        self.knowledge_nodes = [
+            {"id": "root", "label": self._truncate(self.mission, 20), "parent": None, "level": 0},
+            {"id": "research", "label": "Research", "parent": "root", "level": 1},
+            {"id": "concepts", "label": "Core Concepts", "parent": "research", "level": 2},
+            {"id": "references", "label": "References", "parent": "research", "level": 2},
+            {"id": "design", "label": "Design", "parent": "root", "level": 1},
+            {"id": "architecture", "label": "Architecture", "parent": "design", "level": 2},
+            {"id": "materials", "label": "Materials", "parent": "design", "level": 2},
+            {"id": "build", "label": "Build", "parent": "root", "level": 1},
+            {"id": "prototype", "label": "Prototype", "parent": "build", "level": 2},
+            {"id": "testing", "label": "Testing", "parent": "build", "level": 2},
+            {"id": "knowledge", "label": "Knowledge", "parent": "root", "level": 1},
+            {"id": "experiments", "label": "Experiments", "parent": "knowledge", "level": 2},
+            {"id": "insights", "label": "Insights", "parent": "knowledge", "level": 2},
+        ]
+        if any(w in ml for w in ["code", "program", "software", "app"]):
+            self.knowledge_nodes.append({"id": "software", "label": "Software", "parent": "build", "level": 2})
+        if any(w in ml for w in ["robot", "hardware", "mechanical"]):
+            self.knowledge_nodes.append({"id": "mechanical", "label": "Mechanical", "parent": "design", "level": 2})
+        if any(w in ml for w in ["learn", "study", "education"]):
+            self.knowledge_nodes.append({"id": "learning", "label": "Learning Path", "parent": "knowledge", "level": 2})
+        if any(w in ml for w in ["ai", "vision", "intelligence"]):
+            self.knowledge_nodes.append({"id": "ai", "label": "AI Systems", "parent": "research", "level": 2})
+
+    def _init_timeline(self):
+        self.timeline_entries = [
+            (0.05, f"Mission: {self._truncate(self.mission, 22)}", True),
+            (0.2, "Research & Explore", False),
+            (0.38, "Design & Plan", False),
+            (0.55, "Build & Create", False),
+            (0.72, "Test & Refine", False),
+            (0.88, "Launch & Share", False),
+        ]
+
+    # ================================================================
+    # MISSION SPACE — The Intent Becomes a Living World
     # ================================================================
 
     def _render_mission(self):
@@ -4078,273 +4183,273 @@ class ArcDesktop:
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
 
-        # Mission title bar (minimal)
-        self.canvas.create_rectangle(0, 0, w, 55, fill=self.BG_MID, outline="", tags="title_bg")
-        ring_size = 18
-        cx_ring = 30
-        cy_ring = 28
-        self.canvas.create_oval(cx_ring - ring_size, cy_ring - ring_size,
-                                cx_ring + ring_size, cy_ring + ring_size,
-                                outline=self.ACCENT, width=1, tags="mission_logo")
-        self.canvas.create_oval(cx_ring - 2, cy_ring - 2, cx_ring + 2, cy_ring + 2,
-                                fill=self.FG_GLOW, outline="", tags="mission_dot")
+        # Title bar
+        self.canvas.create_rectangle(0, 0, w, 50, fill=self.BG_DEEP, outline="", tags="title_bg")
+        dot_r = 12
+        self.canvas.create_oval(20 - dot_r, 25 - dot_r, 20 + dot_r, 25 + dot_r,
+                                fill="", outline=self.ACCENT, width=1, tags="ms_logo")
+        self.canvas.create_oval(18, 23, 22, 27, fill=self.FG_GLOW, outline="", tags="ms_dot")
+        self.canvas.create_text(40, 25, text=self._truncate(self.mission, 55),
+                                fill=self.FG_BRIGHT, font=("Segoe UI", 12, "bold"), anchor="w", tags="ms_title")
 
-        self.canvas.create_text(65, 28, text=self._truncate(self.mission, 60),
-                                fill=self.FG_BRIGHT, font=("Segoe UI", 13), anchor="w", tags="mission_title")
+        # Agent status strip
+        self.canvas.create_text(w - 200, 15, text="Agents: 7 online",
+                                fill="#445566", font=("Segoe UI", 9), tags="agent_count")
 
-        # Back to intent button
-        self.canvas.create_text(w - 80, 28, text="New Mission  ◎",
-                                fill=self.FG_SOFT, font=("Segoe UI", 10), tags="new_mission_btn")
-        self.canvas.tag_bind("new_mission_btn", "<Button-1>", lambda e: self._render_first_screen())
-        self.canvas.tag_bind("new_mission_btn", "<Enter>", lambda e: self.canvas.itemconfig("new_mission_btn", fill=self.FG_GLOW))
-        self.canvas.tag_bind("new_mission_btn", "<Leave>", lambda e: self.canvas.itemconfig("new_mission_btn", fill=self.FG_SOFT))
+        # New mission button
+        self.canvas.create_text(w - 60, 25, text="✕ New Mission",
+                                fill=self.FG_SOFT, font=("Segoe UI", 9), tags="new_ms_btn")
+        self.canvas.tag_bind("new_ms_btn", "<Button-1>", lambda e: self._render_first_screen())
+        self.canvas.tag_bind("new_ms_btn", "<Enter>", lambda e: self.canvas.itemconfig("new_ms_btn", fill=self.FG_GLOW))
+        self.canvas.tag_bind("new_ms_btn", "<Leave>", lambda e: self.canvas.itemconfig("new_ms_btn", fill=self.FG_SOFT))
 
-        # Dynamic spaces — auto-generated based on intent
-        self.mission_spaces = self._generate_spaces(self.mission)
-        self._render_spaces()
-
-        # Knowledge graph (right side)
+        # Layout regions
+        self._render_agents_panel()
         self._render_knowledge_graph()
-
-        # Timeline (bottom)
         self._render_timeline()
-
-        # AI panel (bottom-right)
-        self._render_ai_panel()
+        self._render_agent_chat()
 
     def _truncate(self, text, n):
         return text if len(text) <= n else text[:n-3] + "..."
 
-    def _generate_spaces(self, intent):
-        """Dynamically generate workspaces based on intent keywords."""
-        intent_lower = intent.lower()
-        spaces = []
+    # ================================================================
+    # AGENTS PANEL — 7 Specialized Collaborators
+    # ================================================================
 
-        # Core spaces that always appear
-        spaces.append(("Research", "research", [
-            "Gather knowledge about " + intent,
-            "Find related projects and papers",
-            "Identify key concepts and principles",
-        ]))
-        spaces.append(("Knowledge", "knowledge", [
-            "Core concepts extracted from " + intent,
-            "Relationships and dependencies",
-            "Unknowns and open questions",
-        ]))
-
-        # Intent-specific spaces
-        if any(w in intent_lower for w in ["build", "create", "make", "design", "develop", "code", "program"]):
-            spaces.append(("Build", "build", [
-                "Architecture and planning for " + intent,
-                "Implementation steps and milestones",
-                "Testing and validation strategy",
-            ]))
-        if any(w in intent_lower for w in ["learn", "study", "understand", "research"]):
-            spaces.append(("Learn", "learn", [
-                "Learning path for " + intent,
-                "Resources, tutorials, references",
-                "Progress tracking and comprehension",
-            ]))
-        if any(w in intent_lower for w in ["simulate", "simulation", "model", "visualize"]):
-            spaces.append(("Simulation", "simulate", [
-                "Model parameters for " + intent,
-                "Simulation environment setup",
-                "Result analysis and visualization",
-            ]))
-        if any(w in intent_lower for w in ["write", "document", "explain", "communicate"]):
-            spaces.append(("Document", "document", [
-                "Documentation structure for " + intent,
-                "Technical writing and explanations",
-                "Diagrams and visual communication",
-            ]))
-
-        # Always include creation space
-        spaces.append(("Create", "create", [
-            "Begin working on " + intent,
-            "Tools and capabilities needed",
-            "Iteration and refinement cycle",
-        ]))
-
-        return spaces
-
-    def _render_spaces(self):
+    def _render_agents_panel(self):
         w = self.root.winfo_screenwidth()
-        h = self.root.winfo_screenheight()
-        space_w = 240
-        space_h = 380
-        margin = 20
-        start_x = 20
-        start_y = 75
+        aw = 260
+        ax, ay = 10, 60
+        a_height = 70
+        gap = 6
 
-        for i, (name, tag, items) in enumerate(self.mission_spaces):
-            x = start_x + i * (space_w + margin)
-            y = start_y
+        self.canvas.create_rectangle(ax, ay, ax + aw, ay + 7 * (a_height + gap) + 10,
+                                     fill=self.BG_DEEP, outline="#151525", tags="agents_bg")
+        self.canvas.create_text(ax + aw // 2, ay + 15, text="AI  AGENTS",
+                                fill=self.FG_GLOW, font=("Segoe UI", 8, "bold"), tags="agents_header")
 
-            # Card background
-            self.canvas.create_rectangle(x, y, x + space_w, y + space_h,
-                                         fill=self.BG_CARD, outline="#1a1a2e", width=1,
-                                         tags=f"card_{tag}")
+        for i, (name, key, desc, color) in enumerate(self.AGENT_DEFS):
+            cy = ay + 35 + i * (a_height + gap)
 
-            # Card header
-            self.canvas.create_rectangle(x, y, x + space_w, y + 40,
-                                         fill=self.BG_MID, outline="", tags=f"card_{tag}_header")
-            self.canvas.create_text(x + space_w // 2, y + 20, text=name,
-                                    fill=self.FG_BRIGHT, font=("Segoe UI", 11, "bold"), tags=f"card_{tag}_title")
+            # Agent card bg
+            self.canvas.create_rectangle(ax + 5, cy, ax + aw - 5, cy + a_height,
+                                         fill=self.BG_CARD, outline="#1a1a2e", tags=f"agent_{key}_bg")
 
-            # Card items
-            for j, item in enumerate(items):
-                iy = y + 55 + j * 30
-                bullet_color = self.ACCENT if j == 0 else self.FG_SOFT
-                self.canvas.create_text(x + 12, iy, text="●", fill=bullet_color,
-                                        font=("Segoe UI", 7), anchor="w", tags=f"card_{tag}_item{j}")
-                self.canvas.create_text(x + 28, iy, text=self._truncate(item, 28),
-                                        fill=self.FG_SOFT, font=self.FONT_LIGHT, anchor="w",
-                                        tags=f"card_{tag}_item{j}")
+            # Status dot
+            status_color = "#44cc44" if self.agents.get(key, {}).get("status") == "idle" else "#888888"
+            self.canvas.create_oval(ax + 15, cy + 10, ax + 23, cy + 18,
+                                    fill=status_color, outline="", tags=f"agent_{key}_status")
 
-            # Begin action button
-            btn_y = y + space_h - 45
-            self.canvas.create_rectangle(x + 15, btn_y, x + space_w - 15, btn_y + 32,
-                                         fill=self.ACCENT, outline="", tags=f"card_{tag}_btn")
-            self.canvas.create_text(x + space_w // 2, btn_y + 16, text=f"Begin {name}",
-                                    fill="#ffffff", font=("Segoe UI", 9), tags=f"card_{tag}_btn")
-            self.canvas.tag_bind(f"card_{tag}_btn", "<Button-1>",
-                                 lambda e, t=tag: self._activate_space(t))
+            # Agent name
+            self.canvas.create_text(ax + 32, cy + 14, text=name,
+                                    fill=color, font=("Segoe UI", 10, "bold"), anchor="w", tags=f"agent_{key}_name")
 
-    def _activate_space(self, tag):
-        self.capability_active = tag
-        self.canvas.itemconfig("space_detail_label", text="")
-        self._show_space_detail(tag)
+            # Agent role (truncated)
+            self.canvas.create_text(ax + 32, cy + 32, text=self._truncate(desc, 30),
+                                    fill=self.FG_SOFT, font=("Segoe UI", 7), anchor="w", tags=f"agent_{key}_role")
 
-    def _show_space_detail(self, tag):
-        """Show a detail overlay for the active space."""
-        try:
-            w = self.root.winfo_screenwidth()
-            h = self.root.winfo_screenheight()
-            dw, dh = 500, 400
-            dx, dy = w - dw - 30, 75
-
-            self.canvas.delete("space_detail")
-            self.canvas.create_rectangle(dx, dy, dx + dw, dy + dh,
-                                         fill=self.BG_CARD, outline="#1a1a2e",
-                                         tags="space_detail")
-            self.canvas.create_text(dx + dw // 2, dy + 25, text=tag.capitalize(),
-                                    fill=self.FG_BRIGHT, font=("Segoe UI", 14, "bold"),
-                                    tags="space_detail")
-
-            hints = {
-                "research": "• Search for existing knowledge\n• Identify core concepts\n• Map related domains\n• Find reference implementations",
-                "knowledge": "• Extract key entities\n• Build relationship graph\n• Identify patterns\n• Document assumptions",
-                "build": "• Define architecture\n• Plan implementation\n• Set up environment\n• Write and test code",
-                "learn": "• Set learning objectives\n• Find resources\n• Practice and apply\n• Assess understanding",
-                "simulate": "• Define model parameters\n• Run simulations\n• Analyze results\n• Refine models",
-                "document": "• Outline structure\n• Write explanations\n• Create diagrams\n• Review and publish",
-                "create": "• Set up workspace\n• Gather materials\n• Begin creation\n• Iterate and improve",
-            }
-            content = hints.get(tag, "• Begin working\n• Track progress\n• Review results")
-            self.canvas.create_text(dx + 20, dy + 55, text=content, anchor="nw",
-                                    fill=self.FG_SOFT, font=self.FONT_LIGHT,
-                                    tags="space_detail")
-        except Exception:
-            pass
+            # Click to activate
+            self.canvas.tag_bind(f"agent_{key}_bg", "<Button-1>", lambda e, k=key: self._activate_agent(k))
+            self.canvas.tag_bind(f"agent_{key}_bg", "<Enter>", lambda e, k=key: self.canvas.itemconfig(f"agent_{k}_bg", outline=self.FG_GLOW))
+            self.canvas.tag_bind(f"agent_{key}_bg", "<Leave>", lambda e, k=key: self.canvas.itemconfig(f"agent_{k}_bg", outline="#1a1a2e"))
 
     # ================================================================
-    # KNOWLEDGE GRAPH — Living Relationship Network
+    # KNOWLEDGE GRAPH — Connected, Hierarchical, Living
     # ================================================================
 
     def _render_knowledge_graph(self):
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
-        gx, gy = w - 280, 75
-        gw, gh = 260, 300
+        gx = 290
+        gy = 65
+        gw = w - gx - 320
+        gh = h - 170
+
+        if gw < 200 or gh < 100:
+            return
 
         self.canvas.create_rectangle(gx, gy, gx + gw, gy + gh,
-                                     fill=self.BG_CARD, outline="#1a1a2e", tags="kg_bg")
-        self.canvas.create_text(gx + gw // 2, gy + 20, text="Knowledge Graph",
-                                fill=self.FG_BRIGHT, font=("Segoe UI", 10, "bold"), tags="kg_title")
+                                     fill=self.BG_DEEP, outline="#151525", tags="kg_bg")
+        self.canvas.create_text(gx + gw // 2, gy + 18, text="KNOWLEDGE GRAPH  ·  Connected Intelligence",
+                                fill=self.FG_GLOW, font=("Segoe UI", 9, "bold"), tags="kg_header")
 
-        # Sample knowledge nodes connected by lines
-        nodes_data = [
-            (gx + 50, gy + 60, self.mission[:12] if self.mission else "Mission"),
-            (gx + 130, gy + 100, "Concepts"),
-            (gx + 180, gy + 160, "Relations"),
-            (gx + 70, gy + 180, "References"),
-            (gx + 140, gy + 240, "Insights"),
-            (gx + 30, gy + 130, "Questions"),
-        ]
-        connections = [(0, 1), (0, 3), (0, 4), (1, 2), (1, 5)]
-        for a, b in connections:
-            if a < len(nodes_data) and b < len(nodes_data):
-                x1, y1, _ = nodes_data[a]
-                x2, y2, _ = nodes_data[b]
-                self.canvas.create_line(x1, y1, x2, y2, fill="#222244", width=1, tags="kg_edge")
+        # Render hierarchical tree
+        levels = {}
+        for node in self.knowledge_nodes:
+            lvl = node["level"]
+            if lvl not in levels:
+                levels[lvl] = []
+            levels[lvl].append(node)
 
-        for i, (nx, ny, nlabel) in enumerate(nodes_data):
-            r = 6
+        max_level = max(levels.keys()) if levels else 0
+        if max_level == 0:
+            return
+
+        node_w = gw // (max_level + 2)
+        start_x = gx + 30
+
+        for node in self.knowledge_nodes:
+            lvl = node["level"]
+            nx = gx + 40 + lvl * node_w
+            # Distribute nodes vertically
+            siblings = [n for n in self.knowledge_nodes if n["parent"] == node["parent"]]
+            idx = siblings.index(node) if node in siblings else 0
+            total = len(siblings)
+            region_h = gh - 60
+            ny = gy + 50 + (idx + 1) * region_h // (total + 1) if total > 0 else gy + gh // 2
+
+            # Draw connection to parent
+            if node["parent"]:
+                parent = next((n for n in self.knowledge_nodes if n["id"] == node["parent"]), None)
+                if parent:
+                    ps = [n for n in self.knowledge_nodes if n["parent"] == parent["parent"]]
+                    p_idx = ps.index(parent) if parent in ps else 0
+                    p_total = len(ps)
+                    px = gx + 40 + (lvl - 1) * node_w
+                    py = gy + 50 + (p_idx + 1) * region_h // (p_total + 1) if p_total > 0 else gy + gh // 2
+                    self.canvas.create_line(px + node_w - 40, py, nx, ny,
+                                            fill="#1a1a3e", width=1, tags="kg_edge")
+
+            # Node circle
+            r = 5 + (3 - lvl) * 2 if lvl < 3 else 5
+            node_color = [self.FG_GLOW, self.ACCENT, self.FG_CYAN, self.FG_SOFT][min(lvl, 3)]
             self.canvas.create_oval(nx - r, ny - r, nx + r, ny + r,
-                                    fill=self.ACCENT, outline="", tags=f"kg_node_{i}")
-            self.canvas.create_text(nx + 14, ny, text=self._truncate(nlabel, 10),
-                                    fill=self.FG_SOFT, font=("Segoe UI", 8), anchor="w", tags=f"kg_label_{i}")
+                                    fill=node_color, outline="", tags=f"kg_node_{node['id']}")
+
+            # Label
+            self.canvas.create_text(nx + r + 6, ny, text=node["label"],
+                                    fill=self.FG_BRIGHT if lvl == 0 else self.FG_SOFT,
+                                    font=("Segoe UI", 8 if lvl > 0 else 9, "bold" if lvl == 0 else "normal"),
+                                    anchor="w", tags=f"kg_label_{node['id']}")
 
     # ================================================================
-    # MEMORY TIMELINE — Time as First-Class Interface
+    # MISSION TIMELINE — Journey Phases
     # ================================================================
 
     def _render_timeline(self):
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
-        ty = h - 100
-        tw = w - 600
+        ty = h - 95
+        tw = w - 80
 
-        self.canvas.create_rectangle(0, ty, tw, h, fill=self.BG_MID, outline="", tags="timeline_bg")
-        self.canvas.create_text(15, ty + 15, text="Timeline  ·  Memory  ·  Context",
-                                fill=self.FG_SOFT, font=("Segoe UI", 9), anchor="w", tags="timeline_title")
+        self.canvas.create_rectangle(15, ty, tw, h - 10,
+                                     fill=self.BG_DEEP, outline="#151525", tags="tl_bg")
+        self.canvas.create_text(30, ty + 10, text="MISSION TIMELINE",
+                                fill=self.FG_SOFT, font=("Segoe UI", 8, "bold"), anchor="w", tags="tl_title")
 
         # Timeline line
-        self.canvas.create_line(30, ty + 50, tw - 30, ty + 50,
-                                fill="#222244", width=1, tags="timeline_line")
+        line_y = ty + 35
+        self.canvas.create_line(50, line_y, tw - 30, line_y, fill="#1a1a3e", width=2, tags="tl_line")
 
-        # Points on the line
-        now = __import__('time').localtime()
-        points = [
-            (0.1, f"Mission: {self._truncate(self.mission, 20)}", True),
-            (0.3, "Research phase", False),
-            (0.5, "Knowledge mapping", False),
-            (0.7, "Creation begins", False),
-            (0.9, "Review & refine", False),
-        ]
-        for frac, label, active in points:
-            px = 30 + int(frac * (tw - 60))
-            color = self.FG_GLOW if active else "#333355"
-            r = 5 if active else 3
-            self.canvas.create_oval(px - r, ty + 50 - r, px + r, ty + 50 + r,
-                                    fill=color, outline="", tags="timeline_pt")
-            self.canvas.create_text(px, ty + 75, text=label,
-                                    fill=self.FG_SOFT if not active else self.FG_BRIGHT,
-                                    font=("Segoe UI", 8), tags="timeline_pt_label")
+        for frac, label, active in self.timeline_entries:
+            px = 50 + int(frac * (tw - 80))
+            r = 6 if active else 4
+            color = self.FG_GLOW if active else "#333366"
+            self.canvas.create_oval(px - r, line_y - r, px + r, line_y + r,
+                                    fill=color, outline="", tags="tl_pt")
+            self.canvas.create_text(px, line_y + 18, text=label,
+                                    fill=self.FG_BRIGHT if active else self.FG_SOFT,
+                                    font=("Segoe UI", 7), tags="tl_label")
 
     # ================================================================
-    # AI INFRASTRUCTURE — Quiet Assistance Everywhere
+    # AGENT CHAT — Natural Conversation with Agents
     # ================================================================
 
-    def _render_ai_panel(self):
+    def _render_agent_chat(self):
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
-        px, py = w - 280, h - 100
-        pw, ph = 280, 100
+        cx, cy = w - 310, 65
+        cw, ch = 295, h - 175
 
-        self.canvas.create_rectangle(px, py, px + pw, py + ph,
-                                     fill=self.BG_CARD, outline="#1a1a2e", tags="ai_bg")
-        self.canvas.create_text(px + 15, py + 15, text="AI  ◎",
-                                fill=self.FG_GLOW, font=("Segoe UI", 10, "bold"), anchor="w", tags="ai_title")
+        if cw < 100 or ch < 100:
+            return
 
-        suggestions = [
-            "• Summarize what I know about " + self._truncate(self.mission, 15),
-            "• Suggest next steps for this mission",
-            "• Find related knowledge gaps",
-        ]
-        for i, s in enumerate(suggestions):
-            self.canvas.create_text(px + 15, py + 40 + i * 20, text=s,
-                                    fill=self.FG_SOFT, font=("Segoe UI", 8), anchor="w", tags=f"ai_sug_{i}")
+        # Chat panel
+        self.canvas.create_rectangle(cx, cy, cx + cw, cy + ch,
+                                     fill=self.BG_DEEP, outline="#151525", tags="chat_bg")
+
+        # Active agent indicator
+        active_name = "All Agents"
+        active_color = self.FG_GLOW
+        if self.active_agent and self.active_agent in self.agents:
+            active_name = self.agents[self.active_agent]["name"]
+            active_color = self.agents[self.active_agent]["color"]
+
+        self.canvas.create_text(cx + cw // 2, cy + 15, text=f"CHAT  ·  {active_name}",
+                                fill=active_color, font=("Segoe UI", 8, "bold"), tags="chat_header")
+
+        # Conversation area
+        max_lines = 8
+        if not self._conversation:
+            welcome = f"Agents ready for: {self._truncate(self.mission, 30)}"
+            self._conversation.append(("system", welcome))
+            self._conversation_lines = [welcome]
+
+        display_lines = self._conversation_lines[-max_lines:]
+        for i, line in enumerate(display_lines):
+            ly = cy + 35 + i * 18
+            self.canvas.create_text(cx + 10, ly, text=line,
+                                    fill=self.FG_SOFT, font=("Segoe UI", 8), anchor="w", tags=f"chat_line_{i}")
+
+        # Input field for chatting with agents
+        self.chat_entry = tk.Entry(self.root, bg=self.BG_CARD, fg=self.FG_BRIGHT,
+                                   font=self.FONT_LIGHT, insertbackground=self.FG_GLOW,
+                                   relief=tk.FLAT, bd=0, highlightthickness=0)
+        self.chat_entry.place(x=cx + 5, y=cy + ch - 30, width=cw - 10, height=25)
+        self.chat_entry.insert(0, "Ask an agent...")
+        self.chat_entry.bind("<FocusIn>", lambda e: self.chat_entry.delete(0, tk.END) if self.chat_entry.get() == "Ask an agent..." else None)
+        self.chat_entry.bind("<Return>", self._on_chat)
+        self.chat_entry.bind("<Button-1>", lambda e: self.chat_entry.delete(0, tk.END) if self.chat_entry.get() == "Ask an agent..." else None)
+
+    def _on_chat(self, event=None):
+        msg = self.chat_entry.get().strip()
+        if msg and msg != "Ask an agent...":
+            target = self.active_agent or "system"
+            self._conversation.append((target, msg))
+            self._conversation_lines.append(f"You: {msg}")
+            if len(self._conversation_lines) > 50:
+                self._conversation_lines = self._conversation_lines[-30:]
+            # Simulate agent response
+            if target in self.agents:
+                agent = self.agents[target]
+                response = f"{agent['name']}: I'll work on '{msg}' for {self._truncate(self.mission, 20)}"
+            else:
+                response = f"System: Processing request for '{self._truncate(self.mission, 20)}'"
+            self._conversation.append((target, response))
+            self._conversation_lines.append(response)
+            self.chat_entry.delete(0, tk.END)
+            self._render_agent_chat()
+
+    def _activate_agent(self, key):
+        self.active_agent = key
+        if key in self.agents:
+            agent = self.agents[key]
+            self._conversation_lines.append(f"--- Focused on {agent['name']} ---")
+            self._render_agent_chat()
+            self._show_agent_detail(key)
+
+    def _show_agent_detail(self, key):
+        if key not in self.agents:
+            return
+        agent = self.agents[key]
+        w = self.root.winfo_screenwidth()
+        h = self.root.winfo_screenheight()
+        try:
+            self.canvas.delete("agent_detail")
+            dw, dh = 320, 200
+            dx, dy = w - dw - 40, h // 2 - dh // 2
+            self.canvas.create_rectangle(dx, dy, dx + dw, dy + dh,
+                                         fill=self.BG_CARD, outline=self.FG_GLOW, tags="agent_detail")
+            self.canvas.create_text(dx + dw // 2, dy + 25, text=agent["name"],
+                                    fill=agent["color"], font=("Segoe UI", 14, "bold"), tags="agent_detail")
+            self.canvas.create_text(dx + 20, dy + 55, text=f"Role: {agent['role']}",
+                                    fill=self.FG_SOFT, font=("Segoe UI", 9), anchor="w", tags="agent_detail")
+            self.canvas.create_text(dx + 20, dy + 80, text=f"Status: {agent['status']}",
+                                    fill=self.FG_BRIGHT, font=("Segoe UI", 9), anchor="w", tags="agent_detail")
+            self.canvas.create_text(dx + dw // 2, dy + dh - 30, text="Click chat input to talk to this agent",
+                                    fill=self.FG_SOFT, font=("Segoe UI", 8), tags="agent_detail")
+        except Exception:
+            pass
 
     # ================================================================
     # SYSTEM
