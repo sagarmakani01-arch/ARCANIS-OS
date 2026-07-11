@@ -3733,6 +3733,386 @@ def test_arc_v18():
 
 
 # ============================================================
+# ARC v19.0.0 AUTONOMOUS WORLD ENGINE TESTS
+# ============================================================
+
+def test_arc_v19():
+    suite = TestSuite("Arc v19.0.0 Autonomous World Engine Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (AutonomousWorldEngine, WorldSimulator, PredictiveModel,
+                      ScenarioGenerator, ExperimentationSystem,
+                      WorldKnowledgeModel, OptimizationEngine,
+                      DecisionPartnership, ResearchWorld, ArcDesktop)
+
+    # ======================== WorldSimulator ========================
+
+    sim = WorldSimulator()
+    suite.assert_true(hasattr(sim, "create_system"), "v19_sim_create")
+    suite.assert_true(hasattr(sim, "run_simulation"), "v19_sim_run")
+    suite.assert_true(hasattr(sim, "compare_scenarios"), "v19_sim_compare")
+
+    # Test create_system
+    sim_sys = sim.create_system("factory1", "My Factory", "factory",
+                                 ["machine_1", "machine_2", "robot_1", "worker_1", "worker_2"])
+    suite.assert_equals(sim_sys["system_id"], "factory1", "v19_sim_system_id")
+    suite.assert_equals(sim_sys["system_type"], "factory", "v19_sim_system_type")
+    suite.assert_equals(len(sim_sys["components"]), 5, "v19_sim_components")
+
+    # Test add_component
+    result = sim.add_component("factory1", "worker_3")
+    suite.assert_true(result, "v19_sim_add_component")
+    suite.assert_equals(len(sim.systems["factory1"]["components"]), 6, "v19_sim_components_after_add")
+
+    # Test run_simulation with factory
+    factory_result = sim.run_simulation("factory1", {"demand_factor": 0.2})
+    suite.assert_true(factory_result is not None, "v19_sim_factory_result")
+    suite.assert_true("output" in factory_result, "v19_sim_factory_output")
+    suite.assert_true("efficiency" in factory_result, "v19_sim_factory_efficiency")
+    suite.assert_true("energy_usage" in factory_result, "v19_sim_factory_energy")
+
+    # Test run_simulation with city
+    city_sys = sim.create_system("city1", "Smart City", "city",
+                                  ["resident_1", "resident_2", "car_1", "car_2", "park_1"])
+    city_result = sim.run_simulation("city1")
+    suite.assert_true("population" in city_result, "v19_sim_city_population")
+    suite.assert_true("traffic_index" in city_result, "v19_sim_city_traffic")
+
+    # Test run_simulation with project
+    proj_sys = sim.create_system("proj1", "Engineering Project", "project",
+                                  ["team_1", "team_2", "engineer_1", "engineer_2"])
+    proj_result = sim.run_simulation("proj1", {"complexity": 2, "scope": 0.5})
+    suite.assert_true("duration_months" in proj_result, "v19_sim_project_duration")
+    suite.assert_true("estimated_cost" in proj_result, "v19_sim_project_cost")
+    suite.assert_true("risk_score" in proj_result, "v19_sim_project_risk")
+
+    # Test compare_scenarios
+    comparison = sim.compare_scenarios(factory_result, proj_result)
+    suite.assert_true("differences" in comparison, "v19_sim_compare_diffs")
+    suite.assert_true("recommendation" in comparison, "v19_sim_compare_rec")
+
+    # Test with nonexistent system
+    none_result = sim.run_simulation("nonexistent")
+    suite.assert_true(none_result is None, "v19_sim_nonexistent")
+
+    # Test serialization
+    sdata = sim.to_dict()
+    sim2 = WorldSimulator()
+    sim2.from_dict(sdata)
+    suite.assert_equals(len(sim2.systems), 3, "v19_sim_from_dict")
+
+    # ======================== PredictiveModel ========================
+
+    pm = PredictiveModel()
+    suite.assert_true(hasattr(pm, "train_model"), "v19_pm_train")
+    suite.assert_true(hasattr(pm, "predict"), "v19_pm_predict")
+
+    # Test train_model
+    model = pm.train_model("fail_pred", "Failure Prediction", "failure_prediction")
+    suite.assert_equals(model["model_type"], "failure_prediction", "v19_pm_model_type")
+    suite.assert_true(model["accuracy"] > 0, "v19_pm_model_accuracy")
+
+    # Test failure prediction
+    pred = pm.predict("fail_pred", {"vibration": 5, "temperature": 85, "hours_run": 500})
+    suite.assert_true(pred is not None, "v19_pm_pred_result")
+    suite.assert_true("probability" in pred, "v19_pm_pred_probability")
+    suite.assert_true("days_remaining" in pred, "v19_pm_pred_days")
+    suite.assert_true("action" in pred, "v19_pm_pred_action")
+
+    # Test demand forecast
+    pm.train_model("demand", "Demand Forecast", "demand_forecast")
+    demand = pm.predict("demand", {"base_demand": 200, "trend": 0.1, "seasonal_factor": 1.2})
+    suite.assert_true("forecast" in demand, "v19_pm_demand_forecast")
+    suite.assert_true("lower_bound" in demand, "v19_pm_demand_lower")
+    suite.assert_true("upper_bound" in demand, "v19_pm_demand_upper")
+
+    # Test timeline estimate
+    pm.train_model("timeline", "Timeline Estimate", "timeline_estimate")
+    tl = pm.predict("timeline", {"tasks": 20, "team_size": 4, "complexity": 1.5})
+    suite.assert_true("estimated_days" in tl, "v19_pm_timeline_days")
+    suite.assert_true("best_case" in tl, "v19_pm_timeline_best")
+    suite.assert_true("worst_case" in tl, "v19_pm_timeline_worst")
+
+    # Test nonexistent model
+    none_pred = pm.predict("no_model", {})
+    suite.assert_true(none_pred is None, "v19_pm_nonexistent_model")
+
+    # Test serialization
+    pdata = pm.to_dict()
+    pm2 = PredictiveModel()
+    pm2.from_dict(pdata)
+    suite.assert_equals(len(pm2._models), 3, "v19_pm_from_dict")
+
+    # ======================== ScenarioGenerator ========================
+
+    sg = ScenarioGenerator()
+    suite.assert_true(hasattr(sg, "create_scenario"), "v19_sg_create")
+    suite.assert_true(hasattr(sg, "add_branch"), "v19_sg_branch")
+    suite.assert_true(hasattr(sg, "evaluate_scenario"), "v19_sg_evaluate")
+    suite.assert_true(hasattr(sg, "generate_futures"), "v19_sg_futures")
+
+    # Test create_scenario
+    sc = sg.create_scenario("s1", "Market Entry", "Entering a new market")
+    suite.assert_equals(sc["name"], "Market Entry", "v19_sg_scenario_name")
+    suite.assert_equals(len(sc["branches"]), 0, "v19_sg_no_branches")
+
+    # Test add_branch
+    branch = sg.add_branch("s1", "Aggressive", ["strong marketing", "large team"],
+                            {"revenue": 1000000, "growth": 30, "risk": 25, "cost": 500000})
+    suite.assert_true(branch is not None, "v19_sg_branch_added")
+    suite.assert_equals(branch["name"], "Aggressive", "v19_sg_branch_name")
+    suite.assert_equals(len(sc["branches"]), 1, "v19_sg_branch_count")
+
+    # Test evaluate_scenario
+    evaluation = sg.evaluate_scenario("s1", "marketing")
+    suite.assert_true(evaluation is not None, "v19_sg_evaluation")
+    suite.assert_true("recommended_path" in evaluation, "v19_sg_eval_rec")
+
+    # Test generate_futures with product query
+    product_scenarios = sg.generate_futures("launch a new product")
+    suite.assert_true(len(product_scenarios) >= 1, "v19_sg_product_futures")
+
+    # Test generate_futures with company query
+    company_scenarios = sg.generate_futures("start a company")
+    suite.assert_true(len(company_scenarios) >= 1, "v19_sg_company_futures")
+
+    # Test generate_futures with generic query
+    generic_scenarios = sg.generate_futures("general idea")
+    suite.assert_true(len(generic_scenarios) >= 1, "v19_sg_generic_futures")
+
+    # Test serialization
+    scdata = sg.to_dict()
+    sg2 = ScenarioGenerator()
+    sg2.from_dict(scdata)
+    suite.assert_true(len(sg2.scenarios) >= 1, "v19_sg_from_dict")
+
+    # ======================== ExperimentationSystem ========================
+
+    exp = ExperimentationSystem()
+    suite.assert_true(hasattr(exp, "create_experiment"), "v19_exp_create")
+    suite.assert_true(hasattr(exp, "run_experiment"), "v19_exp_run")
+
+    # Test create_experiment
+    e1 = exp.create_experiment("mat_exp", "Material Optimization", "materials")
+    suite.assert_equals(e1["domain"], "materials", "v19_exp_domain")
+    suite.assert_equals(e1["status"], "designed", "v19_exp_status")
+
+    # Test run_experiment on materials
+    mat_result = exp.run_experiment("mat_exp", trials=50)
+    suite.assert_true(mat_result is not None, "v19_exp_mat_result")
+    suite.assert_true("best_candidate" in mat_result, "v19_exp_mat_best")
+    suite.assert_true("properties" in mat_result, "v19_exp_mat_properties")
+    suite.assert_true(len(mat_result["candidates"]) >= 1, "v19_exp_mat_candidates")
+
+    # Test run_experiment on design
+    e2 = exp.create_experiment("des_exp", "Design Optimization", "design")
+    des_result = exp.run_experiment("des_exp", trials=30)
+    suite.assert_true("best_configuration" in des_result, "v19_exp_des_best")
+
+    # Test run_experiment on generic domain
+    e3 = exp.create_experiment("gen_exp", "Generic Test", "other")
+    gen_result = exp.run_experiment("gen_exp", trials=5)
+    suite.assert_true("outcomes" in gen_result, "v19_exp_gen_outcomes")
+
+    # Test nonexistent experiment
+    none_exp = exp.run_experiment("no_exp")
+    suite.assert_true(none_exp is None, "v19_exp_nonexistent")
+
+    # Test serialization
+    edata = exp.to_dict()
+    exp2 = ExperimentationSystem()
+    exp2.from_dict(edata)
+    suite.assert_equals(len(exp2.experiments), 3, "v19_exp_from_dict")
+
+    # ======================== WorldKnowledgeModel ========================
+
+    wkm = WorldKnowledgeModel()
+    suite.assert_true(hasattr(wkm, "add_domain"), "v19_wkm_add")
+    suite.assert_true(hasattr(wkm, "connect_domains"), "v19_wkm_connect")
+    suite.assert_true(hasattr(wkm, "get_ecosystem"), "v19_wkm_ecosystem")
+    suite.assert_true(hasattr(wkm, "analyze_project"), "v19_wkm_analyze")
+
+    # Test add_domain
+    wkm.add_domain("robotics", "Robotics", "Robotic systems")
+    wkm.add_domain("ai", "AI", "Artificial intelligence")
+    wkm.add_domain("materials", "Materials", "Material science")
+    suite.assert_equals(len(wkm._nodes), 3, "v19_wkm_domain_count")
+
+    # Test connect_domains
+    result = wkm.connect_domains("robotics", "ai", "related")
+    suite.assert_true(result, "v19_wkm_connect_result")
+    suite.assert_equals(len(wkm._nodes["robotics"]["connected_to"]), 1, "v19_wkm_connected")
+
+    # Test get_ecosystem
+    ecosystem = wkm.get_ecosystem("robotics")
+    suite.assert_true("direct_connections" in ecosystem, "v19_wkm_eco_direct")
+    suite.assert_equals(len(ecosystem["direct_connections"]), 1, "v19_wkm_eco_count")
+
+    # Test analyze_project
+    insights = wkm.analyze_project("Build a robotics AI system")
+    suite.assert_true(len(insights) >= 1, "v19_wkm_insights")
+
+    # Test serialization
+    wkdata = wkm.to_dict()
+    wkm2 = WorldKnowledgeModel()
+    wkm2.from_dict(wkdata)
+    suite.assert_equals(len(wkm2._nodes), 3, "v19_wkm_from_dict")
+
+    # ======================== OptimizationEngine ========================
+
+    oe = OptimizationEngine()
+    suite.assert_true(hasattr(oe, "analyze"), "v19_oe_analyze")
+    suite.assert_true(hasattr(oe, "get_history"), "v19_oe_history")
+
+    # Test energy optimization
+    energy_opt = oe.analyze({"energy_usage": 100}, "energy")
+    suite.assert_equals(energy_opt["current"], 100, "v19_oe_energy_current")
+    suite.assert_equals(energy_opt["optimized"], 72, "v19_oe_energy_optimized")
+    suite.assert_true("28%" in energy_opt["savings"] or "28" in energy_opt["savings"], "v19_oe_energy_savings")
+    suite.assert_true(len(energy_opt["suggestions"]) >= 1, "v19_oe_energy_suggestions")
+
+    # Test timeline optimization
+    tl_opt = oe.analyze({"duration_months": 18}, "timeline")
+    suite.assert_equals(tl_opt["current"], 18, "v19_oe_tl_current")
+    suite.assert_true(tl_opt["optimized"] < 18, "v19_oe_tl_optimized")
+
+    # Test cost optimization
+    cost_opt = oe.analyze({"estimated_cost": 100000}, "cost")
+    suite.assert_equals(cost_opt["optimized"], 75000, "v19_oe_cost_optimized")
+
+    # Test efficiency optimization
+    eff_opt = oe.analyze({"efficiency": 65}, "efficiency")
+    suite.assert_equals(eff_opt["current"], 65, "v19_oe_eff_current")
+    suite.assert_true(eff_opt["optimized"] > 65, "v19_oe_eff_optimized")
+
+    # Test serialization
+    oedata = oe.to_dict()
+    oe2 = OptimizationEngine()
+    oe2.from_dict(oedata)
+    suite.assert_equals(len(oe2._optimizations), 4, "v19_oe_from_dict")
+
+    # ======================== DecisionPartnership ========================
+
+    dp = DecisionPartnership()
+    suite.assert_true(hasattr(dp, "analyze_decision"), "v19_dp_analyze")
+    suite.assert_true(hasattr(dp, "get_decision_history"), "v19_dp_history")
+
+    # Test analyze_decision with default options
+    decision = dp.analyze_decision("Build a company")
+    suite.assert_true("goal" in decision, "v19_dp_goal")
+    suite.assert_true("options" in decision, "v19_dp_options")
+    suite.assert_true("risks" in decision, "v19_dp_risks")
+    suite.assert_true("recommendation" in decision, "v19_dp_recommendation")
+    suite.assert_equals(decision["goal"], "Build a company", "v19_dp_goal_value")
+    suite.assert_true(len(decision["options"]) >= 1, "v19_dp_options_count")
+
+    # Test analyze_decision with custom options
+    custom = dp.analyze_decision("Launch product", [
+        {"name": "Fast launch", "risk": "high", "effort": "low"},
+        {"name": "Careful launch", "risk": "low", "effort": "high"},
+    ])
+    suite.assert_equals(custom["goal"], "Launch product", "v19_dp_custom_goal")
+    suite.assert_equals(len(custom["options"]), 2, "v19_dp_custom_options")
+
+    # Test serialization
+    dpdata = dp.to_dict()
+    dp2 = DecisionPartnership()
+    dp2.from_dict(dpdata)
+    suite.assert_equals(len(dp2._decisions), 2, "v19_dp_from_dict")
+
+    # ======================== ResearchWorld ========================
+
+    rw = ResearchWorld()
+    suite.assert_true(hasattr(rw, "create_world"), "v19_rw_create")
+    suite.assert_true(hasattr(rw, "run_discovery"), "v19_rw_discover")
+
+    # Test create_world
+    world = rw.create_world("w1", "Materials Lab", "Discover new materials")
+    suite.assert_equals(world["name"], "Materials Lab", "v19_rw_world_name")
+    suite.assert_equals(world["status"], "active", "v19_rw_active")
+
+    # Test run_discovery with material science
+    discovery = rw.run_discovery("w1", iterations=5)
+    suite.assert_true(discovery is not None, "v19_rw_discovery_result")
+    suite.assert_true("discoveries" in discovery, "v19_rw_discoveries_list")
+    suite.assert_equals(len(discovery["discoveries"]), 5, "v19_rw_discovery_count")
+
+    # Test run_discovery with physics
+    rw.create_world("w2", "Physics Sim", "Simulate physics")
+    physics = rw.run_discovery("w2", iterations=3)
+    suite.assert_true("discoveries" in physics, "v19_rw_physics_findings")
+
+    # Test nonexistent world
+    bad_world = rw.run_discovery("no_world")
+    suite.assert_true(bad_world is None, "v19_rw_nonexistent")
+
+    # Test serialization
+    rwdata = rw.to_dict()
+    rw2 = ResearchWorld()
+    rw2.from_dict(rwdata)
+    suite.assert_equals(len(rw2.worlds), 2, "v19_rw_from_dict")
+
+    # ======================== AutonomousWorldEngine (Top-Level) ========================
+
+    we = AutonomousWorldEngine()
+    suite.assert_true(hasattr(we, "simulator"), "v19_we_simulator")
+    suite.assert_true(hasattr(we, "predictor"), "v19_we_predictor")
+    suite.assert_true(hasattr(we, "scenario_gen"), "v19_we_scenario")
+    suite.assert_true(hasattr(we, "experiments"), "v19_we_experiments")
+    suite.assert_true(hasattr(we, "knowledge"), "v19_we_knowledge")
+    suite.assert_true(hasattr(we, "optimizer"), "v19_we_optimizer")
+    suite.assert_true(hasattr(we, "decisions"), "v19_we_decisions")
+    suite.assert_true(hasattr(we, "research"), "v19_we_research")
+
+    # Verify default domains loaded
+    suite.assert_true(len(we.knowledge._nodes) >= 8, "v19_we_default_domains")
+
+    # Test analyze_query with factory
+    factory_analysis = we.analyze_query("build a factory")
+    suite.assert_true("query" in factory_analysis, "v19_we_analysis_query")
+    suite.assert_true("scenarios" in factory_analysis, "v19_we_analysis_scenarios")
+    suite.assert_true("simulations" in factory_analysis, "v19_we_analysis_sim")
+
+    # Test analyze_query with project
+    project_analysis = we.analyze_query("project timeline")
+    suite.assert_true("simulations" in project_analysis, "v19_we_analysis_project_sim")
+
+    # Test analyze_query with generic
+    generic_analysis = we.analyze_query("general question")
+    suite.assert_true("scenarios" in generic_analysis, "v19_we_analysis_generic")
+
+    # Test get_world_summary
+    summary = we.get_world_summary()
+    suite.assert_true("simulations" in summary, "v19_we_summary_sim")
+    suite.assert_true("scenarios" in summary, "v19_we_summary_scenarios")
+    suite.assert_true("domains" in summary, "v19_we_summary_domains")
+    suite.assert_true("decisions" in summary, "v19_we_summary_decisions")
+
+    # Test serialization
+    wedata = we.to_dict()
+    we2 = AutonomousWorldEngine()
+    we2.from_dict(wedata)
+    suite.assert_true(hasattr(we2, "simulator"), "v19_we_from_dict")
+
+    # ======================== ArcDesktop Integration ========================
+
+    app = ArcDesktop()
+    suite.assert_true(hasattr(app, "world"), "v19_desktop_has_world")
+    suite.assert_true(isinstance(app.world, AutonomousWorldEngine), "v19_desktop_world_type")
+
+    # Test world engine interaction
+    app.mission = "optimize my factory"
+    app.twin = __import__('demo').DigitalTwinMind()
+    app.world = AutonomousWorldEngine()
+    app.world.analyze_query("optimize my factory")
+
+    # Verify world engine processed
+    summary = app.world.get_world_summary()
+    suite.assert_true("simulations" in summary, "v19_desktop_world_summary")
+
+    return suite
+
+
+# ============================================================
 # B-TREE DB TESTS
 # ============================================================
 
@@ -4161,6 +4541,7 @@ def main():
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
         ("Arc v17.0.0 Living Software Engine", test_arc_v17),
         ("Arc v18.0.0 Reality Layer", test_arc_v18),
+        ("Arc v19.0.0 Autonomous World Engine", test_arc_v19),
     ]
 
     for name, test_func in test_funcs:
@@ -4179,7 +4560,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v18.0.0 Reality Layer")
+    print(f"  OVERALL RESULTS — v19.0.0 Autonomous World Engine")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")

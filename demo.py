@@ -3992,6 +3992,7 @@ class ArcDesktop:
         self.twin = digital_twin or DigitalTwinMind()
         self.living = LivingSoftwareEngine()
         self.reality = RealityLayer()
+        self.world = AutonomousWorldEngine()
 
     def available(self):
         return _HAVE_TK
@@ -4135,6 +4136,8 @@ class ArcDesktop:
             self._living_app = self.living.create_app(intent)
             # Analyze reality context for this intent
             self.reality.understand_goal(intent)
+            # Analyze through world engine
+            self.world.analyze_query(intent)
             self._init_knowledge()
             self._init_timeline()
             self.intent_entry.place_forget()
@@ -4222,6 +4225,7 @@ class ArcDesktop:
         self._render_suggestions_panel()
         self._render_living_apps()
         self._render_reality_layer()
+        self._render_world_engine()
         self._render_timeline()
         self._render_agent_chat()
 
@@ -4376,6 +4380,38 @@ class ArcDesktop:
         text = "  ·  ".join(parts)
         self.canvas.create_text(rx + 15, ry + 18, text=self._truncate(text, int(rw / 5.5)),
                                 fill="#44ddbb", font=("Segoe UI", 8), anchor="w", tags="reality_text")
+
+    # ================================================================
+    # WORLD ENGINE — Simulation Intelligence
+    # ================================================================
+
+    def _render_world_engine(self):
+        w = self.root.winfo_screenwidth()
+        if not hasattr(self, "world"):
+            return
+        wx = 290
+        wy = 196
+        ww = w - 320
+        wh = 36
+
+        if ww < 200:
+            return
+
+        self.canvas.create_rectangle(wx, wy, wx + ww, wy + wh,
+                                     fill="#0a0a14", outline="#2e1a3e", tags="world_bg")
+
+        summary = self.world.get_world_summary()
+        parts = [
+            f"◆ World Engine",
+            f"Simulations: {summary['simulations']}",
+            f"Scenarios: {summary['scenarios']}",
+            f"Optimizations: {summary['optimizations']}",
+            f"Domains: {summary['domains']}",
+            f"Decisions: {summary['decisions']}",
+        ]
+        text = "  ·  ".join(parts)
+        self.canvas.create_text(wx + 15, wy + 18, text=self._truncate(text, int(ww / 5.5)),
+                                fill="#cc88ff", font=("Segoe UI", 8), anchor="w", tags="world_text")
 
     # ================================================================
     # KNOWLEDGE GRAPH — Connected, Hierarchical, Living
@@ -4631,6 +4667,7 @@ class ArcDesktop:
                     state["civilization"] = self.civilization.to_dict()
                 state["living"] = self.living.to_dict()
                 state["reality"] = self.reality.to_dict()
+                state["world"] = self.world.to_dict()
                 import json
                 save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".digital_twin.json")
                 with open(save_path, "w") as f:
@@ -6616,6 +6653,814 @@ class RealityLayer:
             self.environment_manager.from_dict(data["environment_manager"])
         if "spatial_interface" in data:
             self.spatial_interface.from_dict(data["spatial_interface"])
+
+
+# ============================================================
+# AUTONOMOUS WORLD ENGINE — Simulation Intelligence Layer
+# ============================================================
+# v19.0.0 — Phase 6: Computers that understand systems.
+# Simulate realities, predict futures, optimize decisions
+# before actions happen in the physical world.
+
+class WorldSimulator:
+    """Universal simulation environment for physical, digital, organizational systems."""
+
+    SYSTEM_TYPES = ["factory", "city", "project", "machine", "ecosystem", "organization", "supply_chain"]
+
+    def __init__(self):
+        self.systems = {}
+        self._simulation_results = []
+
+    def create_system(self, system_id, name, system_type, components=None):
+        system = {
+            "system_id": system_id,
+            "name": name,
+            "system_type": system_type,
+            "components": components or [],
+            "state": {},
+            "metrics": {},
+            "created": __import__("time").time(),
+        }
+        self.systems[system_id] = system
+        return system
+
+    def add_component(self, system_id, component):
+        system = self.systems.get(system_id)
+        if not system:
+            return False
+        system["components"].append(component)
+        return True
+
+    def run_simulation(self, system_id, parameters=None):
+        system = self.systems.get(system_id)
+        if not system:
+            return None
+        params = parameters or {}
+        system_type = system["system_type"]
+        result = {"system_id": system_id, "name": system["name"], "type": system_type, "parameters": params}
+
+        if system_type == "factory":
+            machines = sum(1 for c in system["components"] if "machine" in c.lower() or "robot" in c.lower())
+            workers = sum(1 for c in system["components"] if "worker" in c.lower() or "operator" in c.lower())
+            efficiency = min(95, 50 + machines * 5 + workers * 3)
+            output = int(1000 * efficiency / 100 * (1 + params.get("demand_factor", 0)))
+            energy = int(500 + machines * 50 + workers * 10)
+            result["output"] = output
+            result["efficiency"] = efficiency
+            result["energy_usage"] = energy
+            result["defect_rate"] = max(0.5, 5 - machines * 0.3)
+        elif system_type == "city":
+            population = sum(1 for c in system["components"] if "resident" in c.lower()) * 1000 + 50000
+            traffic = min(100, 30 + sum(1 for c in system["components"] if "car" in c.lower() or "vehicle" in c.lower()) * 5)
+            result["population"] = population
+            result["traffic_index"] = traffic
+            result["energy_demand"] = int(population * 0.01)
+            result["green_space"] = sum(1 for c in system["components"] if "park" in c.lower()) * 2
+        elif system_type == "project":
+            team_size = sum(1 for c in system["components"] if "team" in c.lower() or "member" in c.lower() or "engineer" in c.lower())
+            duration = max(1, 12 - team_size + params.get("complexity", 0))
+            cost = int(50000 * duration / 12 * (1 + params.get("scope", 0)))
+            result["duration_months"] = duration
+            result["estimated_cost"] = cost
+            result["team_size"] = team_size + 3
+            result["risk_score"] = max(1, 5 - team_size * 0.5 + params.get("complexity", 0))
+        else:
+            result["status"] = "simulated"
+            result["metrics"] = {"performance": 75, "stability": 80}
+
+        result["timestamp"] = __import__("time").time()
+        self._simulation_results.append(result)
+        return result
+
+    def compare_scenarios(self, scenario_a, scenario_b):
+        comparison = {
+            "scenario_a": scenario_a,
+            "scenario_b": scenario_b,
+            "differences": [],
+            "recommendation": None,
+        }
+        for key in scenario_a:
+            if key in scenario_b and key not in ("system_id", "name", "type", "timestamp", "parameters"):
+                va = scenario_a[key]
+                vb = scenario_b[key]
+                if isinstance(va, (int, float)) and isinstance(vb, (int, float)):
+                    diff = ((vb - va) / va * 100) if va != 0 else 0
+                    comparison["differences"].append({
+                        "metric": key,
+                        "a": va, "b": vb,
+                        "change_percent": round(diff, 1),
+                    })
+        better = sum(1 for d in comparison["differences"] if d["change_percent"] > 0)
+        worse = sum(1 for d in comparison["differences"] if d["change_percent"] < 0)
+        comparison["recommendation"] = "B" if better > worse else ("A" if worse > better else "neutral")
+        return comparison
+
+    def get_simulation_history(self):
+        return list(self._simulation_results)
+
+    def to_dict(self):
+        return {"systems": self.systems, "results": self._simulation_results}
+
+    def from_dict(self, data):
+        self.systems = data.get("systems", {})
+        self._simulation_results = data.get("results", [])
+
+
+class PredictiveModel:
+    """Analyzes current state, historical data, patterns to predict outcomes."""
+
+    def __init__(self):
+        self._predictions = []
+        self._models = {}
+
+    def train_model(self, model_id, name, model_type, parameters=None):
+        self._models[model_id] = {
+            "model_id": model_id,
+            "name": name,
+            "model_type": model_type,
+            "parameters": parameters or {},
+            "accuracy": 0.85,
+            "trained": __import__("time").time(),
+        }
+        return self._models[model_id]
+
+    def predict(self, model_id, input_data):
+        model = self._models.get(model_id)
+        if not model:
+            return None
+        model_type = model["model_type"]
+        prediction = {"model_id": model_id, "input": input_data, "confidence": model["accuracy"]}
+
+        if model_type == "failure_prediction":
+            if isinstance(input_data, dict):
+                vibration = input_data.get("vibration", 0)
+                temperature = input_data.get("temperature", 0)
+                hours_run = input_data.get("hours_run", 0)
+                failure_prob = min(95, vibration * 0.3 + (temperature - 70) * 0.5 + hours_run * 0.01)
+                prediction["probability"] = round(failure_prob, 1)
+                prediction["days_remaining"] = max(1, int(30 - failure_prob * 0.3))
+                prediction["action"] = "Maintenance required within 14 days" if failure_prob > 50 else "Normal operation"
+            else:
+                prediction["probability"] = 15
+                prediction["days_remaining"] = 60
+                prediction["action"] = "Normal operation"
+
+        elif model_type == "demand_forecast":
+            base = input_data.get("base_demand", 100) if isinstance(input_data, dict) else 100
+            trend = input_data.get("trend", 0.05) if isinstance(input_data, dict) else 0.05
+            seasonal = input_data.get("seasonal_factor", 1.0) if isinstance(input_data, dict) else 1.0
+            forecast = int(base * (1 + trend) * seasonal)
+            prediction["forecast"] = forecast
+            prediction["lower_bound"] = int(forecast * 0.85)
+            prediction["upper_bound"] = int(forecast * 1.15)
+            prediction["confidence_interval"] = "85-115%"
+
+        elif model_type == "timeline_estimate":
+            tasks = input_data.get("tasks", 10) if isinstance(input_data, dict) else 10
+            team_size = input_data.get("team_size", 3) if isinstance(input_data, dict) else 3
+            complexity = input_data.get("complexity", 1.0) if isinstance(input_data, dict) else 1.0
+            estimated = int(tasks * complexity * 5 / team_size)
+            prediction["estimated_days"] = estimated
+            prediction["best_case"] = int(estimated * 0.7)
+            prediction["worst_case"] = int(estimated * 1.5)
+
+        else:
+            prediction["result"] = "Analysis complete"
+            prediction["confidence"] = 0.7
+
+        prediction["timestamp"] = __import__("time").time()
+        self._predictions.append(prediction)
+        return prediction
+
+    def get_prediction_history(self):
+        return list(self._predictions)
+
+    def to_dict(self):
+        return {"models": self._models, "predictions": self._predictions}
+
+    def from_dict(self, data):
+        self._models = data.get("models", {})
+        self._predictions = data.get("predictions", [])
+
+
+class ScenarioGenerator:
+    """Creates and evaluates branching future scenarios."""
+
+    def __init__(self):
+        self.scenarios = []
+        self._branches = []
+
+    def create_scenario(self, scenario_id, name, description):
+        scenario = {
+            "scenario_id": scenario_id,
+            "name": name,
+            "description": description,
+            "branches": [],
+            "evaluation": None,
+            "created": __import__("time").time(),
+        }
+        self.scenarios.append(scenario)
+        return scenario
+
+    def add_branch(self, scenario_id, branch_name, assumptions, outcomes=None):
+        scenario = next((s for s in self.scenarios if s["scenario_id"] == scenario_id), None)
+        if not scenario:
+            return None
+        branch = {
+            "name": branch_name,
+            "assumptions": assumptions,
+            "outcomes": outcomes or {},
+            "probability": 0.5,
+        }
+        scenario["branches"].append(branch)
+        self._branches.append(branch)
+        return branch
+
+    def evaluate_scenario(self, scenario_id, context=None):
+        scenario = next((s for s in self.scenarios if s["scenario_id"] == scenario_id), None)
+        if not scenario:
+            return None
+        branches = scenario["branches"]
+        if not branches:
+            scenario["evaluation"] = {"result": "No branches defined"}
+            return scenario["evaluation"]
+
+        evaluation = {"branches_analyzed": len(branches), "recommended_path": None, "analysis": []}
+        best_score = -1
+        for branch in branches:
+            score = 0
+            outcomes = branch["outcomes"]
+            if "revenue" in outcomes:
+                score += outcomes["revenue"] * 0.01
+            if "growth" in outcomes:
+                score += outcomes["growth"]
+            if "risk" in outcomes:
+                score -= outcomes["risk"]
+            if "cost" in outcomes:
+                score -= outcomes["cost"] * 0.001
+
+            if context:
+                ctx = context.lower()
+                for assumption in branch["assumptions"]:
+                    if assumption.lower() in ctx:
+                        score += 1
+
+            evaluation["analysis"].append({
+                "branch": branch["name"],
+                "score": round(score, 1),
+                "assumptions": len(branch["assumptions"]),
+                "probability": branch["probability"],
+            })
+            if score > best_score:
+                best_score = score
+                evaluation["recommended_path"] = branch["name"]
+
+        scenario["evaluation"] = evaluation
+        return evaluation
+
+    def generate_futures(self, query):
+        """Generate possible future scenarios from a natural language query."""
+        q = query.lower()
+        scenarios = []
+
+        if "product" in q or "launch" in q:
+            scenarios.append(self.create_scenario("sc_high", "High Demand Scenario",
+                "The product gains strong market traction early."))
+            self.add_branch("sc_high", "Strong adoption", ["strong marketing", "quality product"],
+                {"revenue": 500000, "growth": 25, "risk": 15, "cost": 200000})
+
+            scenarios.append(self.create_scenario("sc_low", "Low Adoption Scenario",
+                "The product faces adoption challenges."))
+            self.add_branch("sc_low", "Improvement needed", ["feedback analysis", "iterative development"],
+                {"revenue": 100000, "growth": 5, "risk": 30, "cost": 150000})
+
+            scenarios.append(self.create_scenario("sc_expand", "Market Expansion Scenario",
+                "The product enables broader market expansion."))
+            self.add_branch("sc_expand", "Growth strategy", ["market analysis", "partnerships"],
+                {"revenue": 1000000, "growth": 40, "risk": 25, "cost": 350000})
+
+        elif "company" in q or "startup" in q or "business" in q:
+            scenarios.append(self.create_scenario("sc_start", "Prototype Phase",
+                "Start with a focused prototype to validate the concept."))
+            self.add_branch("sc_start", "Lean start", ["minimum viable product", "user testing"],
+                {"revenue": 50000, "growth": 10, "risk": 20, "cost": 80000})
+
+            scenarios.append(self.create_scenario("sc_fund", "Funded Growth",
+                "Secure funding and scale the operation."))
+            self.add_branch("sc_fund", "VC-backed", ["investor pitch", "team expansion"],
+                {"revenue": 300000, "growth": 35, "risk": 35, "cost": 500000})
+
+        else:
+            scenarios.append(self.create_scenario("sc_default", "Standard Path",
+                "Follow a standard development and growth trajectory."))
+            self.add_branch("sc_default", "Balanced approach", ["planning", "execution", "review"],
+                {"revenue": 200000, "growth": 15, "risk": 20, "cost": 150000})
+
+        for s in scenarios:
+            self.evaluate_scenario(s["scenario_id"], query)
+
+        return scenarios
+
+    def get_scenarios(self):
+        return list(self.scenarios)
+
+    def to_dict(self):
+        return {"scenarios": self.scenarios}
+
+    def from_dict(self, data):
+        self.scenarios = data.get("scenarios", [])
+
+
+class ExperimentationSystem:
+    """AI agents that test ideas digitally before real implementation."""
+
+    def __init__(self):
+        self.experiments = []
+        self.results = []
+
+    def create_experiment(self, exp_id, name, domain, parameters=None):
+        exp = {
+            "experiment_id": exp_id,
+            "name": name,
+            "domain": domain,
+            "parameters": parameters or {},
+            "status": "designed",
+            "created": __import__("time").time(),
+        }
+        self.experiments.append(exp)
+        return exp
+
+    def run_experiment(self, exp_id, trials=100):
+        exp = next((e for e in self.experiments if e["experiment_id"] == exp_id), None)
+        if not exp:
+            return None
+        exp["status"] = "running"
+        import random
+        domain = exp["domain"]
+        result = {"experiment_id": exp_id, "name": exp["name"], "domain": domain, "trials": trials}
+
+        if domain == "materials" or domain == "chemistry":
+            candidates = []
+            for i in range(min(trials, 10)):
+                strength = random.uniform(50, 120)
+                weight = random.uniform(10, 50)
+                cost = random.uniform(5, 30)
+                candidates.append({
+                    "candidate": f"Material {chr(65 + i)}",
+                    "strength": round(strength, 1),
+                    "weight": round(weight, 1),
+                    "cost": round(cost, 1),
+                    "score": round(strength / weight * 10 - cost * 0.1, 1),
+                })
+            candidates.sort(key=lambda c: -c["score"])
+            result["candidates"] = candidates[:5]
+            best = candidates[0]
+            result["best_candidate"] = best["candidate"]
+            result["properties"] = f"+{round((best['strength'] - 80) / 80 * 100, 0)}% strength, -{round((50 - best['weight']) / 50 * 100, 0)}% weight"
+
+        elif domain == "design" or domain == "engineering":
+            configs = []
+            for i in range(min(trials, 8)):
+                efficiency = random.uniform(60, 98)
+                cost = random.uniform(100, 500)
+                durability = random.uniform(1, 10)
+                configs.append({
+                    "configuration": f"Design {chr(65 + i)}",
+                    "efficiency": round(efficiency, 1),
+                    "cost": round(cost, 1),
+                    "durability": round(durability, 1),
+                    "score": round(efficiency * 0.4 - cost * 0.1 + durability * 5, 1),
+                })
+            configs.sort(key=lambda c: -c["score"])
+            result["configurations"] = configs[:3]
+            result["best_configuration"] = configs[0]["configuration"]
+
+        else:
+            outcomes = []
+            for i in range(min(trials, 5)):
+                success_rate = random.uniform(0.3, 0.95)
+                outcomes.append({
+                    "trial": f"Run {chr(65 + i)}",
+                    "success_rate": round(success_rate, 2),
+                })
+            result["outcomes"] = outcomes
+
+        exp["status"] = "completed"
+        self.results.append(result)
+        return result
+
+    def get_experiment_history(self):
+        return list(self.results)
+
+    def to_dict(self):
+        return {"experiments": self.experiments, "results": self.results}
+
+    def from_dict(self, data):
+        self.experiments = data.get("experiments", [])
+        self.results = data.get("results", [])
+
+
+class WorldKnowledgeModel:
+    """Cross-domain relationship understanding — connects different domains."""
+
+    DOMAINS = [
+        "mechanical_engineering", "ai", "materials", "electronics",
+        "manufacturing", "economics", "biology", "physics",
+        "software", "robotics", "energy", "transportation",
+    ]
+
+    RELATIONSHIPS = {
+        "robotics": ["mechanical_engineering", "ai", "electronics", "materials", "manufacturing", "economics"],
+        "ai": ["software", "electronics", "robotics", "manufacturing"],
+        "manufacturing": ["mechanical_engineering", "materials", "economics", "energy", "robotics"],
+        "energy": ["physics", "economics", "manufacturing", "transportation"],
+    }
+
+    def __init__(self):
+        self._nodes = {}
+        self._edges = []
+        self._insights = []
+
+    def add_domain(self, domain_id, name, description):
+        self._nodes[domain_id] = {
+            "domain_id": domain_id,
+            "name": name,
+            "description": description,
+            "connected_to": [],
+            "added": __import__("time").time(),
+        }
+        return self._nodes[domain_id]
+
+    def connect_domains(self, domain_a, domain_b, relationship):
+        if domain_a in self._nodes and domain_b in self._nodes:
+            self._nodes[domain_a]["connected_to"].append(domain_b)
+            self._nodes[domain_b]["connected_to"].append(domain_a)
+            self._edges.append({"from": domain_a, "to": domain_b, "relationship": relationship})
+            return True
+        return False
+
+    def get_ecosystem(self, domain):
+        """Get the entire ecosystem around a domain."""
+        if domain not in self._nodes:
+            return {}
+        connected = self._nodes[domain].get("connected_to", [])
+        ecosystem = {"domain": domain, "direct_connections": [], "indirect_connections": []}
+        for c in connected:
+            ecosystem["direct_connections"].append({
+                "domain": c,
+                "name": self._nodes[c]["name"],
+                "description": self._nodes[c]["description"],
+            })
+            for c2 in self._nodes[c].get("connected_to", []):
+                if c2 != domain and c2 not in connected:
+                    ecosystem["indirect_connections"].append({
+                        "domain": c2,
+                        "via": c,
+                        "name": self._nodes[c2]["name"],
+                    })
+        return ecosystem
+
+    def analyze_project(self, project_description):
+        """Analyze a project description and identify connected domains."""
+        desc = project_description.lower()
+        insights = []
+        for domain_id, node in self._nodes.items():
+            if any(word in desc for word in node["name"].lower().split()):
+                ecosystem = self.get_ecosystem(domain_id)
+                insights.append({
+                    "domain": domain_id,
+                    "name": node["name"],
+                    "direct_connections": len(ecosystem.get("direct_connections", [])),
+                })
+        self._insights.extend(insights)
+        return insights
+
+    def to_dict(self):
+        return {"nodes": self._nodes, "edges": self._edges, "insights": self._insights}
+
+    def from_dict(self, data):
+        self._nodes = data.get("nodes", {})
+        self._edges = data.get("edges", [])
+        self._insights = data.get("insights", [])
+
+
+class OptimizationEngine:
+    """Continuous search for improvements — energy, timeline, cost, efficiency."""
+
+    def __init__(self):
+        self._optimizations = []
+        self._history = []
+
+    def analyze(self, current_state, target_metric):
+        state = current_state
+        metric = target_metric
+        result = {"metric": metric, "current": None, "optimized": None, "savings": None, "suggestions": []}
+
+        if metric == "energy":
+            current = state.get("energy_usage", 100)
+            optimized = int(current * 0.72)
+            result["current"] = current
+            result["optimized"] = optimized
+            result["savings"] = f"{round((current - optimized) / current * 100)}%"
+            result["suggestions"] = [
+                "Upgrade to energy-efficient equipment",
+                "Implement smart scheduling",
+                "Add renewable energy sources",
+                "Optimize HVAC usage",
+            ]
+        elif metric == "timeline":
+            current = state.get("duration_months", 18)
+            optimized = max(1, int(current * 0.61))
+            result["current"] = current
+            result["optimized"] = optimized
+            result["savings"] = f"{round((current - optimized) / current * 100)}%"
+            result["suggestions"] = [
+                "Parallel task execution",
+                "Add team members to critical path",
+                "Use agile methodology",
+                "Automate repetitive tasks",
+            ]
+        elif metric == "cost":
+            current = state.get("estimated_cost", 100000)
+            optimized = int(current * 0.75)
+            result["current"] = current
+            result["optimized"] = optimized
+            result["savings"] = f"{round((current - optimized) / current * 100)}%"
+            result["suggestions"] = [
+                "Negotiate bulk material pricing",
+                "Reduce scope creep",
+                "Use open-source alternatives",
+                "Optimize resource allocation",
+            ]
+        elif metric == "efficiency":
+            current = state.get("efficiency", 65)
+            optimized = min(99, current + 20)
+            result["current"] = current
+            result["optimized"] = optimized
+            result["savings"] = f"+{round(optimized - current)}%"
+            result["suggestions"] = [
+                "Implement automation",
+                "Reduce bottlenecks",
+                "Train personnel",
+                "Upgrade equipment",
+            ]
+
+        self._optimizations.append(result)
+        return result
+
+    def get_history(self):
+        return list(self._optimizations)
+
+    def to_dict(self):
+        return {"optimizations": self._optimizations}
+
+    def from_dict(self, data):
+        self._optimizations = data.get("optimizations", [])
+
+
+class DecisionPartnership:
+    """Human + AI decision support — simulations, predictions, alternatives, risks."""
+
+    def __init__(self):
+        self._decisions = []
+
+    def analyze_decision(self, goal, options=None):
+        options = options or []
+        if not options:
+            options = [
+                {"name": "Proceed with current plan", "risk": "medium", "effort": "moderate"},
+                {"name": "Start with prototype phase", "risk": "low", "effort": "low"},
+            ]
+
+        analysis = {
+            "goal": goal,
+            "options": [],
+            "analysis": "",
+            "risks": [],
+            "recommendation": None,
+        }
+
+        best_score = -1
+        best_option = None
+        for opt in options:
+            risk_map = {"low": 0.2, "medium": 0.5, "high": 0.8}
+            effort_map = {"low": 0.3, "moderate": 0.5, "high": 0.8}
+            risk_score = risk_map.get(opt.get("risk", "medium"), 0.5)
+            effort_score = effort_map.get(opt.get("effort", "moderate"), 0.5)
+            opportunity_score = 1.0 - risk_score
+            score = opportunity_score * 0.6 + (1 - effort_score) * 0.4
+
+            analyzed = dict(opt)
+            analyzed["score"] = round(score, 2)
+            analyzed["risk_level"] = opt.get("risk", "medium")
+            analyzed["recommended_for"] = "quick wins" if score > 0.7 else "strategic initiatives"
+            analysis["options"].append(analyzed)
+
+            if score > best_score:
+                best_score = score
+                best_option = opt["name"]
+
+        strengths = [o["name"] for o in analysis["options"] if o.get("score", 0) > 0.6]
+        risks = [f"{o['name']}: {o.get('risk', 'medium')} risk" for o in analysis["options"] if o.get('risk', 'medium') in ('high', 'medium')]
+
+        analysis["analysis"] = f"Analysis complete. Found {len(strengths)} strong options, {len(risks)} items to monitor."
+        analysis["risks"] = risks
+        analysis["recommendation"] = best_option
+
+        self._decisions.append(analysis)
+        return analysis
+
+    def get_decision_history(self):
+        return list(self._decisions)
+
+    def to_dict(self):
+        return {"decisions": self._decisions}
+
+    def from_dict(self, data):
+        self._decisions = data.get("decisions", [])
+
+
+class ResearchWorld:
+    """AI agent environments for exploring ideas and discovering knowledge."""
+
+    def __init__(self):
+        self.worlds = []
+        self._discoveries = []
+
+    def create_world(self, world_id, name, goal, agents=None):
+        world = {
+            "world_id": world_id,
+            "name": name,
+            "goal": goal,
+            "agents": agents or ["explorer", "analyst", "experimenter"],
+            "status": "active",
+            "discoveries": [],
+            "created": __import__("time").time(),
+        }
+        self.worlds.append(world)
+        return world
+
+    def run_discovery(self, world_id, iterations=10):
+        world = next((w for w in self.worlds if w["world_id"] == world_id), None)
+        if not world:
+            return None
+        import random
+        goal = world["goal"].lower()
+        discoveries = []
+
+        for i in range(iterations):
+            if "material" in goal or "chemistry" in goal or "science" in goal:
+                discovery = {
+                    "iteration": i + 1,
+                    "finding": f"Compound variant {chr(65 + random.randint(0, 25))}{random.randint(1, 99)}",
+                    "property": random.choice(["strength", "conductivity", "flexibility", "durability"]),
+                    "value": round(random.uniform(0.5, 9.5), 1),
+                    "significance": random.choice(["low", "medium", "high"]),
+                }
+            elif "physics" in goal or "simulation" in goal:
+                discovery = {
+                    "iteration": i + 1,
+                    "finding": f"Simulation run with parameter set {chr(65 + random.randint(0, 25))}",
+                    "result": random.choice(["stable", "unstable", "chaotic", "optimal"]),
+                    "deviation": round(random.uniform(0.01, 0.5), 3),
+                }
+            else:
+                discovery = {
+                    "iteration": i + 1,
+                    "finding": f"Insight {i + 1}: {random.choice(['Pattern detected', 'Anomaly found', 'Optimization possible', 'New approach identified'])}",
+                    "confidence": round(random.uniform(0.5, 0.99), 2),
+                }
+            discoveries.append(discovery)
+
+        significant = [d for d in discoveries if isinstance(d.get("significance"), str) and d["significance"] == "high"]
+
+        result = {
+            "world_id": world_id,
+            "iterations": iterations,
+            "discoveries": discoveries,
+            "significant_findings": len(significant),
+            "top_finding": discoveries[0] if discoveries else None,
+        }
+
+        world["discoveries"].extend(discoveries)
+        self._discoveries.extend(discoveries)
+        return result
+
+    def get_all_discoveries(self):
+        return list(self._discoveries)
+
+    def to_dict(self):
+        return {"worlds": self.worlds, "discoveries": self._discoveries}
+
+    def from_dict(self, data):
+        self.worlds = data.get("worlds", [])
+        self._discoveries = data.get("discoveries", [])
+
+
+class AutonomousWorldEngine:
+    """Top-level orchestrator — simulation intelligence that understands, predicts, and improves reality."""
+
+    def __init__(self):
+        self.simulator = WorldSimulator()
+        self.predictor = PredictiveModel()
+        self.scenario_gen = ScenarioGenerator()
+        self.experiments = ExperimentationSystem()
+        self.knowledge = WorldKnowledgeModel()
+        self.optimizer = OptimizationEngine()
+        self.decisions = DecisionPartnership()
+        self.research = ResearchWorld()
+
+        self._init_default_domains()
+
+    def _init_default_domains(self):
+        domains = {
+            "mechanical_engineering": ("Mechanical Engineering", "Design and construction of mechanical systems"),
+            "ai": ("AI", "Artificial intelligence and machine learning"),
+            "materials": ("Materials", "Material science and engineering"),
+            "electronics": ("Electronics", "Electronic systems and components"),
+            "manufacturing": ("Manufacturing", "Production and industrial processes"),
+            "economics": ("Economics", "Economic systems and market analysis"),
+            "robotics": ("Robotics", "Robotic systems and automation"),
+            "energy": ("Energy", "Energy production and management"),
+            "software": ("Software", "Software engineering and development"),
+            "physics": ("Physics", "Physical laws and phenomena"),
+            "biology": ("Biology", "Biological systems and life sciences"),
+            "transportation": ("Transportation", "Transport and logistics systems"),
+        }
+        for did, (name, desc) in domains.items():
+            self.knowledge.add_domain(did, name, desc)
+
+        for src, targets in WorldKnowledgeModel.RELATIONSHIPS.items():
+            for tgt in targets:
+                if src in self.knowledge._nodes and tgt in self.knowledge._nodes:
+                    self.knowledge.connect_domains(src, tgt, "related")
+
+    def analyze_query(self, query):
+        """Full analysis pipeline: understand, simulate, predict, optimize."""
+        result = {"query": query, "simulations": None, "predictions": None, "scenarios": None, "optimizations": None}
+
+        q = query.lower()
+        system_type = None
+        if "factory" in q or "manufacturing" in q:
+            system_type = "factory"
+        elif "city" in q or "urban" in q:
+            system_type = "city"
+        elif "project" in q or "timeline" in q:
+            system_type = "project"
+
+        if system_type:
+            sys = self.simulator.create_system("sys_1", f"{system_type.capitalize()} System", system_type)
+            sim = self.simulator.run_simulation("sys_1")
+            result["simulations"] = sim
+            opt = self.optimizer.analyze(sim, "energy" if system_type == "factory" else "timeline")
+            result["optimizations"] = opt
+
+        scenarios = self.scenario_gen.generate_futures(query)
+        result["scenarios"] = [s["scenario_id"] for s in scenarios]
+
+        return result
+
+    def get_world_summary(self):
+        return {
+            "simulations": len(self.simulator.get_simulation_history()),
+            "predictions": len(self.predictor.get_prediction_history()),
+            "scenarios": len(self.scenario_gen.get_scenarios()),
+            "experiments": len(self.experiments.get_experiment_history()),
+            "domains": len(self.knowledge._nodes),
+            "discoveries": len(self.research.get_all_discoveries()),
+            "optimizations": len(self.optimizer.get_history()),
+            "decisions": len(self.decisions.get_decision_history()),
+        }
+
+    def to_dict(self):
+        return {
+            "simulator": self.simulator.to_dict(),
+            "predictor": self.predictor.to_dict(),
+            "scenario_gen": self.scenario_gen.to_dict(),
+            "experiments": self.experiments.to_dict(),
+            "knowledge": self.knowledge.to_dict(),
+            "optimizer": self.optimizer.to_dict(),
+            "decisions": self.decisions.to_dict(),
+            "research": self.research.to_dict(),
+        }
+
+    def from_dict(self, data):
+        if "simulator" in data:
+            self.simulator.from_dict(data["simulator"])
+        if "predictor" in data:
+            self.predictor.from_dict(data["predictor"])
+        if "scenario_gen" in data:
+            self.scenario_gen.from_dict(data["scenario_gen"])
+        if "experiments" in data:
+            self.experiments.from_dict(data["experiments"])
+        if "knowledge" in data:
+            self.knowledge.from_dict(data["knowledge"])
+        if "optimizer" in data:
+            self.optimizer.from_dict(data["optimizer"])
+        if "decisions" in data:
+            self.decisions.from_dict(data["decisions"])
+        if "research" in data:
+            self.research.from_dict(data["research"])
 
 
 # ============================================================
