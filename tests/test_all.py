@@ -47,6 +47,9 @@ class TestSuite:
     def assert_not_none(self, value: Any, name: str):
         self.assert_true(value is not None, name, "Value is None")
 
+    def assert_false(self, condition: bool, name: str, msg: str = ""):
+        self.assert_true(not condition, name, msg)
+
     def assert_in(self, item: Any, collection: Any, name: str):
         self.assert_true(item in collection, name, f"{item} not in {collection}")
 
@@ -2905,6 +2908,95 @@ def test_arc_v11():
 
 
 # ============================================================
+# ARC V12.0.0 TESTS - Testing Framework + Debugger
+# ============================================================
+
+def test_arc_v12():
+    suite = TestSuite("Arc v12.0.0 Dev Tools Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLexer, ArcParser, ArcVM, ArcLang
+
+    # ---- Test Framework: test keyword ----
+    vm = ArcVM()
+    src = 'test "passing" { assert 1 == 1; };'
+    lexer = ArcLexer(src)
+    parser = ArcParser(lexer.tokens)
+    ast = parser.parse()
+    results = vm.run_tests(ast)
+    suite.assert_equals(len(results), 1, "v12_test_single")
+    suite.assert_true(results[0]["passed"], "v12_test_passes")
+
+    # Test assert failure
+    vm2 = ArcVM()
+    src2 = 'test "failing" { assert 1 == 2 "msg"; };'
+    lexer2 = ArcLexer(src2)
+    parser2 = ArcParser(lexer2.tokens)
+    ast2 = parser2.parse()
+    results2 = vm2.run_tests(ast2)
+    suite.assert_equals(len(results2), 1, "v12_test_fail_count")
+    suite.assert_false(results2[0]["passed"], "v12_test_fails")
+    suite.assert_in("msg", results2[0]["error"], "v12_test_fail_msg")
+
+    # Test describe/it blocks
+    vm3 = ArcVM()
+    src3 = '''
+        describe "Math" {
+            it "adds" { assert 1 + 1 == 2; };
+            it "multiplies" { assert 2 * 3 == 6; };
+        };
+    '''
+    lexer3 = ArcLexer(src3)
+    parser3 = ArcParser(lexer3.tokens)
+    ast3 = parser3.parse()
+    results3 = vm3.run_tests(ast3)
+    suite.assert_equals(len(results3), 2, "v12_describe_count")
+    suite.assert_true(all(r["passed"] for r in results3), "v12_describe_all_pass")
+
+    # Test assert with string message
+    vm4 = ArcVM()
+    src4 = 'test "msg" { assert true "custom message"; };'
+    lexer4 = ArcLexer(src4)
+    parser4 = ArcParser(lexer4.tokens)
+    ast4 = parser4.parse()
+    results4 = vm4.run_tests(ast4)
+    suite.assert_equals(len(results4), 1, "v12_assert_msg_count")
+    suite.assert_true(results4[0]["passed"], "v12_assert_msg_pass")
+
+    # ---- Debugger: breakpoint ----
+    vm5 = ArcVM()
+    vm5.debug_mode = True
+    bp_hit = [False]
+    def bp_cb(v):
+        bp_hit[0] = True
+        v.debug_mode = False
+    vm5.debug_callback = bp_cb
+    src5 = 'breakpoint; print "after";'
+    lexer5 = ArcLexer(src5)
+    parser5 = ArcParser(lexer5.tokens)
+    ast5 = parser5.parse()
+    vm5._eval(ast5)
+    suite.assert_true(bp_hit[0], "v12_breakpoint_hit")
+
+    # ---- Lexer tokens for new keywords ----
+    lexer_tokens = ArcLexer("test describe it assert expect breakpoint watch")
+    token_types = [t[0] for t in lexer_tokens.tokens]
+    suite.assert_in("TEST", token_types, "v12_lexer_test")
+    suite.assert_in("DESCRIBE", token_types, "v12_lexer_describe")
+    suite.assert_in("IT", token_types, "v12_lexer_it")
+    suite.assert_in("ASSERT", token_types, "v12_lexer_assert")
+    suite.assert_in("EXPECT", token_types, "v12_lexer_expect")
+    suite.assert_in("BREAKPOINT", token_types, "v12_lexer_breakpoint")
+
+    # ---- ArcLang.run_tests ----
+    lang = ArcLang()
+    results_lang = lang.run_tests('test "lang" { assert 1 == 1; };')
+    suite.assert_equals(len(results_lang), 1, "v12_lang_run_tests")
+    suite.assert_true(results_lang[0]["passed"], "v12_lang_run_tests_pass")
+
+    return suite
+
+
+# ============================================================
 # B-TREE DB TESTS
 # ============================================================
 
@@ -3243,7 +3335,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v11.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v12.0.0\033[0m")
     print()
 
     all_suites = []
@@ -3330,6 +3422,7 @@ def main():
         ("Arc Lists", test_arc_lists),
         ("Arc Multithreading", test_arc_threading),
         ("Arc AI Module", test_arc_ai),
+        ("Arc v12.0.0 Dev Tools", test_arc_v12),
     ]
 
     for name, test_func in test_funcs:

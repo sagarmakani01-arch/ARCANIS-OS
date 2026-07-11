@@ -1712,6 +1712,9 @@ class ArcLexer:
         "try": "TRY", "catch": "CATCH", "throw": "THROW",
         "class": "CLASS", "extends": "EXTENDS", "new": "NEW",
         "this": "THIS", "super": "SUPER",
+        "test": "TEST", "describe": "DESCRIBE", "it": "IT",
+        "assert": "ASSERT", "expect": "EXPECT",
+        "breakpoint": "BREAKPOINT", "watch": "WATCH",
     }
 
     def __init__(self, source):
@@ -1827,6 +1830,14 @@ class ArcParser:
             return self._throw_stmt()
         if tok[0] == "CLASS":
             return self._class_stmt()
+        if tok[0] == "TEST":
+            return self._test_stmt()
+        if tok[0] == "DESCRIBE":
+            return self._describe_stmt()
+        if tok[0] == "ASSERT":
+            return self._assert_stmt()
+        if tok[0] == "BREAKPOINT":
+            return self._breakpoint_stmt()
         if tok[0] == "LBRACE":
             return self._block()
         return self._expr_stmt()
@@ -1903,6 +1914,46 @@ class ArcParser:
         self.consume("RBRACE")
         self.consume("SEMI")
         return ("CLASS", name, parent, methods)
+
+    def _test_stmt(self):
+        self.consume("TEST")
+        name = self.consume("STRING")[1] if self.peek()[0] == "STRING" else None
+        body = self._block()
+        self.consume("SEMI")
+        return ("TEST", name, body)
+
+    def _describe_stmt(self):
+        self.consume("DESCRIBE")
+        name = self.consume("STRING")[1]
+        self.consume("LBRACE")
+        blocks = []
+        while self.peek()[0] != "RBRACE" and self.peek()[0] != "EOF":
+            if self.peek()[0] == "IT":
+                self.consume("IT")
+                it_name = self.consume("STRING")[1] if self.peek()[0] == "STRING" else None
+                it_body = self._block()
+                if self.peek()[0] == "SEMI":
+                    self.consume("SEMI")
+                blocks.append(("IT", it_name, it_body))
+            else:
+                break
+        self.consume("RBRACE")
+        self.consume("SEMI")
+        return ("DESCRIBE", name, blocks)
+
+    def _assert_stmt(self):
+        self.consume("ASSERT")
+        cond = self._expr()
+        msg = None
+        if self.peek()[0] == "STRING":
+            msg = self.consume("STRING")[1]
+        self.consume("SEMI")
+        return ("ASSERT", cond, msg)
+
+    def _breakpoint_stmt(self):
+        self.consume("BREAKPOINT")
+        self.consume("SEMI")
+        return ("BREAKPOINT",)
 
     def _if_stmt(self):
         self.consume("IF")
@@ -2131,6 +2182,9 @@ class ArcVM:
         self.arc_lang = None
         self.classes = {}
         self.instances = []
+        self.debug_mode = False
+        self.debug_callback = None
+        self.test_results = []
         self._builtins()
 
     def _builtins(self):
@@ -2444,7 +2498,80 @@ class ArcVM:
             instance = self.instances[-1]
             return {"__super__": True, "instance": instance}
 
+        if t == "TEST":
+            name = node[1]
+            body = node[2]
+            result = {"name": name, "passed": True, "error": None}
+            try:
+                self._eval(body)
+            except ArcError as e:
+                result["passed"] = False
+                result["error"] = str(e.value)
+            except Exception as e:
+                result["passed"] = False
+                result["error"] = str(e)
+            if hasattr(self, "test_results"):
+                self.test_results.append(result)
+            if not result["passed"]:
+                print(f"  \033[31mFAIL\033[0m {name or '<unnamed>'}: {result['error']}")
+            else:
+                print(f"  \033[32mPASS\033[0m {name or '<unnamed>'}")
+            return result
+
+        if t == "DESCRIBE":
+            name = node[1]
+            blocks = node[2]
+            print(f"\n\033[1;36m{name}\033[0m")
+            for block in blocks:
+                self._eval(block)
+            return None
+
+        if t == "IT":
+            name = node[1]
+            body = node[2]
+            result = {"name": name, "passed": True, "error": None}
+            try:
+                self._eval(body)
+            except ArcError as e:
+                result["passed"] = False
+                result["error"] = str(e.value)
+            except Exception as e:
+                result["passed"] = False
+                result["error"] = str(e)
+            if hasattr(self, "test_results"):
+                self.test_results.append(result)
+            status = "\033[32mPASS\033[0m" if result["passed"] else "\033[31mFAIL\033[0m"
+            print(f"  {status} {name or '<unnamed>'}")
+            if not result["passed"]:
+                print(f"       \033[31m{result['error']}\033[0m")
+            return result
+
+        if t == "ASSERT":
+            cond = self._eval(node[1])
+            msg = node[2]
+            if not cond:
+                raise ArcError(msg or "Assertion failed")
+            return None
+
+        if t == "BREAKPOINT":
+            if self.debug_mode and self.debug_callback:
+                self.debug_callback(self)
+            return None
+
         return None
+
+    def run_tests(self, ast):
+        """Run all test cases in the AST and return results."""
+        self.test_results = []
+        self._eval(ast)
+        passed = sum(1 for r in self.test_results if r["passed"])
+        total = len(self.test_results)
+        print(f"\n\033[1;37m{'='*40}\033[0m")
+        print(f"\033[1;37m  Results: {passed}/{total} passed\033[0m")
+        if passed < total:
+            print(f"\033[1;37m  {total - passed} test(s) failed\033[0m")
+        print(f"\033[1;37m{'='*40}\033[0m")
+        return self.test_results
 
     def _load_module(self, module, ns):
         """Load a module from file or built-in stdlib."""
@@ -2865,6 +2992,13 @@ class ArcLang:
         parser = ArcParser(lexer.tokens)
         ast = parser.parse()
         self.vm.exec(ast)
+
+    def run_tests(self, source):
+        """Compile and run Arc test code, returning results."""
+        lexer = ArcLexer(source)
+        parser = ArcParser(lexer.tokens)
+        ast = parser.parse()
+        return self.vm.run_tests(ast)
 
     def run_file(self, path, readable=False):
         with open(path) as f:
@@ -3372,14 +3506,25 @@ class ArcIDE:
         "class": "#569CD6", "extends": "#569CD6",
         "new": "#DCDCAA",
         "this": "#4EC9B0", "super": "#4EC9B0",
+        "test": "#C586C0", "describe": "#C586C0", "it": "#C586C0",
+        "assert": "#DCDCAA", "expect": "#DCDCAA",
+        "breakpoint": "#DCDCAA", "watch": "#DCDCAA",
     }
 
     def __init__(self, jit=None):
         self.root = None
         self.text = None
         self.output = None
+        self.watch_var = None
+        self.watch_list = None
+        self.debug_controls = None
         self.arc = ArcLang(jit=jit)
         self.readable_mode = False
+        self.debug_paused = False
+        self.debug_continue = False
+        self.debug_step_over = False
+        self.debug_step_into = False
+        self.env_snapshot = {}
 
     def available(self):
         return _HAVE_TK
@@ -3407,6 +3552,9 @@ class ArcIDE:
         run_menu = tk.Menu(menu, tearoff=0)
         menu.add_cascade(label="Run", menu=run_menu)
         run_menu.add_command(label="Execute", command=self._run_code)
+        run_menu.add_command(label="Run Tests", command=self._run_tests)
+        run_menu.add_command(label="Debug", command=self._debug_start)
+        run_menu.add_separator()
         run_menu.add_command(label="Show Tokens", command=self._show_tokens)
         run_menu.add_command(label="Show AST", command=self._show_ast)
         run_menu.add_command(label="Explain", command=self._explain_code)
@@ -3438,6 +3586,41 @@ class ArcIDE:
                             font=("Consolas", 9), command=self._run_code,
                             relief=tk.FLAT, padx=15)
         run_btn.pack(side=tk.RIGHT, padx=5, pady=2)
+
+        self.debug_controls = tk.Frame(self.root, bg="#2D2D2D")
+        self.debug_controls.pack(fill=tk.X)
+        btn_continue = tk.Button(self.debug_controls, text="▶ Continue", bg="#0E639C", fg="white",
+                                 font=("Consolas", 9), command=self._debug_continue,
+                                 relief=tk.FLAT, padx=10, state=tk.DISABLED)
+        btn_continue.pack(side=tk.LEFT, padx=2, pady=2)
+        btn_step_over = tk.Button(self.debug_controls, text="↷ Step Over", bg="#0E639C", fg="white",
+                                  font=("Consolas", 9), command=self._debug_step_over,
+                                  relief=tk.FLAT, padx=10, state=tk.DISABLED)
+        btn_step_over.pack(side=tk.LEFT, padx=2, pady=2)
+        btn_step_into = tk.Button(self.debug_controls, text="→ Step Into", bg="#0E639C", fg="white",
+                                  font=("Consolas", 9), command=self._debug_step_into,
+                                  relief=tk.FLAT, padx=10, state=tk.DISABLED)
+        btn_step_into.pack(side=tk.LEFT, padx=2, pady=2)
+        btn_stop = tk.Button(self.debug_controls, text="■ Stop", bg="#8B0000", fg="white",
+                             font=("Consolas", 9), command=self._debug_stop,
+                             relief=tk.FLAT, padx=10, state=tk.DISABLED)
+        btn_stop.pack(side=tk.LEFT, padx=2, pady=2)
+        self.debug_controls.pack_forget()  # Hidden until debug starts
+
+        # Watch variables pane
+        watch_frame = tk.Frame(self.root, bg="#1E1E1E")
+        watch_frame.pack(fill=tk.X, side=tk.BOTTOM)
+        tk.Label(watch_frame, text="Watch:", bg="#1E1E1E", fg="#858585",
+                 font=("Consolas", 9)).pack(side=tk.LEFT, padx=5)
+        self.watch_var = tk.Entry(watch_frame, bg="#3C3C3C", fg="#D4D4D4",
+                                  font=("Consolas", 9), relief=tk.FLAT, width=20)
+        self.watch_var.pack(side=tk.LEFT, padx=2, pady=2)
+        tk.Button(watch_frame, text="Add", bg="#0E639C", fg="white",
+                  font=("Consolas", 8), command=self._debug_add_watch,
+                  relief=tk.FLAT, padx=8).pack(side=tk.LEFT, padx=2)
+        self.watch_list = tk.Listbox(watch_frame, bg="#1E1E1E", fg="#D4D4D4",
+                                     font=("Consolas", 9), height=3, relief=tk.FLAT)
+        self.watch_list.pack(fill=tk.X, padx=5, pady=2)
 
         # Output pane
         self.output = tk.Text(self.root, bg="#1E3A3A", fg="#4EC9B0",
@@ -3580,6 +3763,114 @@ print "sum(0..9) = " + sum;
         else:
             self.output.insert(tk.END, "(no output)")
         self.output.config(state=tk.DISABLED)
+
+    def _run_tests(self):
+        """Run test cases in the editor."""
+        code = self.text.get("1.0", tk.END).strip()
+        if not code:
+            return
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+
+        old_stdout = sys.stdout
+        sys.stdout = output_capture = __import__('io').StringIO()
+        try:
+            self.arc.run_tests(code)
+            result = output_capture.getvalue()
+        except Exception as e:
+            result = f"Error: {e}"
+        finally:
+            sys.stdout = old_stdout
+        if not result:
+            result = output_capture.getvalue()
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, result if result else "(no output)")
+        self.output.config(state=tk.DISABLED)
+
+    def _debug_callback(self, vm):
+        """Called by VM when a breakpoint is hit."""
+        self.env_snapshot = dict(vm.env)
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, "⏸ Paused at breakpoint\n--- Variables ---\n")
+        for k, v in sorted(vm.env.items()):
+            self.output.insert(tk.END, f"  {k} = {v!r}\n")
+        self.output.config(state=tk.DISABLED)
+        self.debug_controls.pack(fill=tk.X, before=self.output)
+        for child in self.debug_controls.winfo_children():
+            child.config(state=tk.NORMAL)
+        self._update_watches(vm)
+        self.root.update()
+        self.debug_paused = True
+        self.debug_continue = False
+        self.debug_step_over = False
+        self.debug_step_into = False
+        while self.debug_paused:
+            self.root.update()
+            __import__('time').sleep(0.05)
+            if self.debug_continue:
+                self.debug_paused = False
+                break
+            if self.debug_step_over or self.debug_step_into:
+                self.debug_paused = False
+                break
+        self.debug_controls.pack_forget()
+        for child in self.debug_controls.winfo_children():
+            child.config(state=tk.DISABLED)
+
+    def _debug_start(self):
+        """Start debugging the current code."""
+        code = self.text.get("1.0", tk.END).strip()
+        if not code:
+            return
+        self.arc.vm.debug_mode = True
+        self.arc.vm.debug_callback = self._debug_callback
+        self.output.config(state=tk.NORMAL)
+        self.output.delete("1.0", tk.END)
+        self.output.insert(tk.END, "▶ Debugging...\n")
+        self.output.config(state=tk.DISABLED)
+        old_stdout = sys.stdout
+        sys.stdout = output_capture = __import__('io').StringIO()
+        try:
+            self.arc.run(code, readable=self.readable_var.get())
+            result = output_capture.getvalue()
+        except Exception as e:
+            result = f"Error: {e}"
+        finally:
+            sys.stdout = old_stdout
+            self.arc.vm.debug_mode = False
+            self.arc.vm.debug_callback = None
+        if result:
+            self.output.config(state=tk.NORMAL)
+            self.output.insert(tk.END, result)
+            self.output.config(state=tk.DISABLED)
+
+    def _debug_continue(self):
+        self.debug_continue = True
+
+    def _debug_step_over(self):
+        self.debug_step_over = True
+
+    def _debug_step_into(self):
+        self.debug_step_into = True
+
+    def _debug_stop(self):
+        self.debug_paused = False
+        self.debug_continue = True
+        self.debug_controls.pack_forget()
+
+    def _debug_add_watch(self):
+        var_name = self.watch_var.get().strip()
+        if var_name and var_name not in self.watch_list.get(0, tk.END):
+            self.watch_list.insert(tk.END, var_name)
+        self.watch_var.delete(0, tk.END)
+
+    def _update_watches(self, vm):
+        for i in range(self.watch_list.size()):
+            var_name = self.watch_list.get(i)
+            val = vm.env.get(var_name, "<undefined>")
+            self.watch_list.delete(i)
+            self.watch_list.insert(i, f"{var_name} = {val!r}")
 
     def _show_tokens(self):
         code = self.text.get("1.0", tk.END).strip()
