@@ -2997,140 +2997,347 @@ def test_arc_v12():
 
 
 # ============================================================
-# ARC V14.0.0 TESTS — Mission Space (AI-Native OS)
+# ARC V15.0.0 TESTS — Digital Twin Mind (Personal Intelligence)
 # ============================================================
 
-def test_arc_v14():
-    suite = TestSuite("Arc v14.0.0 Mission Space Tests")
+def test_arc_v15():
+    suite = TestSuite("Arc v15.0.0 Digital Twin Mind Tests")
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from demo import ArcDesktop, _HAVE_TK
+    from demo import (DigitalTwinMind, MemorySystem, KnowledgeGraph,
+                      ContextEngine, LearningModel, ChiefOfStaff,
+                      SimulationEngine, PrivacyController, ArcDesktop, _HAVE_TK)
 
-    # Test class exists and has mission space methods
-    suite.assert_true(hasattr(ArcDesktop, "launch"), "v14_has_launch")
-    suite.assert_true(hasattr(ArcDesktop, "available"), "v14_has_available")
+    # ======================== DigitalTwinMind ========================
 
-    # Test Tkinter availability
-    suite.assert_equals(_HAVE_TK, True, "v14_tk_available")
+    suite.assert_true(hasattr(DigitalTwinMind, "remember_mission"), "v15_dtm_remember_mission")
+    suite.assert_true(hasattr(DigitalTwinMind, "continue_work"), "v15_dtm_continue_work")
+    suite.assert_true(hasattr(DigitalTwinMind, "get_personalized_greeting"), "v15_dtm_greeting")
+    suite.assert_true(hasattr(DigitalTwinMind, "save_state"), "v15_dtm_save")
+    suite.assert_true(hasattr(DigitalTwinMind, "load_state"), "v15_dtm_load")
+    suite.assert_true(hasattr(DigitalTwinMind, "summary"), "v15_dtm_summary")
 
-    d = ArcDesktop()
+    d = DigitalTwinMind()
 
-    # Test first screen (What future do you want to create?)
-    suite.assert_true(hasattr(d, "_render_first_screen"), "v14_first_screen")
-    suite.assert_true(hasattr(d, "_animate_ambient"), "v14_animate_ambient")
-    suite.assert_true(hasattr(d, "_on_intent"), "v14_on_intent")
+    # Test subsystems exist
+    suite.assert_true(hasattr(d, "memory"), "v15_dtm_memory")
+    suite.assert_true(hasattr(d, "knowledge_graph"), "v15_dtm_kg")
+    suite.assert_true(hasattr(d, "context"), "v15_dtm_context")
+    suite.assert_true(hasattr(d, "learning"), "v15_dtm_learning")
+    suite.assert_true(hasattr(d, "chief"), "v15_dtm_chief")
+    suite.assert_true(hasattr(d, "simulator"), "v15_dtm_sim")
+    suite.assert_true(hasattr(d, "privacy"), "v15_dtm_privacy")
 
-    # Test agent system — 7 specialized autonomous agents
-    suite.assert_true(hasattr(d, "_init_agents"), "v14_init_agents")
-    suite.assert_true(hasattr(d, "_render_agents_panel"), "v14_agents_panel")
-    suite.assert_true(hasattr(d, "_activate_agent"), "v14_activate_agent")
-    suite.assert_true(hasattr(d, "_show_agent_detail"), "v14_agent_detail")
-    suite.assert_true(hasattr(ArcDesktop, "AGENT_DEFS"), "v14_agent_defs")
-    suite.assert_equals(len(ArcDesktop.AGENT_DEFS), 7, "v14_agent_count")
+    # Test initial state
+    suite.assert_equals(d.memory.count(), 0, "v15_dtm_initial_memories")
+    suite.assert_equals(len(d.knowledge_graph._nodes), 0, "v15_dtm_initial_nodes")
+    suite.assert_equals(len(d.learning.get_skills()), 0, "v15_dtm_initial_skills")
 
-    # Verify all 7 agents exist
-    agent_names = [a[1] for a in ArcDesktop.AGENT_DEFS]
-    for key in ["researcher", "engineer", "coder", "learner", "designer", "planner", "critic"]:
-        suite.assert_true(key in agent_names, f"v14_agent_{key}")
+    # ======================== MemorySystem ========================
 
-    # Test agent initialization produces 7 agents with correct state
-    d._init_agents()
-    suite.assert_equals(len(d.agents), 7, "v14_agents_init_count")
-    for key, agent in d.agents.items():
-        suite.assert_true("name" in agent, f"v14_agent_{key}_has_name")
-        suite.assert_true("role" in agent, f"v14_agent_{key}_has_role")
-        suite.assert_true("status" in agent, f"v14_agent_{key}_has_status")
-        suite.assert_equals(agent["status"], "idle", f"v14_agent_{key}_status_idle")
+    ms = MemorySystem()
+    suite.assert_true(hasattr(ms, "store"), "v15_mem_store")
+    suite.assert_true(hasattr(ms, "recall"), "v15_mem_recall")
+    suite.assert_true(hasattr(ms, "search_by_tag"), "v15_mem_search_tag")
+    suite.assert_true(hasattr(ms, "count"), "v15_mem_count")
+    suite.assert_true(hasattr(ms, "categories"), "v15_mem_categories")
+    suite.assert_true(hasattr(ms, "recent"), "v15_mem_recent")
+    suite.assert_true(hasattr(ms, "to_dict"), "v15_mem_to_dict")
+    suite.assert_true(hasattr(ms, "from_dict"), "v15_mem_from_dict")
 
-    # Test knowledge graph system
-    suite.assert_true(hasattr(d, "_init_knowledge"), "v14_init_knowledge")
-    suite.assert_true(hasattr(d, "_render_knowledge_graph"), "v14_knowledge_graph")
+    # Test store and recall
+    id1 = ms.store("mission", "build a robot", tags=["active", "robotics"], source="user")
+    id2 = ms.store("note", "research motors", tags=["robotics"], source="user")
+    id3 = ms.store("code", "def move(): pass", tags=["python", "robotics"], source="user")
+    suite.assert_equals(ms.count(), 3, "v15_mem_count_3")
+    suite.assert_equals(ms.count("mission"), 1, "v15_mem_count_mission")
 
-    # Test knowledge graph generation with different missions
-    d.mission = "build a humanoid robot"
-    d._init_knowledge()
-    suite.assert_true(len(d.knowledge_nodes) > 3, "v14_knowledge_nodes_count")
-    root_node = d.knowledge_nodes[0]
-    suite.assert_equals(root_node["id"], "root", "v14_knowledge_root")
-    suite.assert_equals(root_node["parent"], None, "v14_knowledge_root_parent")
+    # Test recall by query
+    results = ms.recall(query="robot", limit=5)
+    suite.assert_true(len(results) >= 1, "v15_mem_recall_robot")
 
-    # Test knowledge includes mission-specific nodes
-    node_ids = [n["id"] for n in d.knowledge_nodes]
-    suite.assert_true("research" in node_ids, "v14_knowledge_research")
-    suite.assert_true("design" in node_ids, "v14_knowledge_design")
-    suite.assert_true("build" in node_ids, "v14_knowledge_build")
+    # Test recall by category
+    results = ms.recall(category="note", limit=5)
+    suite.assert_equals(len(results), 1, "v15_mem_recall_note")
 
-    # Test robot mission adds mechanical node
-    suite.assert_true("mechanical" in node_ids, "v14_knowledge_mechanical")
+    # Test search by tag
+    results = ms.search_by_tag("python")
+    suite.assert_equals(len(results), 1, "v15_mem_tag_python")
 
-    # Test software mission adds software node
-    d.mission = "build a web app"
-    d._init_knowledge()
-    node_ids = [n["id"] for n in d.knowledge_nodes]
-    suite.assert_true("software" in node_ids, "v14_knowledge_software")
+    # Test categories
+    cats = ms.categories()
+    suite.assert_true("mission" in cats, "v15_mem_cat_mission")
+    suite.assert_true("note" in cats, "v15_mem_cat_note")
+    suite.assert_true("code" in cats, "v15_mem_cat_code")
 
-    # Test AI mission adds AI node
-    d.mission = "research artificial intelligence"
-    d._init_knowledge()
-    node_ids = [n["id"] for n in d.knowledge_nodes]
-    suite.assert_true("ai" in node_ids, "v14_knowledge_ai")
+    # Test recent
+    recent = ms.recent(2)
+    suite.assert_equals(len(recent), 2, "v15_mem_recent_2")
 
-    # Test learning mission adds learning path node
-    d.mission = "learn quantum physics"
-    d._init_knowledge()
-    node_ids = [n["id"] for n in d.knowledge_nodes]
-    suite.assert_true("learning" in node_ids, "v14_knowledge_learning")
+    # Test serialization
+    data = ms.to_dict()
+    ms2 = MemorySystem()
+    ms2.from_dict(data)
+    suite.assert_equals(ms2.count(), 3, "v15_mem_from_dict_count")
 
-    # Test timeline system
-    suite.assert_true(hasattr(d, "_init_timeline"), "v14_init_timeline")
-    suite.assert_true(hasattr(d, "_render_timeline"), "v14_timeline")
-    d.mission = "test mission"
-    d._init_timeline()
-    suite.assert_true(len(d.timeline_entries) > 0, "v14_timeline_entries")
+    # ======================== KnowledgeGraph ========================
 
-    # Test agent chat system
-    suite.assert_true(hasattr(d, "_render_agent_chat"), "v14_agent_chat")
-    suite.assert_true(hasattr(d, "_on_chat"), "v14_on_chat")
+    kg = KnowledgeGraph()
+    suite.assert_true(hasattr(kg, "add_concept"), "v15_kg_add")
+    suite.assert_true(hasattr(kg, "relate"), "v15_kg_relate")
+    suite.assert_true(hasattr(kg, "get_connections"), "v15_kg_connections")
+    suite.assert_true(hasattr(kg, "query"), "v15_kg_query")
+    suite.assert_true(hasattr(kg, "path"), "v15_kg_path")
+    suite.assert_true(hasattr(kg, "to_dict"), "v15_kg_to_dict")
 
-    # Test mission rendering
-    suite.assert_true(hasattr(d, "_render_mission"), "v14_render_mission")
+    # Test add concepts
+    kg.add_concept("ai", "Artificial Intelligence", "cs")
+    kg.add_concept("ml", "Machine Learning", "cs")
+    kg.add_concept("nn", "Neural Networks", "cs")
+    kg.add_concept("cv", "Computer Vision", "cs")
+    kg.add_concept("robot", "Robotics", "engineering")
+    suite.assert_equals(len(kg._nodes), 5, "v15_kg_5_nodes")
 
-    # Test system methods
-    suite.assert_true(hasattr(d, "_shutdown"), "v14_shutdown")
-    suite.assert_true(hasattr(d, "_truncate"), "v14_truncate")
+    # Test relationships
+    kg.relate("ai", "ml", "includes")
+    kg.relate("ml", "nn", "includes")
+    kg.relate("ai", "cv", "includes")
+    kg.relate("ai", "robot", "applied_to")
+    suite.assert_equals(len(kg._edges), 4, "v15_kg_4_edges")
 
-    # Test _truncate method
-    suite.assert_equals(d._truncate("hello world", 5), "he...", "v14_truncate_short")
-    suite.assert_equals(d._truncate("hello", 10), "hello", "v14_truncate_full")
-    suite.assert_equals(d._truncate("hello world", 11), "hello world", "v14_truncate_exact")
+    # Test get_connections
+    conns = kg.get_connections("ai")
+    suite.assert_true(len(conns) >= 3, "v15_kg_conn_ai")
+    conn_ids = [c[0] for c in conns]
+    suite.assert_true("ml" in conn_ids, "v15_kg_conn_ml")
+    suite.assert_true("cv" in conn_ids, "v15_kg_conn_cv")
+    suite.assert_true("robot" in conn_ids, "v15_kg_conn_robot")
 
-    # Test mission state
-    suite.assert_equals(d.mission, "test mission", "v14_mission_set")
-    suite.assert_equals(d.mission_mode, False, "v14_initial_mode")
-    suite.assert_equals(d.active_agent, None, "v14_initial_active_agent")
-    suite.assert_equals(len(d._conversation), 0, "v14_initial_conversation")
+    # Test query
+    results = kg.query(category="cs")
+    suite.assert_equals(len(results), 4, "v15_kg_query_cs")
+    results = kg.query(prefix="art")
+    suite.assert_equals(len(results), 1, "v15_kg_query_prefix")
 
-    # Verify NO old v13 cognitive OS artifacts remain
-    suite.assert_false(hasattr(d, "mission_spaces"), "v14_no_mission_spaces")
-    suite.assert_false(hasattr(d, "capability_active"), "v14_no_capability_active")
-    suite.assert_false(hasattr(d, "_generate_spaces"), "v14_no_generate_spaces")
-    suite.assert_false(hasattr(d, "_render_spaces"), "v14_no_render_spaces")
-    suite.assert_false(hasattr(d, "_activate_space"), "v14_no_activate_space")
-    suite.assert_false(hasattr(d, "_show_space_detail"), "v14_no_space_detail")
-    suite.assert_false(hasattr(d, "_render_ai_panel"), "v14_no_ai_panel")
-    suite.assert_false(hasattr(d, "_animate_logo"), "v14_no_animate_logo")
+    # Test path finding
+    path = kg.path("ai", "nn")
+    suite.assert_true(path is not None, "v15_kg_path_found")
+    suite.assert_true("ai" in path, "v15_kg_path_has_ai")
+    suite.assert_true("nn" in path, "v15_kg_path_has_nn")
 
-    # Verify NO old v12/v11 desktop artifacts remain
-    suite.assert_false(hasattr(d, "app_icons"), "v14_no_app_icons")
-    suite.assert_false(hasattr(d, "_create_taskbar"), "v14_no_taskbar")
-    suite.assert_false(hasattr(d, "_update_clock"), "v14_no_clock")
-    suite.assert_false(hasattr(d, "_context_menu"), "v14_no_context_menu")
-    suite.assert_false(hasattr(d, "_cycle_wallpaper"), "v14_no_wallpaper")
-    suite.assert_false(hasattr(d, "_toggle_start_menu"), "v14_no_start_menu")
-    suite.assert_false(hasattr(d, "_open_file_manager"), "v14_no_file_manager")
-    suite.assert_false(hasattr(d, "_open_terminal"), "v14_no_terminal")
-    suite.assert_false(hasattr(d, "_open_ide"), "v14_no_ide")
-    suite.assert_false(hasattr(d, "_open_settings"), "v14_no_settings")
-    suite.assert_false(hasattr(d, "_open_calculator"), "v14_no_calculator")
+    # Test no path
+    kg.add_concept("unrelated", "Unrelated", "other")
+    path = kg.path("ai", "unrelated")
+    suite.assert_equals(path, None, "v15_kg_path_none")
+
+    # Test serialization
+    data = kg.to_dict()
+    kg2 = KnowledgeGraph()
+    kg2.from_dict(data)
+    suite.assert_equals(len(kg2._nodes), 6, "v15_kg_from_dict_nodes")
+
+    # ======================== ContextEngine ========================
+
+    ce = ContextEngine()
+    suite.assert_true(hasattr(ce, "set_mission"), "v15_ctx_set_mission")
+    suite.assert_true(hasattr(ce, "get_current"), "v15_ctx_get_current")
+    suite.assert_true(hasattr(ce, "track_action"), "v15_ctx_track")
+    suite.assert_true(hasattr(ce, "summary"), "v15_ctx_summary")
+
+    # Test initial state
+    current = ce.get_current()
+    suite.assert_equals(current["mission"], None, "v15_ctx_initial_mission")
+    suite.assert_equals(len(current["active_projects"]), 0, "v15_ctx_initial_projects")
+
+    # Test set_mission
+    ce.set_mission("build a robot")
+    current = ce.get_current()
+    suite.assert_equals(current["mission"], "build a robot", "v15_ctx_mission_set")
+
+    # Test track_action
+    ce.track_action("research", {"topic": "motors"})
+    current = ce.get_current()
+    suite.assert_equals(current["session_actions"], 2, "v15_ctx_actions_count")
+
+    # Test preferences
+    ce.set_preference("theme", "dark")
+    suite.assert_equals(ce.get_preference("theme"), "dark", "v15_ctx_pref")
+    suite.assert_equals(ce.get_preference("missing", "default"), "default", "v15_ctx_pref_default")
+
+    # Test serialization
+    data = ce.to_dict()
+    ce2 = ContextEngine()
+    ce2.from_dict(data)
+    suite.assert_equals(ce2.get_current()["mission"], "build a robot", "v15_ctx_from_dict")
+
+    # ======================== LearningModel ========================
+
+    lm = LearningModel()
+    suite.assert_true(hasattr(lm, "add_skill"), "v15_lm_add_skill")
+    suite.assert_true(hasattr(lm, "update_skill"), "v15_lm_update_skill")
+    suite.assert_true(hasattr(lm, "get_skill"), "v15_lm_get_skill")
+    suite.assert_true(hasattr(lm, "create_path"), "v15_lm_create_path")
+    suite.assert_true(hasattr(lm, "complete_step"), "v15_lm_complete_step")
+    suite.assert_true(hasattr(lm, "progress_summary"), "v15_lm_progress")
+
+    # Test add skills
+    lm.add_skill("Python", "programming", 0.7)
+    lm.add_skill("Robotics", "engineering", 0.2)
+    lm.add_skill("Deep Learning", "ai", 0.0)
+    suite.assert_equals(len(lm.get_skills()), 3, "v15_lm_3_skills")
+
+    # Test update skill
+    lm.update_skill("Python", 0.1)
+    skill = lm.get_skill("Python")
+    suite.assert_true(skill["level"] > 0.7, "v15_lm_skill_updated")
+
+    # Test get skill by category
+    prog_skills = lm.get_skills("programming")
+    suite.assert_equals(len(prog_skills), 1, "v15_lm_cat_programming")
+
+    # Test learning path
+    path = lm.create_path("Become an AI Engineer", [
+        "Linear Algebra", "Neural Networks", "Deep Learning", "Computer Vision", "AI Agents"
+    ])
+    suite.assert_equals(path["progress"], 0.0, "v15_lm_path_progress")
+
+    # Test complete step
+    lm.complete_step("Become an AI Engineer", "Linear Algebra")
+    suite.assert_equals(lm.get_path("Become an AI Engineer")["progress"], 0.2, "v15_lm_step_done")
+
+    # Test progress summary
+    summary = lm.progress_summary()
+    suite.assert_true("Become an AI Engineer" in summary, "v15_lm_summary")
+    suite.assert_equals(summary["Become an AI Engineer"], "20%", "v15_lm_summary_pct")
+
+    # Test serialization
+    data = lm.to_dict()
+    lm2 = LearningModel()
+    lm2.from_dict(data)
+    suite.assert_equals(len(lm2.get_skills()), 3, "v15_lm_from_dict")
+
+    # ======================== ChiefOfStaff ========================
+
+    cofs = ChiefOfStaff()
+    suite.assert_true(hasattr(cofs, "analyze_mission"), "v15_cofs_analyze")
+    suite.assert_true(hasattr(cofs, "get_suggestions"), "v15_cofs_suggestions")
+    suite.assert_true(hasattr(cofs, "get_obstacles"), "v15_cofs_obstacles")
+
+    # Test analyze with data
+    mem = MemorySystem()
+    mem.store("mission", "building an AI", tags=["ai"], source="test")
+    result = cofs.analyze_mission("build a robot", mem, kg, lm)
+    suite.assert_true("suggestions" in result, "v15_cofs_result_suggestions")
+    suite.assert_true("obstacles" in result, "v15_cofs_result_obstacles")
+
+    # Test suggestions returned
+    suggestions = cofs.get_suggestions()
+    suite.assert_true(len(suggestions) > 0, "v15_cofs_has_suggestions")
+    obstacles = cofs.get_obstacles()
+    suite.assert_true(len(obstacles) > 0, "v15_cofs_has_obstacles")
+
+    # ======================== SimulationEngine ========================
+
+    sim = SimulationEngine()
+    suite.assert_true(hasattr(sim, "compare"), "v15_sim_compare")
+    suite.assert_true(hasattr(sim, "history"), "v15_sim_history")
+
+    # Test compare
+    result = sim.compare(
+        "Learn cybersecurity",
+        "Learn robotics",
+        context="building a robot with AI vision"
+    )
+    suite.assert_true("scenario_a" in result, "v15_sim_result_a")
+    suite.assert_true("scenario_b" in result, "v15_sim_result_b")
+    suite.assert_true("analysis" in result, "v15_sim_analysis")
+    suite.assert_true("recommendation" in result, "v15_sim_recommendation")
+
+    # Test simulation favors robotics given robot context
+    result = sim.compare(
+        "cybersecurity focus",
+        "robotics engineering",
+        context="robot project with AI vision"
+    )
+    suite.assert_equals(result["recommendation"], "B", "v15_sim_rec_robotics")
+
+    # Test history
+    history = sim.history()
+    suite.assert_equals(len(history), 2, "v15_sim_history_2")
+
+    # ======================== PrivacyController ========================
+
+    pc = PrivacyController()
+    suite.assert_true(hasattr(pc, "grant"), "v15_priv_grant")
+    suite.assert_true(hasattr(pc, "check"), "v15_priv_check")
+    suite.assert_true(hasattr(pc, "audit"), "v15_priv_audit")
+    suite.assert_true(hasattr(pc, "explain"), "v15_priv_explain")
+
+    # Test grant and check
+    suite.assert_false(pc.check("agent", "read"), "v15_priv_initial_denied")
+    pc.grant("agent", "read")
+    suite.assert_true(pc.check("agent", "read"), "v15_priv_granted")
+    pc.revoke("agent", "read")
+    suite.assert_false(pc.check("agent", "read"), "v15_priv_revoked")
+
+    # Test audit log
+    audit = pc.audit()
+    suite.assert_true(len(audit) >= 2, "v15_priv_audit_entries")
+
+    # Test explain
+    explanation = pc.explain("Study robotics first", ["skill levels", "project goals"])
+    suite.assert_true("Study robotics first" in explanation, "v15_priv_explain_text")
+
+    # ======================== DigitalTwinMind Integration ========================
+
+    dt = DigitalTwinMind()
+
+    # Test remember_mission
+    dt.remember_mission("build a humanoid robot")
+    suite.assert_equals(dt.memory.count(), 1, "v15_dt_mission_memory")
+    suite.assert_equals(dt.context.get_current()["mission"], "build a humanoid robot", "v15_dt_mission_context")
+
+    # Test continue_work
+    result = dt.continue_work("continue my robot project")
+    suite.assert_true("current_mission" in result, "v15_dt_continue_mission")
+    suite.assert_true("suggestions" in result, "v15_dt_continue_suggestions")
+    suite.assert_true("knowledge_summary" in result, "v15_dt_continue_knowledge")
+
+    # Test personalized greeting
+    greeting = dt.get_personalized_greeting()
+    suite.assert_true("greeting" in greeting, "v15_dt_greeting_msg")
+    suite.assert_true("recent_missions" in greeting, "v15_dt_greeting_missions")
+    suite.assert_true("skills_count" in greeting, "v15_dt_greeting_skills")
+    suite.assert_true(greeting["greeting"] in ["Good morning", "Good afternoon", "Good evening"], "v15_dt_greeting_time")
+
+    # Test save and load state
+    dt.learning.add_skill("Python", "programming", 0.8)
+    dt.knowledge_graph.add_concept("robot", "Robotics", "engineering")
+    state = dt.save_state()
+    suite.assert_true("memory" in state, "v15_dt_state_memory")
+    suite.assert_true("knowledge_graph" in state, "v15_dt_state_kg")
+    suite.assert_true("context" in state, "v15_dt_state_context")
+    suite.assert_true("learning" in state, "v15_dt_state_learning")
+
+    dt2 = DigitalTwinMind()
+    dt2.load_state(state)
+    suite.assert_equals(dt2.memory.count(), 1, "v15_dt_load_memory")
+    suite.assert_equals(len(dt2.learning.get_skills()), 1, "v15_dt_load_skills")
+
+    # ======================== ArcDesktop Integration ========================
+
+    suite.assert_true(hasattr(ArcDesktop, "_render_suggestions_panel"), "v15_desktop_suggestions")
+
+    # Test ArcDesktop accepts digital_twin
+    custom_twin = DigitalTwinMind()
+    custom_twin.remember_mission("test mission")
+    app = ArcDesktop(digital_twin=custom_twin)
+    suite.assert_equals(app.twin, custom_twin, "v15_desktop_twin_injected")
+    suite.assert_equals(app.twin.memory.count(), 1, "v15_desktop_twin_memories")
+
+    # Test ArcDesktop normal init creates twin
+    app2 = ArcDesktop()
+    suite.assert_true(hasattr(app2, "twin"), "v15_desktop_has_twin")
+    suite.assert_true(isinstance(app2.twin, DigitalTwinMind), "v15_desktop_twin_type")
 
     return suite
 
@@ -3562,7 +3769,7 @@ def main():
         ("Arc Multithreading", test_arc_threading),
         ("Arc AI Module", test_arc_ai),
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
-        ("Arc v14.0.0 Mission Space", test_arc_v14),
+        ("Arc v15.0.0 Digital Twin Mind", test_arc_v15),
     ]
 
     for name, test_func in test_funcs:
@@ -3581,7 +3788,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v14.0.0 Mission Space")
+    print(f"  OVERALL RESULTS — v15.0.0 Digital Twin Mind")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")

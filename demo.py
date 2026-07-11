@@ -3988,7 +3988,7 @@ class ArcDesktop:
         ("Critic", "critic", "Reviews, finds gaps, suggests improvements", "#ff6644"),
     ]
 
-    def __init__(self):
+    def __init__(self, digital_twin=None):
         self.root = None
         self.canvas = None
         self.mission = None
@@ -3999,6 +3999,7 @@ class ArcDesktop:
         self.mission_mode = False
         self._conversation = []
         self._conversation_lines = []
+        self.twin = digital_twin or DigitalTwinMind()
 
     def available(self):
         return _HAVE_TK
@@ -4058,23 +4059,43 @@ class ArcDesktop:
         self.canvas.create_text(cx, cy + 20, text="ARCANIS",
                                 fill=self.FG_BRIGHT, font=self.FONT_XL, tags="main_title")
 
-        # Tagline
-        self.canvas.create_text(cx, cy + 85, text="What future do you want to create?",
+        # Personalized greeting from Digital Twin
+        greeting = self.twin.get_personalized_greeting()
+        greeting_text = f"{greeting['greeting']}."
+        if greeting["recent_missions"]:
+            greeting_text += f"  {greeting['memories_count']} memories  ·  {greeting['skills_count']} skills"
+        self.canvas.create_text(cx, cy + 80, text=greeting_text,
+                                fill=self.FG_SOFT, font=("Segoe UI", 13), tags="greeting")
+
+        # Active missions from Digital Twin
+        if greeting["recent_missions"]:
+            mission_y = cy + 110
+            self.canvas.create_text(cx, mission_y, text="Your active missions:",
+                                    fill=self.FG_CYAN, font=("Segoe UI", 9, "bold"), tags="active_label")
+            for i, m in enumerate(greeting["recent_missions"]):
+                self.canvas.create_text(cx, mission_y + 20 + i * 18, text=f"  ◎  {self._truncate(m, 50)}",
+                                        fill="#555577", font=("Segoe UI", 9), tags=f"active_mission_{i}")
+
+        # Tagline (position depends on whether missions shown)
+        tag_y = cy + 160 if greeting["recent_missions"] else cy + 85
+        self.canvas.create_text(cx, tag_y, text="What future do you want to create?",
                                 fill=self.FG_SOFT, font=("Segoe UI", 16, "italic"), tags="tagline")
 
-        # Intent input
+        # Intent input (position depends on whether missions shown)
+        input_y = tag_y + 55
         self.intent_entry = tk.Entry(self.root, bg=self.BG_DEEP, fg=self.FG_BRIGHT,
                                      font=self.FONT_MED, insertbackground=self.FG_GLOW,
                                      relief=tk.FLAT, bd=0, highlightthickness=0,
                                      width=50, justify="center")
-        self.intent_entry.place(x=cx - 300, y=cy + 140, width=600, height=45)
+        self.intent_entry.place(x=cx - 300, y=input_y, width=600, height=45)
         self.intent_entry.insert(0, "")
         self.intent_entry.bind("<Return>", self._on_intent)
         self.intent_entry.focus()
 
         # Example hints
+        examples_y = input_y + 60
         examples = "e.g. Build a humanoid robot  ·  Learn quantum physics  ·  Create a game  ·  Design a company"
-        self.canvas.create_text(cx, cy + 200, text=examples,
+        self.canvas.create_text(cx, examples_y, text=examples,
                                 fill="#333355", font=("Segoe UI", 9), tags="examples")
 
         self.canvas.create_text(cx, h - 40, text="Escape to exit  ·  Your intent becomes your world",
@@ -4113,6 +4134,8 @@ class ArcDesktop:
         intent = self.intent_entry.get().strip()
         if intent:
             self.mission = intent
+            self.twin.remember_mission(intent)
+            self.twin.context.track_action("mission_start", intent)
             self._init_agents()
             self._init_knowledge()
             self._init_timeline()
@@ -4203,9 +4226,14 @@ class ArcDesktop:
         self.canvas.tag_bind("new_ms_btn", "<Enter>", lambda e: self.canvas.itemconfig("new_ms_btn", fill=self.FG_GLOW))
         self.canvas.tag_bind("new_ms_btn", "<Leave>", lambda e: self.canvas.itemconfig("new_ms_btn", fill=self.FG_SOFT))
 
+        # Digital Twin: Chief of Staff suggestions
+        self._twin_suggestions = self.twin.chief.get_suggestions()
+        self._twin_obstacles = self.twin.chief.get_obstacles()
+
         # Layout regions
         self._render_agents_panel()
         self._render_knowledge_graph()
+        self._render_suggestions_panel()
         self._render_timeline()
         self._render_agent_chat()
 
@@ -4252,6 +4280,36 @@ class ArcDesktop:
             self.canvas.tag_bind(f"agent_{key}_bg", "<Button-1>", lambda e, k=key: self._activate_agent(k))
             self.canvas.tag_bind(f"agent_{key}_bg", "<Enter>", lambda e, k=key: self.canvas.itemconfig(f"agent_{k}_bg", outline=self.FG_GLOW))
             self.canvas.tag_bind(f"agent_{key}_bg", "<Leave>", lambda e, k=key: self.canvas.itemconfig(f"agent_{k}_bg", outline="#1a1a2e"))
+
+    # ================================================================
+    # CHIEF OF STAFF — Proactive Intelligence
+    # ================================================================
+
+    def _render_suggestions_panel(self):
+        w = self.root.winfo_screenwidth()
+        sx = 290
+        sy = 65
+        sw = w - 320
+        sh = 40
+
+        if sw < 200:
+            return
+
+        bg_color = "#0d0d1a"
+        self.canvas.create_rectangle(sx, sy, sx + sw, sy + sh,
+                                     fill=bg_color, outline="#1a1a2e", tags="suggestions_bg")
+
+        parts = []
+        if self._twin_suggestions:
+            parts.append("💡 " + self._twin_suggestions[0])
+        if self._twin_obstacles:
+            parts.append("⚠ " + self._twin_obstacles[0])
+        if not parts:
+            parts.append("Your Digital Twin is ready. Start your mission to receive guidance.")
+
+        text = "  ·  ".join(parts)
+        self.canvas.create_text(sx + 15, sy + 20, text=self._truncate(text, int(sw / 6)),
+                                fill=self.FG_SOFT, font=("Segoe UI", 9), anchor="w", tags="suggestions_text")
 
     # ================================================================
     # KNOWLEDGE GRAPH — Connected, Hierarchical, Living
@@ -4409,12 +4467,33 @@ class ArcDesktop:
             self._conversation_lines.append(f"You: {msg}")
             if len(self._conversation_lines) > 50:
                 self._conversation_lines = self._conversation_lines[-30:]
-            # Simulate agent response
+
+            # Store in Digital Twin memory
+            self.twin.memory.store("conversation", msg, tags=[target], source="user_chat")
+
+            # Generate response using Digital Twin context
             if target in self.agents:
                 agent = self.agents[target]
-                response = f"{agent['name']}: I'll work on '{msg}' for {self._truncate(self.mission, 20)}"
+                # Check knowledge graph for relevant context
+                related = self.twin.knowledge_graph.get_connections(target, depth=1)
+                context_hint = ""
+                if related:
+                    labels = []
+                    for cid, _ in related[:2]:
+                        node = self.twin.knowledge_graph._nodes.get(cid, {})
+                        if node:
+                            labels.append(node.get("label", cid))
+                    if labels:
+                        context_hint = f" (related: {', '.join(labels)})"
+                response = f"{agent['name']}: I'll work on '{msg}' for {self._truncate(self.mission, 20)}{context_hint}"
             else:
-                response = f"System: Processing request for '{self._truncate(self.mission, 20)}'"
+                # Use chief of staff for system-level responses
+                suggestions = self.twin.chief.get_suggestions()
+                if suggestions and "continue" in msg.lower():
+                    response = f"System: {suggestions[0]}"
+                else:
+                    response = f"System: Processing request for '{self._truncate(self.mission, 20)}'"
+
             self._conversation.append((target, response))
             self._conversation_lines.append(response)
             self.chat_entry.delete(0, tk.END)
@@ -4425,6 +4504,7 @@ class ArcDesktop:
         if key in self.agents:
             agent = self.agents[key]
             self._conversation_lines.append(f"--- Focused on {agent['name']} ---")
+            self.twin.context.track_action("agent_activate", key)
             self._render_agent_chat()
             self._show_agent_detail(key)
 
@@ -4457,7 +4537,488 @@ class ArcDesktop:
 
     def _shutdown(self):
         if self.root:
+            try:
+                state = self.twin.save_state()
+                import json
+                save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".digital_twin.json")
+                with open(save_path, "w") as f:
+                    json.dump(state, f, indent=2)
+            except Exception:
+                pass
             self.root.destroy()
+
+
+# ============================================================
+# DIGITAL TWIN MIND — Personal Intelligence Layer
+# ============================================================
+# The OS understands user goals, knowledge, projects, decisions.
+# Remembers 'why this matters' not just 'where this file is'.
+
+class PrivacyController:
+    """User-controlled, private by default, permission-based memory access."""
+
+    def __init__(self):
+        self._permissions = {}
+        self._audit_log = []
+        self._user_owned = True
+
+    def grant(self, component, access_type):
+        self._permissions[(component, access_type)] = True
+        self._log(f"Granted {access_type} to {component}")
+
+    def revoke(self, component, access_type):
+        self._permissions.pop((component, access_type), None)
+        self._log(f"Revoked {access_type} from {component}")
+
+    def check(self, component, access_type):
+        return self._permissions.get((component, access_type), False)
+
+    def _log(self, entry):
+        import time
+        self._audit_log.append({"time": time.time(), "entry": entry})
+        if len(self._audit_log) > 200:
+            self._audit_log = self._audit_log[-100:]
+
+    def explain(self, suggestion, sources):
+        return f"Suggestion: {suggestion}\nBased on: {', '.join(sources)}"
+
+    def audit(self):
+        return list(self._audit_log)
+
+
+class MemorySystem:
+    """Stores conversations, documents, projects, notes, research, code, decisions."""
+
+    def __init__(self):
+        self._memories = []
+        self._categories = set()
+
+    def store(self, category, content, tags=None, source=None):
+        import time
+        entry = {
+            "id": len(self._memories),
+            "time": time.time(),
+            "category": category,
+            "content": content,
+            "tags": tags or [],
+            "source": source,
+        }
+        self._memories.append(entry)
+        self._categories.add(category)
+        return entry["id"]
+
+    def recall(self, query=None, category=None, limit=5):
+        results = self._memories
+        if category:
+            results = [m for m in results if m["category"] == category]
+        if query:
+            q = query.lower()
+            results = [m for m in results if q in m["content"].lower() or any(q in t.lower() for t in m["tags"])]
+        return sorted(results, key=lambda m: m["time"], reverse=True)[:limit]
+
+    def search_by_tag(self, tag, limit=10):
+        return [m for m in self._memories if tag in m["tags"]][:limit]
+
+    def count(self, category=None):
+        if category:
+            return sum(1 for m in self._memories if m["category"] == category)
+        return len(self._memories)
+
+    def categories(self):
+        return sorted(self._categories)
+
+    def recent(self, n=5):
+        return sorted(self._memories, key=lambda m: m["time"], reverse=True)[:n]
+
+    def to_dict(self):
+        return {"memories": self._memories}
+
+    def from_dict(self, data):
+        self._memories = data.get("memories", [])
+        self._categories = {m["category"] for m in self._memories}
+
+
+class KnowledgeGraph:
+    """Dynamic graph database of concepts, relationships, dependencies."""
+
+    def __init__(self):
+        self._nodes = {}
+        self._edges = []
+
+    def add_concept(self, concept_id, label, category="general", details=None):
+        import time
+        self._nodes[concept_id] = {
+            "id": concept_id,
+            "label": label,
+            "category": category,
+            "details": details or {},
+            "created": time.time(),
+            "updated": time.time(),
+        }
+        return concept_id
+
+    def relate(self, from_id, to_id, relation="related_to"):
+        if from_id in self._nodes and to_id in self._nodes:
+            edge = {"from": from_id, "to": to_id, "relation": relation}
+            if edge not in self._edges:
+                self._edges.append(edge)
+            self._nodes[from_id]["updated"] = __import__("time").time()
+
+    def get_connections(self, concept_id, depth=1):
+        if concept_id not in self._nodes:
+            return []
+        connected = []
+        for edge in self._edges:
+            if edge["from"] == concept_id:
+                connected.append((edge["to"], edge["relation"]))
+            elif edge["to"] == concept_id:
+                connected.append((edge["from"], edge["relation"]))
+        if depth > 1:
+            for cid, _ in list(connected):
+                connected.extend(self.get_connections(cid, depth - 1))
+        return connected
+
+    def query(self, category=None, prefix=None):
+        results = list(self._nodes.values())
+        if category:
+            results = [n for n in results if n["category"] == category]
+        if prefix:
+            results = [n for n in results if n["label"].lower().startswith(prefix.lower())]
+        return results
+
+    def path(self, from_id, to_id):
+        """Simple BFS to find path between two concepts."""
+        if from_id not in self._nodes or to_id not in self._nodes:
+            return None
+        visited = {from_id}
+        queue = [[from_id]]
+        while queue:
+            path = queue.pop(0)
+            last = path[-1]
+            if last == to_id:
+                return path
+            for edge in self._edges:
+                neighbor = None
+                if edge["from"] == last:
+                    neighbor = edge["to"]
+                elif edge["to"] == last:
+                    neighbor = edge["from"]
+                if neighbor and neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(path + [neighbor])
+        return None
+
+    def to_dict(self):
+        return {"nodes": self._nodes, "edges": self._edges}
+
+    def from_dict(self, data):
+        self._nodes = data.get("nodes", {})
+        self._edges = data.get("edges", [])
+
+
+class ContextEngine:
+    """Understands current task, previous conversations, active projects, user goals."""
+
+    def __init__(self):
+        self._current_mission = None
+        self._active_projects = []
+        self._session_history = []
+        self._preferences = {}
+
+    def set_mission(self, mission):
+        self._current_mission = mission
+        self._session_history.append({"type": "mission_start", "data": mission})
+
+    def get_current(self):
+        return {
+            "mission": self._current_mission,
+            "active_projects": list(self._active_projects),
+            "session_actions": len(self._session_history),
+        }
+
+    def track_action(self, action_type, data=None):
+        import time
+        self._session_history.append({"type": action_type, "data": data, "time": time.time()})
+        if len(self._session_history) > 100:
+            self._session_history = self._session_history[-50:]
+
+    def set_preference(self, key, value):
+        self._preferences[key] = value
+
+    def get_preference(self, key, default=None):
+        return self._preferences.get(key, default)
+
+    def summary(self):
+        m = self._current_mission or "No active mission"
+        return f"Mission: {m} | Projects: {len(self._active_projects)} | Actions: {len(self._session_history)}"
+
+    def to_dict(self):
+        return {
+            "current_mission": self._current_mission,
+            "active_projects": self._active_projects,
+            "preferences": self._preferences,
+        }
+
+    def from_dict(self, data):
+        self._current_mission = data.get("current_mission")
+        self._active_projects = data.get("active_projects", [])
+        self._preferences = data.get("preferences", {})
+
+
+class LearningModel:
+    """Tracks what user knows, learning progress, skill progression."""
+
+    def __init__(self):
+        self._skills = {}
+        self._learning_paths = {}
+        self._completed = []
+
+    def add_skill(self, name, category, level=0.0):
+        self._skills[name] = {
+            "name": name,
+            "category": category,
+            "level": max(0.0, min(1.0, level)),
+            "updated": __import__("time").time(),
+        }
+
+    def update_skill(self, name, delta=0.1):
+        if name in self._skills:
+            self._skills[name]["level"] = max(0.0, min(1.0, self._skills[name]["level"] + delta))
+            self._skills[name]["updated"] = __import__("time").time()
+
+    def get_skill(self, name):
+        return self._skills.get(name)
+
+    def get_skills(self, category=None):
+        if category:
+            return {k: v for k, v in self._skills.items() if v["category"] == category}
+        return dict(self._skills)
+
+    def create_path(self, goal, steps):
+        import time
+        path = {
+            "goal": goal,
+            "steps": [{"name": s, "completed": False} for s in steps],
+            "created": time.time(),
+            "progress": 0.0,
+        }
+        self._learning_paths[goal] = path
+        return path
+
+    def complete_step(self, goal, step_name):
+        path = self._learning_paths.get(goal)
+        if not path:
+            return
+        for step in path["steps"]:
+            if step["name"] == step_name and not step["completed"]:
+                step["completed"] = True
+                completed = sum(1 for s in path["steps"] if s["completed"])
+                path["progress"] = completed / len(path["steps"])
+                self._completed.append({"goal": goal, "step": step_name, "time": __import__("time").time()})
+                return
+
+    def get_path(self, goal):
+        return self._learning_paths.get(goal)
+
+    def progress_summary(self):
+        return {goal: f"{path['progress']*100:.0f}%" for goal, path in self._learning_paths.items()}
+
+    def to_dict(self):
+        return {"skills": self._skills, "paths": self._learning_paths, "completed": self._completed}
+
+    def from_dict(self, data):
+        self._skills = data.get("skills", {})
+        self._learning_paths = data.get("paths", {})
+        self._completed = data.get("completed", [])
+
+
+class ChiefOfStaff:
+    """Proactive intelligence — analyzes goals, tracks progress, detects obstacles."""
+
+    def __init__(self):
+        self._suggestions = []
+        self._obstacles = []
+
+    def analyze_mission(self, mission, memory_system, knowledge_graph, learning_model):
+        suggestions = []
+        obstacles = []
+
+        # Check if we've seen similar missions
+        similar = memory_system.recall(query=mission, category="mission", limit=3)
+        if similar:
+            suggestions.append(f"You previously worked on similar missions. Review past progress for insights.")
+
+        # Check for skill gaps
+        skills = learning_model.get_skills()
+        low_skills = {k: v for k, v in skills.items() if v["level"] < 0.3}
+        if low_skills:
+            skill_names = ", ".join(sorted(low_skills.keys()))
+            suggestions.append(f"Consider building skills: {skill_names}")
+            obstacles.append(f"Skill gap detected in: {skill_names}")
+
+        # Check knowledge graph for related concepts
+        related = knowledge_graph.query(prefix=mission[:10])
+        if related:
+            suggestions.append(f"Found {len(related)} related concepts in your knowledge graph.")
+
+        # Extract key terms as learning suggestions
+        terms = [w for w in mission.lower().split() if len(w) > 4][:5]
+        if terms:
+            suggestions.append(f"Key areas to explore: {', '.join(terms)}")
+
+        if not suggestions:
+            suggestions.append("Begin by researching and gathering knowledge about this mission.")
+
+        self._suggestions = suggestions
+        self._obstacles = obstacles
+        return {"suggestions": suggestions, "obstacles": obstacles}
+
+    def get_suggestions(self):
+        return list(self._suggestions)
+
+    def get_obstacles(self):
+        return list(self._obstacles)
+
+    def prioritize(self, items):
+        """Rank items by importance."""
+        return sorted(items, key=lambda x: len(x), reverse=True)
+
+
+class SimulationEngine:
+    """Decision-support system for simulating possibilities."""
+
+    def __init__(self):
+        self._scenarios = []
+
+    def compare(self, scenario_a, scenario_b, context=None):
+        """Compare two scenarios and return analysis."""
+        analysis = {
+            "scenario_a": scenario_a,
+            "scenario_b": scenario_b,
+            "analysis": [],
+            "recommendation": None,
+        }
+
+        a_keywords = set(scenario_a.lower().split())
+        b_keywords = set(scenario_b.lower().split())
+
+        if context:
+            ctx = context.lower()
+            ctx_words = ctx.split()
+            def match_keywords(kw_set, ctx_words):
+                count = 0
+                for kw in kw_set:
+                    for cw in ctx_words:
+                        if kw == cw or kw.startswith(cw) or cw.startswith(kw):
+                            count += 1
+                            break
+                return count
+            a_match = match_keywords(a_keywords, ctx_words)
+            b_match = match_keywords(b_keywords, ctx_words)
+            if a_match > b_match:
+                analysis["analysis"].append(f"Path A aligns more with your current context ({a_match} matches).")
+                analysis["recommendation"] = "A"
+            elif b_match > a_match:
+                analysis["analysis"].append(f"Path B aligns more with your current context ({b_match} matches).")
+                analysis["recommendation"] = "B"
+
+        if len(a_keywords) > len(b_keywords):
+            analysis["analysis"].append(f"Path A covers {len(a_keywords)} key areas vs {len(b_keywords)} for Path B.")
+        elif len(b_keywords) > len(a_keywords):
+            analysis["analysis"].append(f"Path B covers {len(b_keywords)} key areas vs {len(a_keywords)} for Path A.")
+
+        if not analysis["analysis"]:
+            analysis["analysis"].append("Both paths have different strengths. Consider your long-term goals.")
+
+        self._scenarios.append(analysis)
+        return analysis
+
+    def history(self):
+        return list(self._scenarios)
+
+
+class DigitalTwinMind:
+    """Personal Intelligence Layer — understands user goals, knowledge, projects, decisions."""
+
+    def __init__(self):
+        self.memory = MemorySystem()
+        self.knowledge_graph = KnowledgeGraph()
+        self.context = ContextEngine()
+        self.learning = LearningModel()
+        self.chief = ChiefOfStaff()
+        self.simulator = SimulationEngine()
+        self.privacy = PrivacyController()
+
+    def remember_mission(self, mission):
+        """Store a new mission and initialize its context."""
+        self.memory.store("mission", mission, tags=["active"], source="user_intent")
+        self.context.set_mission(mission)
+        self.chief.analyze_mission(mission, self.memory, self.knowledge_graph, self.learning)
+
+    def continue_work(self, query):
+        """Understand 'continue my work' — find context and return state."""
+        current = self.context.get_current()
+        recent = self.memory.recent(3)
+        suggestions = self.chief.get_suggestions()
+
+        return {
+            "current_mission": current["mission"],
+            "recent_memories": recent,
+            "suggestions": suggestions,
+            "active_projects": current["active_projects"],
+            "knowledge_summary": f"{self.knowledge_graph.query().__len__()} concepts in knowledge graph",
+        }
+
+    def get_personalized_greeting(self):
+        """Generate a greeting based on time and user state."""
+        import time
+        hour = time.localtime().tm_hour
+        if hour < 12:
+            greeting = "Good morning"
+        elif hour < 18:
+            greeting = "Good afternoon"
+        else:
+            greeting = "Good evening"
+
+        current = self.context.get_current()
+        missions = self.memory.recall(category="mission", limit=3)
+        skills = self.learning.get_skills()
+
+        result = {
+            "greeting": greeting,
+            "active_mission": current["mission"],
+            "recent_missions": [m["content"] for m in missions],
+            "skills_count": len(skills),
+            "memories_count": self.memory.count(),
+        }
+        return result
+
+    def save_state(self):
+        """Serialize all subsystems to a dict."""
+        return {
+            "memory": self.memory.to_dict(),
+            "knowledge_graph": self.knowledge_graph.to_dict(),
+            "context": self.context.to_dict(),
+            "learning": self.learning.to_dict(),
+        }
+
+    def load_state(self, data):
+        """Restore all subsystems from a dict."""
+        if "memory" in data:
+            self.memory.from_dict(data["memory"])
+        if "knowledge_graph" in data:
+            self.knowledge_graph.from_dict(data["knowledge_graph"])
+        if "context" in data:
+            self.context.from_dict(data["context"])
+        if "learning" in data:
+            self.learning.from_dict(data["learning"])
+
+    def summary(self):
+        return (
+            f"Digital Twin: {self.memory.count()} memories, "
+            f"{len(self.knowledge_graph._nodes)} concepts, "
+            f"{len(self.learning.get_skills())} skills tracked"
+        )
 
 
 THEMES = {
