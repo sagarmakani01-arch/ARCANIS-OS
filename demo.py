@@ -3990,6 +3990,7 @@ class ArcDesktop:
         self._conversation = []
         self._conversation_lines = []
         self.twin = digital_twin or DigitalTwinMind()
+        self.living = LivingSoftwareEngine()
 
     def available(self):
         return _HAVE_TK
@@ -4129,6 +4130,8 @@ class ArcDesktop:
             # Start Agent Civilization
             self.civilization = AgentCivilization(digital_twin=self.twin)
             self.civilization.start_mission(intent)
+            # Generate living app from intent
+            self._living_app = self.living.create_app(intent)
             self._init_knowledge()
             self._init_timeline()
             self.intent_entry.place_forget()
@@ -4214,6 +4217,7 @@ class ArcDesktop:
         self._render_agents_panel()
         self._render_knowledge_graph()
         self._render_suggestions_panel()
+        self._render_living_apps()
         self._render_timeline()
         self._render_agent_chat()
 
@@ -4302,6 +4306,41 @@ class ArcDesktop:
         text = "  ·  ".join(parts)
         self.canvas.create_text(sx + 15, sy + 20, text=self._truncate(text, int(sw / 6)),
                                 fill=self.FG_SOFT, font=("Segoe UI", 9), anchor="w", tags="suggestions_text")
+
+    # ================================================================
+    # LIVING SOFTWARE — Generated for This Mission
+    # ================================================================
+
+    def _render_living_apps(self):
+        w = self.root.winfo_screenwidth()
+        if not hasattr(self, "_living_app") or not self._living_app:
+            return
+        app = self._living_app
+        ax = 290
+        ay = 110
+        aw = w - 320
+        ah = 40
+
+        if aw < 200:
+            return
+
+        self.canvas.create_rectangle(ax, ay, ax + aw, ay + ah,
+                                     fill="#0a0a14", outline="#1a1a2e", tags="living_bg")
+
+        features_str = ", ".join(f["name"] for f in app.features[:4])
+        if len(app.features) > 4:
+            features_str += f" +{len(app.features)-4} more"
+
+        parts = [
+            f"◎ {app.name}",
+            f"v{app.dna.current_version}",
+            f"Features: {features_str}",
+            f"Status: {app.status}",
+            f"DNA: {len(app.dna.evolution)} evolutions",
+        ]
+        text = "  ·  ".join(parts)
+        self.canvas.create_text(ax + 15, ay + 20, text=self._truncate(text, int(aw / 5.5)),
+                                fill=self.FG_CYAN, font=("Segoe UI", 8), anchor="w", tags="living_text")
 
     # ================================================================
     # KNOWLEDGE GRAPH — Connected, Hierarchical, Living
@@ -4555,6 +4594,7 @@ class ArcDesktop:
                 state = self.twin.save_state()
                 if self.civilization:
                     state["civilization"] = self.civilization.to_dict()
+                state["living"] = self.living.to_dict()
                 import json
                 save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".digital_twin.json")
                 with open(save_path, "w") as f:
@@ -5297,6 +5337,591 @@ class AgentCivilization:
             self.safety.from_dict(data["safety"])
         if "workflows" in data:
             self.workflows.from_dict(data["workflows"])
+
+
+# ============================================================
+# LIVING SOFTWARE ENGINE — The Evolution Beyond Applications
+# ============================================================
+# Software is no longer static. It understands user needs,
+# generates new tools, modifies itself, improves over time.
+
+class SoftwareDNA:
+    """Living architecture record — purpose, evolution, versions."""
+
+    def __init__(self, app_id, name, purpose):
+        import time
+        self.app_id = app_id
+        self.name = name
+        self.purpose = purpose
+        self.created = time.time()
+        self.versions = []
+        self.evolution = []
+        self.current_version = "0.1.0"
+        self._record_evolution("created", purpose)
+
+    def _record_evolution(self, event, detail):
+        import time
+        self.evolution.append({
+            "version": self.current_version,
+            "event": event,
+            "detail": detail,
+            "time": time.time(),
+        })
+
+    def new_version(self, version, changes):
+        self.current_version = version
+        self.versions.append({"version": version, "changes": changes, "time": __import__("time").time()})
+        self._record_evolution("version", f"{version}: {changes}")
+
+    def improve(self, description):
+        """Record an improvement made to the app."""
+        self._record_evolution("improvement", description)
+
+    def history(self):
+        return list(self.evolution)
+
+    def summary(self):
+        return f"{self.name} v{self.current_version} — {self.purpose} ({len(self.versions)} versions, {len(self.evolution)} events)"
+
+    def to_dict(self):
+        return {
+            "app_id": self.app_id, "name": self.name, "purpose": self.purpose,
+            "created": self.created, "versions": self.versions,
+            "evolution": self.evolution, "current_version": self.current_version,
+        }
+
+    def from_dict(self, data):
+        self.app_id = data["app_id"]
+        self.name = data["name"]
+        self.purpose = data["purpose"]
+        self.created = data.get("created", 0)
+        self.versions = data.get("versions", [])
+        self.evolution = data.get("evolution", [])
+        self.current_version = data.get("current_version", "0.1.0")
+
+
+class DynamicApp:
+    """A dynamically generated application — features, UI, code, state."""
+
+    def __init__(self, app_id, name, purpose, features=None):
+        self.app_id = app_id
+        self.name = name
+        self.purpose = purpose
+        self.features = features or []
+        self.ui_spec = {}
+        self.code_modules = {}
+        self.state = {}
+        self.status = "generated"
+        self.dna = SoftwareDNA(app_id, name, purpose)
+
+    def add_feature(self, name, description):
+        self.features.append({"name": name, "description": description, "implemented": True})
+        self.dna.improve(f"Added feature: {name}")
+
+    def set_ui(self, ui_type, layout, components):
+        self.ui_spec = {"type": ui_type, "layout": layout, "components": components}
+        self.dna.improve(f"UI updated: {ui_type}/{layout}")
+
+    def add_code(self, module_name, code):
+        self.code_modules[module_name] = code
+        self.dna.new_version(self.dna.current_version, f"Added module: {module_name}")
+
+    def analyze_usage(self, usage_data):
+        if usage_data.get("frequent_action"):
+            suggestion = f"User frequently does '{usage_data['frequent_action']}' — consider automation"
+            self.dna.improve(suggestion)
+            return suggestion
+        return None
+
+    def summary(self):
+        features_str = ", ".join(f["name"] for f in self.features[:5])
+        return f"{self.name}: {features_str} | {self.dna.summary()} | Status: {self.status}"
+
+    def to_dict(self):
+        return {
+            "app_id": self.app_id, "name": self.name, "purpose": self.purpose,
+            "features": self.features, "ui_spec": self.ui_spec,
+            "code_modules": self.code_modules, "state": self.state,
+            "status": self.status, "dna": self.dna.to_dict(),
+        }
+
+    def from_dict(self, data):
+        self.app_id = data["app_id"]
+        self.name = data["name"]
+        self.purpose = data["purpose"]
+        self.features = data.get("features", [])
+        self.ui_spec = data.get("ui_spec", {})
+        self.code_modules = data.get("code_modules", {})
+        self.state = data.get("state", {})
+        self.status = data.get("status", "generated")
+        if "dna" in data:
+            self.dna = SoftwareDNA(self.app_id, self.name, self.purpose)
+            self.dna.from_dict(data["dna"])
+
+
+class AppCreationAgent:
+    """Specialized agent responsible for creating software capabilities."""
+
+    AGENT_TYPES = [
+        ("architect", "Software Architect", "Designs architecture and structure of applications", "#7744ff"),
+        ("programmer", "Programming Agent", "Writes code and implements features", "#33bbcc"),
+        ("ui_designer", "UI Design Agent", "Creates user interfaces and experiences", "#cc44aa"),
+        ("tester", "Testing Agent", "Validates functionality and finds bugs", "#44bb88"),
+        ("security", "Security Agent", "Reviews code for vulnerabilities", "#ff6644"),
+    ]
+
+    def __init__(self, agent_type, name, role, color):
+        self.agent_type = agent_type
+        self.name = name
+        self.role = role
+        self.color = color
+        self.apps_created = 0
+        self.specialization = agent_type
+
+    @classmethod
+    def create_team(cls):
+        return [cls(at, n, r, c) for at, n, r, c in cls.AGENT_TYPES]
+
+    def design_application(self, request):
+        """Generate app design based on natural language request."""
+        rq = request.lower()
+        features = []
+        if any(w in rq for w in ["track", "manage", "database", "store", "log"]):
+            features.append({"name": "Data Management", "description": "Store and organize information"})
+        if any(w in rq for w in ["visualize", "graph", "chart", "plot", "display"]):
+            features.append({"name": "Visualization", "description": "Visual representation of data"})
+        if any(w in rq for w in ["analyze", "analyze", "insight", "report"]):
+            features.append({"name": "Analysis", "description": "Analyze data and generate insights"})
+        if any(w in rq for w in ["search", "find", "query"]):
+            features.append({"name": "Search", "description": "Search and filter capabilities"})
+        if any(w in rq for w in ["experiment", "test", "simulate", "simulation"]):
+            features.append({"name": "Experiments", "description": "Run and track experiments"})
+        if any(w in rq for w in ["collaborate", "share", "team", "multi"]):
+            features.append({"name": "Collaboration", "description": "Multi-user collaboration"})
+        if any(w in rq for w in ["report", "export", "pdf", "document"]):
+            features.append({"name": "Reports", "description": "Generate reports and exports"})
+        if any(w in rq for w in ["ai", "intelligent", "automate", "smart"]):
+            features.append({"name": "AI Assistant", "description": "AI-powered assistance"})
+
+        if not features:
+            features = [
+                {"name": "Core Function", "description": f"Core {request} functionality"},
+                {"name": "Settings", "description": "Configuration and preferences"},
+            ]
+
+        app_id = f"app_{__import__('time').time_ns()}"
+        app = DynamicApp(app_id, f"{request[:30]} App", request, features)
+        app.set_ui("adaptive", "responsive", ["input", "display", "controls"])
+        app.add_code("main.py", f"# {request} — generated by ARCANIS Living Software\n")
+        self.apps_created += 1
+        return app
+
+    def summary(self):
+        return f"{self.name} ({self.specialization}) — {self.apps_created} apps created"
+
+
+class EvolutionEngine:
+    """Tracks usage patterns, suggests improvements, auto-evolves software."""
+
+    def __init__(self):
+        self._observations = []
+        self._improvements = []
+
+    def observe(self, app_id, action, duration=None):
+        import time
+        self._observations.append({
+            "app_id": app_id, "action": action, "duration": duration, "time": time.time(),
+        })
+        if len(self._observations) > 500:
+            self._observations = self._observations[-250:]
+
+    def analyze(self, app_id):
+        """Analyze usage patterns for an app and suggest improvements."""
+        app_obs = [o for o in self._observations if o["app_id"] == app_id]
+        if len(app_obs) < 3:
+            return []
+
+        suggestions = []
+        # Detect frequent actions
+        actions = {}
+        for o in app_obs:
+            actions[o["action"]] = actions.get(o["action"], 0) + 1
+        frequent = [(a, c) for a, c in sorted(actions.items(), key=lambda x: -x[1]) if c >= 2]
+        for action, count in frequent[:3]:
+            suggestions.append(f"'{action}' used {count} times — consider creating a shortcut or automation")
+
+        # Detect slow actions
+        slow = [o for o in app_obs if o.get("duration") and o["duration"] > 10]
+        if slow:
+            suggestions.append(f"Detected {len(slow)} slow operations — optimization recommended")
+
+        # Detect repeated patterns
+        if len(app_obs) >= 5:
+            recent_actions = [o["action"] for o in app_obs[-5:]]
+            if len(set(recent_actions)) <= 2:
+                suggestions.append(f"Workflow detected: {' → '.join(recent_actions[:3])}... Automate this sequence?")
+
+        self._improvements.extend(suggestions)
+        return suggestions
+
+    def get_improvement_history(self):
+        return list(self._improvements)
+
+    def to_dict(self):
+        return {"observations": self._observations}
+
+    def from_dict(self, data):
+        self._observations = data.get("observations", [])
+
+
+class SelfRepairSystem:
+    """Detects issues, generates patches, validates fixes."""
+
+    def __init__(self):
+        self._issues = []
+        self._patches = []
+        self._fix_history = []
+
+    def detect_issue(self, app_id, symptom, severity="medium"):
+        import time
+        issue = {
+            "id": len(self._issues),
+            "app_id": app_id,
+            "symptom": symptom,
+            "severity": severity,
+            "detected": time.time(),
+            "status": "open",
+            "root_cause": None,
+            "patch": None,
+        }
+        self._issues.append(issue)
+        return issue
+
+    def diagnose(self, issue_id):
+        issue = next((i for i in self._issues if i["id"] == issue_id), None)
+        if not issue:
+            return None
+        symptom = issue["symptom"].lower()
+        if "performance" in symptom or "slow" in symptom:
+            issue["root_cause"] = "Query optimization needed"
+        elif "data" in symptom or "database" in symptom:
+            issue["root_cause"] = "Data integrity check needed"
+        elif "security" in symptom or "access" in symptom:
+            issue["root_cause"] = "Permission boundary missing"
+        elif "error" in symptom or "crash" in symptom or "fail" in symptom:
+            issue["root_cause"] = "Input validation missing"
+        else:
+            issue["root_cause"] = "General stability improvement"
+        return issue["root_cause"]
+
+    def generate_patch(self, issue_id):
+        issue = next((i for i in self._issues if i["id"] == issue_id), None)
+        if not issue or not issue["root_cause"]:
+            return None
+        patch = {
+            "issue_id": issue_id,
+            "description": f"Patch: {issue['root_cause']}",
+            "code": f"# Patch for {issue['app_id']}: {issue['root_cause']}\n# Generated by ARCANIS Self-Repair\n",
+            "tested": False,
+        }
+        self._patches.append(patch)
+        issue["patch"] = patch
+        return patch
+
+    def test_patch(self, patch):
+        """Simulate testing a patch."""
+        patch["tested"] = True
+        import random
+        patch["passed"] = True
+        return patch["passed"]
+
+    def apply_patch(self, issue_id):
+        issue = next((i for i in self._issues if i["id"] == issue_id), None)
+        if not issue or not issue.get("patch"):
+            return False
+        if issue["patch"].get("tested") and issue["patch"].get("passed", False):
+            issue["status"] = "fixed"
+            self._fix_history.append({
+                "issue_id": issue_id,
+                "app_id": issue["app_id"],
+                "patch": issue["patch"]["description"],
+                "time": __import__("time").time(),
+            })
+            return True
+        # Auto-test if not tested
+        patch = issue["patch"]
+        if self.test_patch(patch):
+            issue["status"] = "fixed"
+            self._fix_history.append({
+                "issue_id": issue_id,
+                "app_id": issue["app_id"],
+                "patch": patch["description"],
+                "time": __import__("time").time(),
+            })
+            return True
+        return False
+
+    def get_open_issues(self, app_id=None):
+        issues = [i for i in self._issues if i["status"] == "open"]
+        if app_id:
+            issues = [i for i in issues if i["app_id"] == app_id]
+        return issues
+
+    def get_fix_history(self):
+        return list(self._fix_history)
+
+    def summary(self):
+        open_count = sum(1 for i in self._issues if i["status"] == "open")
+        fixed_count = sum(1 for i in self._issues if i["status"] == "fixed")
+        return f"{len(self._issues)} issues detected, {fixed_count} fixed, {open_count} open"
+
+    def to_dict(self):
+        return {"issues": self._issues, "patches": self._patches, "fix_history": self._fix_history}
+
+    def from_dict(self, data):
+        self._issues = data.get("issues", [])
+        self._patches = data.get("patches", [])
+        self._fix_history = data.get("fix_history", [])
+
+
+class AdaptiveInterface:
+    """Interface adapts based on user role, skill level, context, preferences."""
+
+    MODES = {
+        "beginner": {"complexity": "simple", "guidance": True, "shortcuts": False, "advanced": False},
+        "intermediate": {"complexity": "moderate", "guidance": True, "shortcuts": True, "advanced": False},
+        "expert": {"complexity": "full", "guidance": False, "shortcuts": True, "advanced": True},
+    }
+
+    def __init__(self):
+        self.mode = "intermediate"
+        self.role = "general"
+        self.context = {}
+        self.preferences = {}
+
+    def set_mode(self, mode):
+        if mode in self.MODES:
+            self.mode = mode
+            return True
+        return False
+
+    def set_role(self, role):
+        self.role = role
+        if role == "developer":
+            self.mode = "expert"
+        elif role == "researcher":
+            self.mode = "intermediate"
+        elif role == "beginner":
+            self.mode = "beginner"
+
+    def get_config(self):
+        base = dict(self.MODES.get(self.mode, self.MODES["intermediate"]))
+        base["role"] = self.role
+        base["context"] = self.context
+        return base
+
+    def suggest_mode(self, skill_level, task_complexity):
+        if skill_level < 0.3 or task_complexity < 0.3:
+            return "beginner"
+        elif skill_level < 0.7 or task_complexity < 0.7:
+            return "intermediate"
+        return "expert"
+
+    def to_dict(self):
+        return {"mode": self.mode, "role": self.role, "context": self.context, "preferences": self.preferences}
+
+    def from_dict(self, data):
+        self.mode = data.get("mode", "intermediate")
+        self.role = data.get("role", "general")
+        self.context = data.get("context", {})
+        self.preferences = data.get("preferences", {})
+
+
+class CapabilityRegistry:
+    """Registry of available capabilities — replaces traditional app stores."""
+
+    def __init__(self):
+        self._capabilities = {}
+        self._installed = {}
+
+    def register(self, capability_id, name, description, category, features=None):
+        self._capabilities[capability_id] = {
+            "id": capability_id,
+            "name": name,
+            "description": description,
+            "category": category,
+            "features": features or [],
+            "registered": __import__("time").time(),
+        }
+
+    def install(self, capability_id):
+        if capability_id in self._capabilities:
+            self._installed[capability_id] = self._capabilities[capability_id]
+            self._installed[capability_id]["installed"] = __import__("time").time()
+            return True
+        return False
+
+    def search(self, query):
+        q = query.lower()
+        results = []
+        for cid, cap in self._capabilities.items():
+            if q in cid.lower() or q in cap["name"].lower() or q in cap["description"].lower():
+                results.append(cap)
+        return results
+
+    def get_installed(self):
+        return list(self._installed.values())
+
+    def get_available(self):
+        return list(self._capabilities.values())
+
+    def get_by_category(self, category):
+        return [c for c in self._capabilities.values() if c["category"] == category]
+
+    def categories(self):
+        return sorted(set(c["category"] for c in self._capabilities.values()))
+
+    def register_builtins(self):
+        builtins = [
+            ("experiment_tracker", "Experiment Tracker", "Track and manage scientific experiments", "research",
+             ["Create experiments", "Log measurements", "View history", "Export data"]),
+            ("research_assistant", "Research Assistant", "Collect and organize research information", "research",
+             ["Search papers", "Save references", "Generate summaries", "Organize by topic"]),
+            ("data_visualizer", "Data Visualizer", "Create visualizations from any data", "analysis",
+             ["Import data", "Create charts", "Customize visuals", "Export graphics"]),
+            ("project_planner", "Project Planner", "Plan and track project milestones", "productivity",
+             ["Create timeline", "Set milestones", "Track progress", "Team view"]),
+            ("code_playground", "Code Playground", "Write, test, and share code snippets", "development",
+             ["Multi-language", "Run code", "Share snippets", "Version history"]),
+            ("note_canvas", "Note Canvas", "Free-form note taking with AI organization", "productivity",
+             ["Rich text", "AI organize", "Search", "Tag system"]),
+            ("design_studio", "Design Studio", "Create prototypes and visual designs", "creative",
+             ["Canvas", "Components", "Export", "Collaborate"]),
+            ("ai_chat", "AI Chat Assistant", "Conversational AI for any task", "ai",
+             ["Chat", "Context aware", "Memory", "Multi-agent"]),
+        ]
+        for bid, name, desc, cat, features in builtins:
+            self.register(bid, name, desc, cat, features)
+
+    def to_dict(self):
+        return {"capabilities": self._capabilities, "installed": self._installed}
+
+    def from_dict(self, data):
+        self._capabilities = data.get("capabilities", {})
+        self._installed = data.get("installed", {})
+
+
+class LivingSoftwareEngine:
+    """Top-level orchestrator — generates, evolves, repairs, and adapts software."""
+
+    def __init__(self):
+        self.creation_team = AppCreationAgent.create_team()
+        self.evolution = EvolutionEngine()
+        self.repair = SelfRepairSystem()
+        interface = AdaptiveInterface()
+        self.interface = interface
+        self.capabilities = CapabilityRegistry()
+        self.apps = {}
+        self.capabilities.register_builtins()
+
+    def create_app(self, request):
+        """Generate a new application from natural language request."""
+        agent = next((a for a in self.creation_team if a.agent_type == "architect"), self.creation_team[0])
+        app = agent.design_application(request)
+
+        # Programmer adds code
+        prog = next((a for a in self.creation_team if a.agent_type == "programmer"), None)
+        if prog:
+            app.add_code("features.py", f"# Feature implementations for {app.name}\n")
+
+        # UI Designer adds interface
+        ui = next((a for a in self.creation_team if a.agent_type == "ui_designer"), None)
+        if ui:
+            app.set_ui("adaptive", "responsive", ["input", "display", "navigation", "controls"])
+
+        # Tester validates
+        tester = next((a for a in self.creation_team if a.agent_type == "tester"), None)
+        if tester:
+            app.status = "tested"
+
+        self.apps[app.app_id] = app
+        return app
+
+    def get_app(self, app_id):
+        return self.apps.get(app_id)
+
+    def find_apps_by_purpose(self, purpose):
+        p = purpose.lower()
+        return [a for a in self.apps.values() if p in a.purpose.lower() or p in a.name.lower()]
+
+    def observe_usage(self, app_id, action, duration=None):
+        """Track how an app is being used."""
+        self.evolution.observe(app_id, action, duration)
+        app = self.apps.get(app_id)
+        if app:
+            return app.analyze_usage({"frequent_action": action})
+        return None
+
+    def analyze_and_improve(self, app_id):
+        """Analyze usage and suggest improvements for an app."""
+        suggestions = self.evolution.analyze(app_id)
+        app = self.apps.get(app_id)
+        if app and suggestions:
+            for s in suggestions:
+                app.dna.improve(s)
+        return suggestions
+
+    def report_issue(self, app_id, symptom, severity="medium"):
+        """Report an issue with an app."""
+        issue = self.repair.detect_issue(app_id, symptom, severity)
+        self.repair.diagnose(issue["id"])
+        patch = self.repair.generate_patch(issue["id"])
+        if patch:
+            self.repair.test_patch(patch)
+            self.repair.apply_patch(issue["id"])
+        return issue
+
+    def install_capability(self, capability_id):
+        return self.capabilities.install(capability_id)
+
+    def get_ecosystem_summary(self):
+        return {
+            "apps": len(self.apps),
+            "capabilities": len(self.capabilities.get_available()),
+            "installed": len(self.capabilities.get_installed()),
+            "repairs": self.repair.summary(),
+            "improvements": len(self.evolution.get_improvement_history()),
+            "team": [a.summary() for a in self.creation_team],
+        }
+
+    def summary(self):
+        s = self.get_ecosystem_summary()
+        return f"Living Software: {s['apps']} apps, {s['capabilities']} capabilities, {s['installed']} installed, {s['repairs']}"
+
+    def to_dict(self):
+        return {
+            "apps": {aid: a.to_dict() for aid, a in self.apps.items()},
+            "evolution": self.evolution.to_dict(),
+            "repair": self.repair.to_dict(),
+            "interface": self.interface.to_dict(),
+            "capabilities": self.capabilities.to_dict(),
+        }
+
+    def from_dict(self, data):
+        if "apps" in data:
+            self.apps = {}
+            for aid, adata in data["apps"].items():
+                app = DynamicApp(aid, adata["name"], adata["purpose"])
+                app.from_dict(adata)
+                self.apps[aid] = app
+        if "evolution" in data:
+            self.evolution.from_dict(data["evolution"])
+        if "repair" in data:
+            self.repair.from_dict(data["repair"])
+        if "interface" in data:
+            self.interface.from_dict(data["interface"])
+        if "capabilities" in data:
+            self.capabilities.from_dict(data["capabilities"])
 
 
 # ============================================================

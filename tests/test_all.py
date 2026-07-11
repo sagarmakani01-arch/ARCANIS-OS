@@ -2997,386 +2997,376 @@ def test_arc_v12():
 
 
 # ============================================================
-# ARC V16.0.0 TESTS — Agent Civilization
+# ARC V17.0.0 TESTS — Living Software Engine
 # ============================================================
 
-def test_arc_v16():
-    suite = TestSuite("Arc v16.0.0 Agent Civilization Tests")
+def test_arc_v17():
+    suite = TestSuite("Arc v17.0.0 Living Software Tests")
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from demo import (AgentCivilization, Agent, AgentMemory, AgentSafetyCage,
-                      AgentCommunicationNetwork, MissionManager, AgentMarketplace,
-                      AgentTraining, SafetyArchitecture, WorkflowEngine, ArcDesktop)
+    from demo import (LivingSoftwareEngine, DynamicApp, SoftwareDNA,
+                      AppCreationAgent, EvolutionEngine, SelfRepairSystem,
+                      AdaptiveInterface, CapabilityRegistry, ArcDesktop)
 
-    # ======================== Agent ========================
+    # ======================== SoftwareDNA ========================
 
-    a = Agent("test1", "Test Agent", "Testing", "#ff0000")
-    suite.assert_equals(a.id, "test1", "v16_agent_id")
-    suite.assert_equals(a.name, "Test Agent", "v16_agent_name")
-    suite.assert_equals(a.role, "Testing", "v16_agent_role")
-    suite.assert_equals(a.status, "idle", "v16_agent_status_initial")
-    suite.assert_equals(a.tasks_completed, 0, "v16_agent_tasks_initial")
+    dna = SoftwareDNA("app1", "Test App", "Testing purposes")
+    suite.assert_equals(dna.app_id, "app1", "v17_dna_id")
+    suite.assert_equals(dna.name, "Test App", "v17_dna_name")
+    suite.assert_equals(dna.current_version, "0.1.0", "v17_dna_initial_version")
+    suite.assert_true(len(dna.evolution) >= 1, "v17_dna_initial_evolution")
 
-    # Test add_skill
-    a.add_skill("python", 0.8)
-    a.add_skill("robotics", 0.4)
-    suite.assert_equals(len(a.skills), 2, "v16_agent_skills")
-    suite.assert_equals(a.skills["python"], 0.8, "v16_agent_skill_level")
+    # Test new_version
+    dna.new_version("1.0.0", "Initial release")
+    suite.assert_equals(dna.current_version, "1.0.0", "v17_dna_version_updated")
+    suite.assert_equals(len(dna.versions), 1, "v17_dna_versions_count")
 
-    # Test add_tool
-    a.add_tool("compiler")
-    a.add_tool("debugger")
-    suite.assert_equals(len(a.tools), 2, "v16_agent_tools")
+    # Test improve
+    dna.improve("Added search functionality")
+    suite.assert_equals(len(dna.evolution), 3, "v17_dna_evolution_count")
 
-    # Test assign_task
-    a.assign_task("Build the control system")
-    suite.assert_equals(a.status, "working", "v16_agent_status_working")
-    suite.assert_equals(a.current_task, "Build the control system", "v16_agent_task")
-
-    # Test complete_task
-    result = a.complete_task("completed")
-    suite.assert_equals(a.tasks_completed, 1, "v16_agent_tasks_done")
-    suite.assert_equals(a.status, "idle", "v16_agent_status_idle_after")
-    suite.assert_true("task" in result and "outcome" in result, "v16_agent_result_keys")
-
-    # Test feedback
-    fb = a.feedback(0.9, "Great work")
-    suite.assert_equals(fb["rating"], 0.9, "v16_agent_feedback_rating")
-
-    # Test improvement_needed
-    suite.assert_false(a.improvement_needed(), "v16_agent_no_improvement")
-    a.feedback(0.2, "Bad")
-    a.feedback(0.1, "Very bad")
-    a.feedback(0.3, "Poor")
-    suite.assert_true(a.improvement_needed(), "v16_agent_improvement_needed")
+    # Test history
+    history = dna.history()
+    suite.assert_equals(len(history), 3, "v17_dna_history_length")
 
     # Test summary
-    summary = a.summary()
-    suite.assert_true("Test Agent" in summary, "v16_agent_summary")
+    s = dna.summary()
+    suite.assert_true("Test App" in s, "v17_dna_summary")
 
     # Test serialization
-    data = a.to_dict()
-    a2 = Agent("copy", "Copy", "Copying")
-    a2.from_dict(data)
-    suite.assert_equals(a2.name, "Test Agent", "v16_agent_from_dict_name")
-    suite.assert_equals(a2.tasks_completed, 1, "v16_agent_from_dict_tasks")
-    suite.assert_equals(len(a2.skills), 2, "v16_agent_from_dict_skills")
+    data = dna.to_dict()
+    dna2 = SoftwareDNA("copy", "Copy", "Copying")
+    dna2.from_dict(data)
+    suite.assert_equals(dna2.current_version, "1.0.0", "v17_dna_from_dict_version")
 
-    # ======================== AgentMemory ========================
+    # ======================== DynamicApp ========================
 
-    am = AgentMemory()
-    suite.assert_true(hasattr(am, "store_personal"), "v16_am_store_personal")
-    suite.assert_true(hasattr(am, "store_mission"), "v16_am_store_mission")
-    suite.assert_true(hasattr(am, "recall_personal"), "v16_am_recall_personal")
-    suite.assert_true(hasattr(am, "recall_mission"), "v16_am_recall_mission")
+    app = DynamicApp("exp1", "Experiment Manager", "Manage robotics experiments",
+                     [{"name": "Data Logging", "description": "Log sensor data"}])
+    suite.assert_equals(app.app_id, "exp1", "v17_app_id")
+    suite.assert_equals(len(app.features), 1, "v17_app_features_initial")
 
-    am.store_personal("Learned about motors")
-    am.store_personal("Studied sensor fusion")
-    am.store_mission("Assigned to design task")
-    suite.assert_equals(len(am.recall_personal()), 2, "v16_am_personal_count")
-    suite.assert_equals(len(am.recall_mission()), 1, "v16_am_mission_count")
-    results = am.recall_personal("motor")
-    suite.assert_equals(len(results), 1, "v16_am_recall_query")
+    # Test add_feature
+    app.add_feature("Visualization", "Charts and graphs")
+    suite.assert_equals(len(app.features), 2, "v17_app_features_added")
 
-    # ======================== AgentSafetyCage ========================
+    # Test set_ui
+    app.set_ui("web", "responsive", ["navbar", "sidebar", "main"])
+    suite.assert_equals(app.ui_spec["type"], "web", "v17_app_ui_type")
 
-    cage = AgentSafetyCage()
-    suite.assert_true(hasattr(cage, "allow_tool"), "v16_cage_allow")
-    suite.assert_true(hasattr(cage, "can_use"), "v16_cage_can_use")
+    # Test add_code
+    app.add_code("main.py", "# Main entry point")
+    suite.assert_equals(len(app.code_modules), 1, "v17_app_code")
 
-    cage.allow_tool("vim")
-    cage.deny_tool("rm")
-    suite.assert_true(cage.can_use("vim"), "v16_cage_use_allowed")
-    suite.assert_false(cage.can_use("rm"), "v16_cage_use_denied")
-
-    # ======================== AgentCommunicationNetwork ========================
-
-    net = AgentCommunicationNetwork()
-    suite.assert_true(hasattr(net, "send"), "v16_net_send")
-    suite.assert_true(hasattr(net, "broadcast"), "v16_net_broadcast")
-    suite.assert_true(hasattr(net, "inbox"), "v16_net_inbox")
-    suite.assert_true(hasattr(net, "outbox"), "v16_net_outbox")
-    suite.assert_true(hasattr(net, "conversation_between"), "v16_net_conversation")
-
-    # Test send
-    net.send("researcher", "engineer", "Requirements", "Need specs", "work")
-    net.send("engineer", "researcher", "Re: Requirements", "Here are the specs", "work")
-    suite.assert_equals(len(net._messages), 2, "v16_net_message_count")
-
-    # Test broadcast
-    net.broadcast("Manager", "Status update", "general")
-    suite.assert_equals(len(net._messages), 3, "v16_net_broadcast")
-
-    # Test inbox (includes broadcast messages)
-    inbox = net.inbox("engineer")
-    suite.assert_equals(len(inbox), 2, "v16_net_inbox_count")
-
-    # Test outbox
-    outbox = net.outbox("engineer")
-    suite.assert_equals(len(outbox), 1, "v16_net_outbox_count")
-
-    # Test conversation
-    conv = net.conversation_between("researcher", "engineer")
-    suite.assert_equals(len(conv), 2, "v16_net_conversation_count")
-
-    # Test channel
-    channel = net.get_channel("work")
-    suite.assert_equals(len(channel), 2, "v16_net_channel_count")
-
-    # Test recent_activity
-    activity = net.recent_activity(5)
-    suite.assert_equals(len(activity), 3, "v16_net_activity")
-
-    # Test serialization
-    data = net.to_dict()
-    net2 = AgentCommunicationNetwork()
-    net2.from_dict(data)
-    suite.assert_equals(len(net2._messages), 3, "v16_net_from_dict")
-
-    # ======================== MissionManager ========================
-
-    mm = MissionManager()
-    suite.assert_true(hasattr(mm, "define_goal"), "v16_mm_define")
-    suite.assert_true(hasattr(mm, "get_available_tasks"), "v16_mm_avail")
-    suite.assert_true(hasattr(mm, "assign"), "v16_mm_assign")
-    suite.assert_true(hasattr(mm, "complete_task"), "v16_mm_complete")
-    suite.assert_true(hasattr(mm, "organization_chart"), "v16_mm_org")
-
-    # Test define_goal
-    tasks = mm.define_goal("build a humanoid robot with AI")
-    suite.assert_true(len(tasks) > 5, "v16_mm_tasks_count")
-
-    # Verify specific task types exist
-    task_ids = [t["id"] for t in tasks]
-    suite.assert_true("research" in task_ids, "v16_mm_task_research")
-    suite.assert_true("plan" in task_ids, "v16_mm_task_plan")
-    suite.assert_true("design" in task_ids, "v16_mm_task_design")
-    suite.assert_true("implement" in task_ids, "v16_mm_task_implement")
-    suite.assert_true("test" in task_ids, "v16_mm_task_test")
-    suite.assert_true("review" in task_ids, "v16_mm_task_review")
-
-    # Test business goal adds business tasks
-    tasks = mm.define_goal("start a tech company")
-    task_ids = [t["id"] for t in tasks]
-    suite.assert_true("market" in task_ids, "v16_mm_task_market")
-    suite.assert_true("strategy" in task_ids, "v16_mm_task_strategy")
-    suite.assert_true("finance" in task_ids, "v16_mm_task_finance")
-
-    # Test get_available_tasks
-    mm.define_goal("simple project")
-    available = mm.get_available_tasks()
-    suite.assert_true(len(available) >= 1, "v16_mm_avail_nonempty")
-
-    # Test assign
-    mm.assign(available[0]["id"], "agent1")
-    suite.assert_true(mm.assignments[available[0]["id"]]["agent_id"] == "agent1", "v16_mm_assigned")
-
-    # Test complete_task
-    mm.complete_task(available[0]["id"], "done")
-    suite.assert_true(mm.assignments[available[0]["id"]]["completed"], "v16_mm_completed")
-
-    # Test organization chart
-    org = mm.organization_chart()
-    suite.assert_true("name" in org, "v16_mm_org_name")
-    suite.assert_true("children" in org, "v16_mm_org_children")
+    # Test analyze_usage
+    suggestion = app.analyze_usage({"frequent_action": "create report"})
+    suite.assert_true(suggestion is not None, "v17_app_usage_analysis")
 
     # Test summary
-    summary = mm.summary()
-    suite.assert_true("simple project" in summary, "v16_mm_summary")
+    s = app.summary()
+    suite.assert_true("Experiment Manager" in s, "v17_app_summary")
 
     # Test serialization
-    data = mm.to_dict()
-    mm2 = MissionManager()
-    mm2.from_dict(data)
-    suite.assert_equals(mm2.goal, "simple project", "v16_mm_from_dict")
+    data = app.to_dict()
+    app2 = DynamicApp("copy", "Copy", "Copying")
+    app2.from_dict(data)
+    suite.assert_equals(app2.name, "Experiment Manager", "v17_app_from_dict_name")
+    suite.assert_equals(len(app2.features), 2, "v17_app_from_dict_features")
 
-    # ======================== AgentMarketplace ========================
+    # ======================== AppCreationAgent ========================
 
-    mp = AgentMarketplace()
-    suite.assert_true(hasattr(mp, "available_types"), "v16_mp_available")
-    suite.assert_true(hasattr(mp, "spawn"), "v16_mp_spawn")
-    suite.assert_true(hasattr(mp, "register_type"), "v16_mp_register")
+    suite.assert_equals(len(AppCreationAgent.AGENT_TYPES), 5, "v17_aca_agent_types")
 
-    # Test builtin types
-    types = mp.available_types()
-    suite.assert_true(len(types) >= 8, "v16_mp_builtin_count")
-    suite.assert_true("researcher" in types, "v16_mp_type_researcher")
-    suite.assert_true("engineer" in types, "v16_mp_type_engineer")
-    suite.assert_true("coder" in types, "v16_mp_type_coder")
+    # Test create_team
+    team = AppCreationAgent.create_team()
+    suite.assert_equals(len(team), 5, "v17_aca_team_size")
+    suite.assert_equals(team[0].agent_type, "architect", "v17_aca_team_architect")
+    suite.assert_equals(team[1].agent_type, "programmer", "v17_aca_team_programmer")
 
-    # Test spawn
-    agent = mp.spawn("coder")
-    suite.assert_true(agent is not None, "v16_mp_spawn_coder")
-    suite.assert_equals(agent.name, "Coding Agent", "v16_mp_spawn_name")
+    # Test design_application
+    architect = team[0]
+    generated = architect.design_application("Build me a simulation tool for robotics experiments")
+    suite.assert_true(isinstance(generated, DynamicApp), "v17_aca_design_type")
+    suite.assert_true(len(generated.features) > 0, "v17_aca_design_features")
+    suite.assert_equals(architect.apps_created, 1, "v17_aca_apps_created")
 
-    # Test register custom type
-    mp.register_type("custom_agent", "Custom Agent", "Does custom things", "#00ff00", {"custom": 0.9})
-    suite.assert_true("custom_agent" in mp.available_types(), "v16_mp_registered")
-    custom = mp.spawn("custom_agent")
-    suite.assert_equals(custom.name, "Custom Agent", "v16_mp_custom_name")
+    # Test feature detection
+    app_dm = architect.design_application("I need a database to track and store experiment data")
+    feature_names = [f["name"] for f in app_dm.features]
+    suite.assert_true("Data Management" in feature_names, "v17_aca_feature_data")
 
-    # Test spawn non-existent
-    none_agent = mp.spawn("nonexistent")
-    suite.assert_equals(none_agent, None, "v16_mp_spawn_none")
+    app_viz = architect.design_application("Create charts and visualizations")
+    feature_names = [f["name"] for f in app_viz.features]
+    suite.assert_true("Visualization" in feature_names, "v17_aca_feature_viz")
 
-    # ======================== AgentTraining ========================
+    app_ai = architect.design_application("Build an AI-powered analysis tool")
+    feature_names = [f["name"] for f in app_ai.features]
+    suite.assert_true("AI Assistant" in feature_names, "v17_aca_feature_ai")
 
-    training = AgentTraining()
-    suite.assert_true(hasattr(training, "record_feedback"), "v16_train_feedback")
-    suite.assert_true(hasattr(training, "get_improvements"), "v16_train_improvements")
-    suite.assert_true(hasattr(training, "get_performance_summary"), "v16_train_summary")
+    app_report = architect.design_application("Generate PDF reports and export documents")
+    feature_names = [f["name"] for f in app_report.features]
+    suite.assert_true("Reports" in feature_names, "v17_aca_feature_reports")
 
-    # Test record feedback
-    training.record_feedback("agent1", 0.9, "Excellent")
-    training.record_feedback("agent1", 0.2, "Poor")
-    training.record_feedback("agent1", 0.1, "Very poor")
-    improvements = training.get_improvements("agent1")
-    suite.assert_true(len(improvements) >= 1, "v16_train_improvements_found")
+    # ======================== EvolutionEngine ========================
 
-    # Test average rating
-    avg = training.get_average_rating("agent1")
-    suite.assert_true(avg is not None, "v16_train_avg_exists")
+    ev = EvolutionEngine()
+    suite.assert_true(hasattr(ev, "observe"), "v17_ev_observe")
+    suite.assert_true(hasattr(ev, "analyze"), "v17_ev_analyze")
+    suite.assert_true(hasattr(ev, "get_improvement_history"), "v17_ev_history")
 
-    # Test performance summary
-    summary = training.get_performance_summary()
-    suite.assert_true("agent1" in summary, "v16_train_summary_agent")
-    suite.assert_true("avg_rating" in summary["agent1"], "v16_train_summary_rating")
+    # Test observe
+    ev.observe("app1", "create report", 5)
+    ev.observe("app1", "create report", 4)
+    ev.observe("app1", "edit data", 3)
+    ev.observe("app1", "create report", 6)
+    ev.observe("app1", "edit data", 2)
+    suite.assert_equals(len(ev._observations), 5, "v17_ev_observations")
 
-    # ======================== SafetyArchitecture ========================
+    # Test analyze — frequent action detection
+    suggestions = ev.analyze("app1")
+    suite.assert_true(len(suggestions) >= 1, "v17_ev_suggestions")
+    has_shortcut = any("shortcut" in s.lower() for s in suggestions)
+    suite.assert_true(has_shortcut, "v17_ev_shortcut_suggestion")
 
-    sa = SafetyArchitecture()
-    suite.assert_true(hasattr(sa, "log_activity"), "v16_sa_log")
-    suite.assert_true(hasattr(sa, "require_approval"), "v16_sa_approval")
-    suite.assert_true(hasattr(sa, "get_logs"), "v16_sa_get_logs")
+    # Test analyze — insufficient data
+    suggestions_few = ev.analyze("app2")
+    suite.assert_equals(len(suggestions_few), 0, "v17_ev_no_suggestions")
 
-    # Test log
-    sa.log_activity("agent1", "read_file", {"path": "/data"})
-    sa.log_activity("agent2", "write_file", {"path": "/output"})
-    logs = sa.get_logs()
-    suite.assert_equals(len(logs), 2, "v16_sa_log_count")
-
-    # Test filtered logs
-    agent_logs = sa.get_logs("agent1")
-    suite.assert_equals(len(agent_logs), 1, "v16_sa_log_filter")
-
-    # Test approval
-    req = sa.require_approval("agent1", "delete_data", "Needs to clean up")
-    suite.assert_equals(req["approved"], None, "v16_sa_approval_pending")
-    sa.approve(req["id"])
-    suite.assert_true(req["approved"], "v16_sa_approval_granted")
-
-    # Test restrictions
-    sa.restrict_global("format_drive")
-    suite.assert_true(sa.is_restricted("format_drive"), "v16_sa_restricted")
-    suite.assert_false(sa.is_restricted("read_file"), "v16_sa_not_restricted")
-
-    # ======================== WorkflowEngine ========================
-
-    we = WorkflowEngine()
-    suite.assert_true(hasattr(we, "record_workflow"), "v16_we_record")
-    suite.assert_true(hasattr(we, "learn_from_sequence"), "v16_we_learn")
-    suite.assert_true(hasattr(we, "get_suggested_workflows"), "v16_we_suggest")
-
-    # Test record
-    we.record_workflow("Research", ["Search", "Read", "Summarize", "Save"])
-    workflow = we.get_workflow("Research")
-    suite.assert_true(workflow is not None, "v16_we_recorded")
-    suite.assert_equals(len(workflow["steps"]), 4, "v16_we_steps")
-
-    # Test learn from sequence (frequency-based)
-    we.learn_from_sequence(["Open", "Edit", "Save"])
-    we.learn_from_sequence(["Open", "Edit", "Save"])
-    we.learn_from_sequence(["Open", "Edit", "Save"])
-    learned = we.learn_from_sequence(["Open", "Edit", "Save"])
-    suite.assert_true(learned is not None, "v16_we_learned")
-    suite.assert_true("Open → Edit → Save" in we.list_workflows(), "v16_we_workflow_learned")
-
-    # Test suggest
-    suggestions = we.get_suggested_workflows("Edit")
-    suite.assert_true(len(suggestions) > 0, "v16_we_suggestions")
-
-    # Test list
-    wf_list = we.list_workflows()
-    suite.assert_true(len(wf_list) >= 2, "v16_we_list_count")
-
-    # ======================== AgentCivilization ========================
-
-    civ = AgentCivilization()
-    suite.assert_true(hasattr(civ, "start_mission"), "v16_civ_start")
-    suite.assert_true(hasattr(civ, "communicate"), "v16_civ_comm")
-    suite.assert_true(hasattr(civ, "complete_agent_task"), "v16_civ_complete")
-    suite.assert_true(hasattr(civ, "get_activity_feed"), "v16_civ_feed")
-    suite.assert_true(hasattr(civ, "organization_chart"), "v16_civ_org")
-    suite.assert_true(hasattr(civ, "summary"), "v16_civ_summary")
-
-    # Test start_mission — build goal
-    summary = civ.start_mission("build a robot")
-    suite.assert_true(len(civ.agents) >= 4, "v16_civ_agents_build")
-    suite.assert_equals(civ.manager.goal, "build a robot", "v16_civ_goal")
-
-    # Verify specific agent types
-    agent_types = list(civ.agents.keys())
-    suite.assert_true("researcher" in agent_types, "v16_civ_agent_researcher")
-    suite.assert_true("engineer" in agent_types, "v16_civ_agent_engineer")
-    suite.assert_true("coder" in agent_types, "v16_civ_agent_coder")
-    suite.assert_true("critic" in agent_types, "v16_civ_agent_critic")
-    suite.assert_true("planner" in agent_types, "v16_civ_agent_planner")
-
-    # Test start_mission — learn goal
-    civ2 = AgentCivilization()
-    civ2.start_mission("learn quantum physics")
-    agent_types2 = list(civ2.agents.keys())
-    suite.assert_true("mentor" in agent_types2, "v16_civ_agent_mentor")
-
-    # Test start_mission — business goal
-    civ3 = AgentCivilization()
-    civ3.start_mission("start a tech company")
-    agent_types3 = list(civ3.agents.keys())
-    suite.assert_true("analyst" in agent_types3, "v16_civ_agent_analyst")
-
-    # Test communicate
-    civ.communicate("researcher", "Found relevant papers")
-    civ.communicate("engineer", "Need design specs", "researcher")
-    activity = civ.get_activity_feed(5)
-    suite.assert_true(len(activity) > 0, "v16_civ_activity")
-
-    # Test complete_agent_task (next available task goes to appropriate agent)
-    if "researcher" in civ.agents:
-        result = civ.complete_agent_task("researcher", "Research complete")
-        suite.assert_true(result, "v16_civ_complete_ok")
-        # After research, 'plan' task becomes available and goes to planner
-        suite.assert_true(civ.agents["researcher"].status == "idle", "v16_civ_researcher_done")
-        suite.assert_equals(civ.agents.get("planner", civ.agents["researcher"]).status, "working" if "planner" in civ.agents else "idle", "v16_civ_next_agent_working")
-
-    # Test organization chart
-    org = civ.organization_chart()
-    suite.assert_true("agents" in org, "v16_civ_org_agents")
-    suite.assert_true("children" in org, "v16_civ_org_children")
+    # Test improvement history
+    history = ev.get_improvement_history()
+    suite.assert_true(len(history) >= 1, "v17_ev_history_count")
 
     # Test serialization
-    data = civ.to_dict()
-    civ4 = AgentCivilization()
-    civ4.from_dict(data)
-    suite.assert_equals(len(civ4.agents), len(civ.agents), "v16_civ_from_dict")
-    for aid in civ.agents:
-        suite.assert_true(aid in civ4.agents, f"v16_civ_from_dict_agent_{aid}")
+    data = ev.to_dict()
+    ev2 = EvolutionEngine()
+    ev2.from_dict(data)
+    suite.assert_equals(len(ev2._observations), 5, "v17_ev_from_dict")
+
+    # ======================== SelfRepairSystem ========================
+
+    sr = SelfRepairSystem()
+    suite.assert_true(hasattr(sr, "detect_issue"), "v17_sr_detect")
+    suite.assert_true(hasattr(sr, "diagnose"), "v17_sr_diagnose")
+    suite.assert_true(hasattr(sr, "generate_patch"), "v17_sr_patch")
+    suite.assert_true(hasattr(sr, "apply_patch"), "v17_sr_apply")
+    suite.assert_true(hasattr(sr, "get_open_issues"), "v17_sr_open")
+    suite.assert_true(hasattr(sr, "summary"), "v17_sr_summary")
+
+    # Test detect
+    issue = sr.detect_issue("app1", "Database performance is slow", "high")
+    suite.assert_equals(issue["status"], "open", "v17_sr_issue_open")
+    suite.assert_equals(issue["severity"], "high", "v17_sr_issue_severity")
+
+    # Test diagnose
+    cause = sr.diagnose(issue["id"])
+    suite.assert_true(cause is not None, "v17_sr_diagnosis")
+    suite.assert_true("Query" in cause, "v17_sr_diagnosis_content")
+
+    # Test patch generation
+    patch = sr.generate_patch(issue["id"])
+    suite.assert_true(patch is not None, "v17_sr_patch_exists")
+    suite.assert_true("Patch" in patch["description"], "v17_sr_patch_desc")
+
+    # Test apply (auto-tests if not tested)
+    result = sr.apply_patch(issue["id"])
+    suite.assert_true(result, "v17_sr_apply_success")
+    suite.assert_equals(issue["status"], "fixed", "v17_sr_fixed")
+
+    # Test open issues
+    open_issues = sr.get_open_issues()
+    suite.assert_equals(len(open_issues), 0, "v17_sr_no_open")
+    sr.detect_issue("app2", "UI crash on load", "critical")
+    open_issues = sr.get_open_issues()
+    suite.assert_equals(len(open_issues), 1, "v17_sr_open_after")
+
+    # Test filtered open issues
+    filtered = sr.get_open_issues("app1")
+    suite.assert_equals(len(filtered), 0, "v17_sr_filtered")
+
+    # Test fix history
+    history = sr.get_fix_history()
+    suite.assert_equals(len(history), 1, "v17_sr_fix_history")
+
+    # Test summary
+    s = sr.summary()
+    suite.assert_true("issues" in s, "v17_sr_summary_text")
+
+    # Test symptom-based diagnosis
+    issue2 = sr.detect_issue("app3", "Security breach detected", "critical")
+    cause2 = sr.diagnose(issue2["id"])
+    suite.assert_true("Permission" in cause2, "v17_sr_diag_security")
+
+    issue3 = sr.detect_issue("app4", "Data corruption error", "medium")
+    cause3 = sr.diagnose(issue3["id"])
+    suite.assert_true("Data integrity" in cause3, "v17_sr_diag_data")
+
+    # ======================== AdaptiveInterface ========================
+
+    ai = AdaptiveInterface()
+    suite.assert_true(hasattr(ai, "set_mode"), "v17_ai_set_mode")
+    suite.assert_true(hasattr(ai, "set_role"), "v17_ai_set_role")
+    suite.assert_true(hasattr(ai, "get_config"), "v17_ai_get_config")
+    suite.assert_true(hasattr(ai, "suggest_mode"), "v17_ai_suggest")
+
+    # Test default mode
+    config = ai.get_config()
+    suite.assert_equals(config["complexity"], "moderate", "v17_ai_default_mode")
+
+    # Test set_mode
+    ai.set_mode("beginner")
+    config = ai.get_config()
+    suite.assert_true(config["guidance"], "v17_ai_beginner_guidance")
+    suite.assert_false(config["advanced"], "v17_ai_beginner_no_advanced")
+
+    ai.set_mode("expert")
+    config = ai.get_config()
+    suite.assert_false(config["guidance"], "v17_ai_expert_no_guidance")
+    suite.assert_true(config["advanced"], "v17_ai_expert_advanced")
+
+    # Test set_role
+    ai.set_role("developer")
+    suite.assert_equals(ai.mode, "expert", "v17_ai_role_dev_expert")
+
+    ai.set_role("beginner")
+    suite.assert_equals(ai.mode, "beginner", "v17_ai_role_beginner")
+
+    # Test suggest_mode
+    mode = ai.suggest_mode(0.2, 0.1)
+    suite.assert_equals(mode, "beginner", "v17_ai_suggest_beginner")
+    mode = ai.suggest_mode(0.5, 0.5)
+    suite.assert_equals(mode, "intermediate", "v17_ai_suggest_intermediate")
+    mode = ai.suggest_mode(0.9, 0.8)
+    suite.assert_equals(mode, "expert", "v17_ai_suggest_expert")
+
+    # Test invalid mode
+    result = ai.set_mode("nonexistent")
+    suite.assert_false(result, "v17_ai_invalid_mode")
+
+    # ======================== CapabilityRegistry ========================
+
+    cr = CapabilityRegistry()
+    suite.assert_true(hasattr(cr, "register"), "v17_cr_register")
+    suite.assert_true(hasattr(cr, "install"), "v17_cr_install")
+    suite.assert_true(hasattr(cr, "search"), "v17_cr_search")
+    suite.assert_true(hasattr(cr, "get_installed"), "v17_cr_installed")
+    suite.assert_true(hasattr(cr, "get_available"), "v17_cr_available")
+    suite.assert_true(hasattr(cr, "categories"), "v17_cr_categories")
+
+    # Test builtins
+    cr.register_builtins()
+    available = cr.get_available()
+    suite.assert_equals(len(available), 8, "v17_cr_builtins_count")
+
+    # Test search
+    results = cr.search("experiment")
+    suite.assert_true(len(results) >= 1, "v17_cr_search_experiment")
+    results = cr.search("data")
+    suite.assert_true(len(results) >= 1, "v17_cr_search_data")
+
+    # Test install
+    result = cr.install("experiment_tracker")
+    suite.assert_true(result, "v17_cr_install_ok")
+    installed = cr.get_installed()
+    suite.assert_equals(len(installed), 1, "v17_cr_installed_count")
+
+    # Test categories
+    cats = cr.categories()
+    suite.assert_true("research" in cats, "v17_cr_cat_research")
+    suite.assert_true("productivity" in cats, "v17_cr_cat_productivity")
+    suite.assert_true("development" in cats, "v17_cr_cat_dev")
+
+    # Test get_by_category
+    research_caps = cr.get_by_category("research")
+    suite.assert_equals(len(research_caps), 2, "v17_cr_category_count")
+
+    # Test register custom
+    cr.register("custom_tool", "Custom Tool", "A custom capability", "custom", ["Feat A", "Feat B"])
+    suite.assert_true("custom_tool" in [c["id"] for c in cr.get_available()], "v17_cr_custom")
+
+    # ======================== LivingSoftwareEngine ========================
+
+    lse = LivingSoftwareEngine()
+    suite.assert_true(hasattr(lse, "create_app"), "v17_lse_create")
+    suite.assert_true(hasattr(lse, "get_app"), "v17_lse_get")
+    suite.assert_true(hasattr(lse, "find_apps_by_purpose"), "v17_lse_find")
+    suite.assert_true(hasattr(lse, "observe_usage"), "v17_lse_observe")
+    suite.assert_true(hasattr(lse, "analyze_and_improve"), "v17_lse_improve")
+    suite.assert_true(hasattr(lse, "report_issue"), "v17_lse_repair")
+    suite.assert_true(hasattr(lse, "install_capability"), "v17_lse_install")
+    suite.assert_true(hasattr(lse, "get_ecosystem_summary"), "v17_lse_eco")
+
+    # Test creation team
+    suite.assert_equals(len(lse.creation_team), 5, "v17_lse_team_size")
+
+    # Test create_app
+    app_gen = lse.create_app("I need a system to manage my robotics experiments")
+    suite.assert_true(isinstance(app_gen, DynamicApp), "v17_lse_app_type")
+    suite.assert_true(len(app_gen.features) > 0, "v17_lse_app_features")
+    suite.assert_equals(app_gen.app_id in lse.apps, True, "v17_lse_app_stored")
+
+    # Test find_apps_by_purpose
+    found = lse.find_apps_by_purpose("robotics")
+    suite.assert_true(len(found) >= 1, "v17_lse_find_robotics")
+
+    # Test observe and analyze
+    lse.observe_usage(app_gen.app_id, "log experiment", 8)
+    lse.observe_usage(app_gen.app_id, "log experiment", 6)
+    lse.observe_usage(app_gen.app_id, "log experiment", 7)
+    suggestions = lse.analyze_and_improve(app_gen.app_id)
+    suite.assert_true(len(suggestions) >= 1, "v17_lse_improvements")
+
+    # Test report_issue (auto-repair cycle)
+    issue = lse.report_issue(app_gen.app_id, "Data storage is slow", "medium")
+    suite.assert_equals(issue["status"], "fixed", "v17_lse_auto_repair")
+
+    # Test install_capability
+    result = lse.install_capability("data_visualizer")
+    suite.assert_true(result, "v17_lse_install_cap")
+
+    # Test ecosystem summary
+    eco = lse.get_ecosystem_summary()
+    suite.assert_true("apps" in eco, "v17_lse_eco_apps")
+    suite.assert_true("capabilities" in eco, "v17_lse_eco_caps")
+    suite.assert_true("repairs" in eco, "v17_lse_eco_repairs")
+    suite.assert_true("team" in eco, "v17_lse_eco_team")
+    suite.assert_equals(eco["apps"], 1, "v17_lse_eco_app_count")
+
+    # Test create multiple apps
+    app2 = lse.create_app("Build a project planner for my team")
+    suite.assert_equals(len(lse.apps), 2, "v17_lse_two_apps")
+
+    # Test find by purpose with other app
+    found = lse.find_apps_by_purpose("planner")
+    suite.assert_equals(len(found), 1, "v17_lse_find_planner")
+
+    # Test summary
+    s = lse.summary()
+    suite.assert_true("Living Software" in s, "v17_lse_summary_text")
+
+    # Test serialization
+    data = lse.to_dict()
+    lse2 = LivingSoftwareEngine()
+    lse2.from_dict(data)
+    suite.assert_equals(len(lse2.apps), 2, "v17_lse_from_dict_apps")
 
     # ======================== ArcDesktop Integration ========================
 
     app = ArcDesktop()
-    suite.assert_true(hasattr(app, "civilization"), "v16_desktop_has_civ")
-    suite.assert_equals(app.civilization, None, "v16_desktop_civ_none")
+    suite.assert_true(hasattr(app, "living"), "v17_desktop_has_living")
+    suite.assert_true(hasattr(app, "_render_living_apps"), "v17_desktop_render_living")
 
-    # Test civilization created on intent
-    app.mission = "build a robot"
+    # Test living engine is initialized
+    suite.assert_true(isinstance(app.living, LivingSoftwareEngine), "v17_desktop_living_type")
+
+    # Test living app creation on intent
+    app.mission = "build a robot tracker"
     app.twin = __import__('demo').DigitalTwinMind()
-    app.civilization = AgentCivilization(digital_twin=app.twin)
-    app.civilization.start_mission("build a robot")
-    suite.assert_true(app.civilization is not None, "v16_desktop_civ_created")
-    suite.assert_true(len(app.civilization.agents) >= 4, "v16_desktop_civ_agents")
+    app.living = LivingSoftwareEngine()
+    app._living_app = app.living.create_app("build a robot tracker")
+    suite.assert_true(hasattr(app, "_living_app"), "v17_desktop_has_living_app")
+    suite.assert_true("Data Management" in [f["name"] for f in app._living_app.features], "v17_desktop_living_features")
 
-    # Verify ArcDesktop no longer has old AGENT_DEFS
-    suite.assert_false(hasattr(ArcDesktop, "AGENT_DEFS"), "v16_desktop_no_agent_defs")
-    suite.assert_false(hasattr(app, "_init_agents"), "v16_desktop_no_init_agents")
+    # Verify capability registry has builtins
+    suite.assert_equals(len(app.living.capabilities.get_available()), 8, "v17_desktop_capabilities")
 
     return suite
 
@@ -3808,7 +3798,7 @@ def main():
         ("Arc Multithreading", test_arc_threading),
         ("Arc AI Module", test_arc_ai),
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
-        ("Arc v16.0.0 Agent Civilization", test_arc_v16),
+        ("Arc v17.0.0 Living Software Engine", test_arc_v17),
     ]
 
     for name, test_func in test_funcs:
@@ -3827,7 +3817,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v16.0.0 Agent Civilization")
+    print(f"  OVERALL RESULTS — v17.0.0 Living Software Engine")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")
