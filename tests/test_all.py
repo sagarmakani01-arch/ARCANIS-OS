@@ -3372,6 +3372,367 @@ def test_arc_v17():
 
 
 # ============================================================
+# ARC v18.0.0 REALITY LAYER TESTS
+# ============================================================
+
+def test_arc_v18():
+    suite = TestSuite("Arc v18.0.0 Reality Layer Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (RealityLayer, RealityTwin, DeviceNode, SpatialNode,
+                      SensorNetwork, SensorReading, RealityAgent,
+                      DeviceOrchestrator, EnvironmentManager,
+                      SpatialInterface, PersonalRealityAssistant,
+                      HumanMachineCollaborator, ArcDesktop)
+
+    # ======================== DeviceNode ========================
+
+    device = DeviceNode("dev1", "Robot Arm", "robot", ["actuator", "sensor"])
+    suite.assert_equals(device.device_id, "dev1", "v18_device_id")
+    suite.assert_equals(device.name, "Robot Arm", "v18_device_name")
+    suite.assert_equals(device.device_type, "robot", "v18_device_type")
+    suite.assert_equals(device.status, "offline", "v18_device_initial_offline")
+
+    # Test connect
+    result = device.connect()
+    suite.assert_true(result, "v18_device_connect")
+    suite.assert_equals(device.status, "online", "v18_device_online")
+
+    # Test send_command
+    result = device.send_command("move_to 10,20,30")
+    suite.assert_true(result, "v18_device_command")
+    suite.assert_equals(len(device._command_log), 1, "v18_device_command_logged")
+
+    # Test get_telemetry
+    telemetry = device.get_telemetry()
+    suite.assert_equals(telemetry["device_id"], "dev1", "v18_device_telemetry_id")
+    suite.assert_equals(telemetry["type"], "robot", "v18_device_telemetry_type")
+    suite.assert_equals(telemetry["status"], "online", "v18_device_telemetry_status")
+    suite.assert_equals(telemetry["commands_sent"], 1, "v18_device_telemetry_commands")
+
+    # Test disconnect
+    result = device.disconnect()
+    suite.assert_true(result, "v18_device_disconnect")
+    suite.assert_equals(device.status, "offline", "v18_device_offline")
+
+    # Device serialization
+    data = device.to_dict()
+    device2 = DeviceNode("", "", "")
+    device2.from_dict(data)
+    suite.assert_equals(device2.device_id, "dev1", "v18_device_from_dict_id")
+    suite.assert_equals(device2.name, "Robot Arm", "v18_device_from_dict_name")
+
+    # ======================== SpatialNode ========================
+
+    node = SpatialNode("n1", "Workspace A", {"x": 5, "y": 10, "z": 0})
+    suite.assert_equals(node.node_id, "n1", "v18_spatial_id")
+    suite.assert_equals(node.position["x"], 5, "v18_spatial_pos_x")
+
+    node2 = SpatialNode("n2", "Workspace B")
+    node.link_to(node2)
+    suite.assert_equals(len(node.connections), 1, "v18_spatial_link")
+    suite.assert_equals(len(node2.connections), 1, "v18_spatial_link_bidirectional")
+
+    node.move_to(20, 30, 40)
+    suite.assert_equals(node.position["x"], 20, "v18_spatial_move_x")
+    suite.assert_equals(node.position["y"], 30, "v18_spatial_move_y")
+
+    # Spatial serialization
+    ndata = node.to_dict()
+    node3 = SpatialNode("", "")
+    node3.from_dict(ndata)
+    suite.assert_equals(node3.node_id, "n1", "v18_spatial_from_dict")
+
+    # ======================== SensorReading ========================
+
+    reading = SensorReading("s1", "temperature", 23.5, "celsius")
+    suite.assert_equals(reading.sensor_id, "s1", "v18_reading_id")
+    suite.assert_equals(reading.value, 23.5, "v18_reading_value")
+    suite.assert_equals(reading.unit, "celsius", "v18_reading_unit")
+
+    # ======================== SensorNetwork ========================
+
+    sn = SensorNetwork()
+    sn.register_sensor("s1", "temperature", "Room Temp Sensor", "office")
+    sn.register_sensor("s2", "humidity", "Room Humidity Sensor", "office")
+    suite.assert_equals(len(sn.sensors), 2, "v18_sensor_count")
+
+    sn.record_reading("s1", "temperature", 22.5, "celsius")
+    sn.record_reading("s1", "temperature", 23.0, "celsius")
+    sn.record_reading("s1", "temperature", 24.0, "celsius")
+    sn.record_reading("s2", "humidity", 45, "percent")
+    suite.assert_equals(len(sn.readings), 4, "v18_sensor_readings_count")
+
+    # Test get_readings
+    temp_readings = sn.get_readings(sensor_id="s1", limit=10)
+    suite.assert_equals(len(temp_readings), 3, "v18_sensor_filtered")
+
+    # Test analyze
+    analysis = sn.analyze("s1")
+    suite.assert_equals(analysis["min"], 22.5, "v18_sensor_analysis_min")
+    suite.assert_equals(analysis["max"], 24.0, "v18_sensor_analysis_max")
+    suite.assert_true(abs(analysis["avg"] - 23.1667) < 0.01, "v18_sensor_analysis_avg")
+
+    # Sensor summary
+    summary = sn.get_sensor_summary()
+    suite.assert_equals(len(summary), 2, "v18_sensor_summary_count")
+
+    # Sensor serialization
+    sdata = sn.to_dict()
+    sn2 = SensorNetwork()
+    sn2.from_dict(sdata)
+    suite.assert_equals(len(sn2.sensors), 2, "v18_sensor_from_dict")
+
+    # ======================== RealityTwin ========================
+
+    rt = RealityTwin()
+    suite.assert_true(hasattr(rt, "devices"), "v18_twin_devices")
+    suite.assert_true(hasattr(rt, "spaces"), "v18_twin_spaces")
+    suite.assert_true(hasattr(rt, "sensor_network"), "v18_twin_sensors")
+
+    # Test register_device
+    d = rt.register_device("bot1", "Delivery Robot", "robot", ["navigation", "sensor"])
+    suite.assert_true(isinstance(d, DeviceNode), "v18_twin_register_device")
+    suite.assert_equals(len(rt.devices), 1, "v18_twin_device_count")
+
+    # Test get_device
+    found = rt.get_device("bot1")
+    suite.assert_true(found is not None, "v18_twin_get_device")
+    suite.assert_equals(found.name, "Delivery Robot", "v18_twin_device_name")
+
+    # Test get_online_devices
+    online = rt.get_online_devices()
+    suite.assert_equals(len(online), 0, "v18_twin_no_online")
+    d.connect()
+    online = rt.get_online_devices()
+    suite.assert_equals(len(online), 1, "v18_twin_online_after_connect")
+
+    # Test track_space
+    space = rt.track_space("lab1", "Research Lab", {"width": 10, "height": 5, "depth": 8})
+    suite.assert_equals(space["name"], "Research Lab", "v18_twin_space_name")
+    suite.assert_equals(len(rt.spaces), 1, "v18_twin_space_count")
+
+    # Test add_spatial_node
+    snode = rt.add_spatial_node("ws1", "Workstation 1", {"x": 2, "y": 3, "z": 1})
+    suite.assert_true(isinstance(snode, SpatialNode), "v18_twin_spatial_node")
+    suite.assert_equals(len(rt.spatial_nodes), 1, "v18_twin_spatial_count")
+
+    # Test environment summary
+    env_summary = rt.get_environment_summary()
+    suite.assert_equals(env_summary["devices"], 1, "v18_twin_summary_devices")
+    suite.assert_equals(env_summary["online_devices"], 1, "v18_twin_summary_online")
+    suite.assert_equals(env_summary["spaces"], 1, "v18_twin_summary_spaces")
+    suite.assert_equals(env_summary["sensors"], 0, "v18_twin_summary_sensors")
+
+    # Twin serialization
+    tdata = rt.to_dict()
+    rt2 = RealityTwin()
+    rt2.from_dict(tdata)
+    suite.assert_equals(len(rt2.devices), 1, "v18_twin_from_dict_devices")
+    suite.assert_equals(len(rt2.spaces), 1, "v18_twin_from_dict_spaces")
+
+    # ======================== RealityAgent ========================
+
+    agents = RealityAgent.create_team()
+    suite.assert_equals(len(agents), 6, "v18_agent_team_size")
+
+    agent = agents[0]
+    suite.assert_true(hasattr(agent, "agent_type"), "v18_agent_has_type")
+    suite.assert_true(hasattr(agent, "assign_task"), "v18_agent_assign")
+    suite.assert_true(hasattr(agent, "complete_task"), "v18_agent_complete")
+
+    agent.assign_task("Monitor factory floor")
+    suite.assert_true(agent.active, "v18_agent_active")
+    suite.assert_equals(agent.current_task, "Monitor factory floor", "v18_agent_task")
+
+    agent.complete_task()
+    suite.assert_false(agent.active, "v18_agent_inactive")
+    suite.assert_equals(agent.tasks_completed, 1, "v18_agent_tasks")
+
+    # Test agent types
+    types = [a.agent_type for a in agents]
+    suite.assert_true("reality_manager" in types, "v18_agent_type_manager")
+    suite.assert_true("robot_controller" in types, "v18_agent_type_robot")
+    suite.assert_true("environment_monitor" in types, "v18_agent_type_env")
+    suite.assert_true("sensor_analyst" in types, "v18_agent_type_sensor")
+    suite.assert_true("simulation_runner" in types, "v18_agent_type_sim")
+    suite.assert_true("safety_guardian" in types, "v18_agent_type_safety")
+
+    # ======================== DeviceOrchestrator ========================
+
+    orch = DeviceOrchestrator()
+    suite.assert_true(hasattr(orch, "create_workflow"), "v18_orch_create")
+    suite.assert_true(hasattr(orch, "orchestrate"), "v18_orch_orchestrate")
+    suite.assert_true(hasattr(orch, "get_active_orchestrations"), "v18_orch_active")
+
+    wf = orch.create_workflow("wf1", "Test Sequence", [
+        {"step": "initialize", "device": "bot1"},
+        {"step": "scan_area", "device": "bot1"},
+        {"step": "report", "device": "bot1"},
+    ])
+    suite.assert_equals(wf["name"], "Test Sequence", "v18_orch_workflow_name")
+    suite.assert_equals(len(wf["steps"]), 3, "v18_orch_workflow_steps")
+
+    orch_result = orch.orchestrate("wf1", [d])
+    suite.assert_true(orch_result is not False, "v18_orch_started")
+    active = orch.get_active_orchestrations()
+    suite.assert_equals(len(active), 1, "v18_orch_active_count")
+
+    # ======================== EnvironmentManager ========================
+
+    em = EnvironmentManager()
+    suite.assert_true(hasattr(em, "analyze_environment"), "v18_env_analyze")
+    suite.assert_true(hasattr(em, "optimize"), "v18_env_optimize")
+    suite.assert_true(hasattr(em, "apply_config"), "v18_env_apply")
+
+    # Test analyze_environment
+    analysis = em.analyze_environment({"temperature": 30, "lighting": 50, "noise": 70})
+    suite.assert_equals(analysis.get("action"), "cooling_recommended", "v18_env_analysis_hot")
+    suite.assert_equals(analysis.get("lighting_action"), "increase_lighting", "v18_env_analysis_dark")
+    suite.assert_equals(analysis.get("noise_action"), "noise_reduction_recommended", "v18_env_analysis_noisy")
+
+    analysis2 = em.analyze_environment({"temperature": 20, "lighting": 500})
+    suite.assert_equals(analysis2.get("action"), "temperature_optimal", "v18_env_analysis_optimal")
+    suite.assert_equals(analysis2.get("lighting_action"), "lighting_optimal", "v18_env_analysis_light_optimal")
+
+    # Test optimize
+    config = em.optimize("comfortable_workspace", {})
+    suite.assert_equals(config.get("temperature"), 22, "v18_env_optimize_temp")
+    suite.assert_equals(config.get("lighting"), 500, "v18_env_optimize_light")
+
+    config2 = em.optimize("focus_mode", {})
+    suite.assert_equals(config2.get("notifications"), "silent", "v18_env_optimize_focus")
+    suite.assert_equals(config2.get("lighting"), 300, "v18_env_optimize_focus_light")
+
+    # Test apply_config
+    result = em.apply_config("focus_config", config2)
+    suite.assert_true(result, "v18_env_apply_result")
+    suite.assert_equals(em.active_config, "focus_config", "v18_env_active_config")
+
+    # ======================== SpatialInterface ========================
+
+    si = SpatialInterface()
+    suite.assert_true(hasattr(si, "create_workspace"), "v18_si_create")
+    suite.assert_true(hasattr(si, "add_node"), "v18_si_add_node")
+    suite.assert_true(hasattr(si, "get_active_workspace"), "v18_si_active")
+
+    ws = si.create_workspace("ws1", "Research Lab Workspace", "spatial")
+    suite.assert_equals(ws["name"], "Research Lab Workspace", "v18_si_workspace_name")
+    suite.assert_equals(ws["layout"], "spatial", "v18_si_workspace_layout")
+
+    si.add_node("ws1", snode)
+    ws_after = si.get_active_workspace()
+    suite.assert_equals(len(ws_after["nodes"]), 1, "v18_si_node_added")
+
+    si.connect_nodes("ws1", "n1", "n2")
+    ws_final = si.get_active_workspace()
+    suite.assert_equals(len(ws_final["connections"]), 1, "v18_si_connect")
+
+    # ======================== PersonalRealityAssistant ========================
+
+    pra = PersonalRealityAssistant()
+    suite.assert_true(hasattr(pra, "understand_context"), "v18_pra_context")
+    suite.assert_true(hasattr(pra, "analyze_available_resources"), "v18_pra_resources")
+    suite.assert_true(hasattr(pra, "suggest_actions"), "v18_pra_suggest")
+
+    # Test understand_context
+    context = pra.understand_context(rt)
+    suite.assert_true("available_devices" in context, "v18_pra_context_devices")
+    suite.assert_true("device_summary" in context, "v18_pra_context_summary")
+
+    # Test analyze_available_resources
+    resources = pra.analyze_available_resources("testing", rt)
+    suite.assert_true(isinstance(resources, list), "v18_pra_resources_list")
+
+    # Test suggest_actions
+    suggestions = pra.suggest_actions("test robot arm", rt)
+    suite.assert_true(len(suggestions) >= 1, "v18_pra_suggestions_nonempty")
+
+    suggestions_no_devices = pra.suggest_actions("test", RealityTwin())
+    suite.assert_true(len(suggestions_no_devices) >= 1, "v18_pra_suggestions_no_devices")
+
+    # ======================== HumanMachineCollaborator ========================
+
+    hmc = HumanMachineCollaborator()
+    suite.assert_true(hasattr(hmc, "start_collaboration"), "v18_hmc_start")
+    suite.assert_true(hasattr(hmc, "generate_design_options"), "v18_hmc_design")
+
+    collab = hmc.start_collaboration("Design a lighter drone", {})
+    suite.assert_equals(collab["goal"], "Design a lighter drone", "v18_hmc_goal")
+    suite.assert_equals(collab["current_phase"], "understand", "v18_hmc_initial_phase")
+
+    options = hmc.generate_design_options("Design a lighter drone")
+    suite.assert_true(len(options) >= 1, "v18_hmc_options_count")
+    suite.assert_equals(options[0]["name"], "Lightweight carbon frame", "v18_hmc_drone_option")
+
+    # Test greenhouse design
+    hmc2 = HumanMachineCollaborator()
+    hmc2.start_collaboration("Build an automated greenhouse", {})
+    garden_options = hmc2.generate_design_options("Build an automated greenhouse")
+    suite.assert_true(len(garden_options) >= 1, "v18_hmc_garden_options")
+    suite.assert_true("sensors" in garden_options[0], "v18_hmc_garden_sensors")
+
+    # ======================== RealityLayer (Top-Level) ========================
+
+    rl = RealityLayer()
+    suite.assert_true(hasattr(rl, "reality_twin"), "v18_rl_twin")
+    suite.assert_true(hasattr(rl, "device_orchestrator"), "v18_rl_orch")
+    suite.assert_true(hasattr(rl, "environment_manager"), "v18_rl_env")
+    suite.assert_true(hasattr(rl, "spatial_interface"), "v18_rl_spatial")
+    suite.assert_true(hasattr(rl, "reality_assistant"), "v18_rl_assistant")
+    suite.assert_true(hasattr(rl, "human_machine"), "v18_rl_hmc")
+    suite.assert_true(hasattr(rl, "reality_agents"), "v18_rl_agents")
+    suite.assert_equals(len(rl.reality_agents), 6, "v18_rl_agent_count")
+
+    # Test understand_goal
+    goal_result = rl.understand_goal("Test the new robot")
+    suite.assert_true("goal" in goal_result, "v18_rl_goal_understand")
+    suite.assert_true("suggestions" in goal_result, "v18_rl_goal_suggestions")
+
+    # Test coordinate_agents
+    assignments = rl.coordinate_agents("control robot arm safely")
+    suite.assert_true(len(assignments) >= 1, "v18_rl_coordinate_assignments")
+
+    # Test control_systems (with no devices, should fail gracefully)
+    results = rl.control_systems([{"device_id": "nonexistent", "action": "stop"}])
+    suite.assert_equals(results[0]["status"], "failed", "v18_rl_control_fail")
+
+    # Test learn_from_environment
+    env_state = rl.learn_from_environment()
+    suite.assert_true("environment" in env_state, "v18_rl_learn_env")
+    suite.assert_true("sensors" in env_state, "v18_rl_learn_sensors")
+
+    # Test get_full_state
+    full = rl.get_full_state()
+    suite.assert_true("reality_twin" in full, "v18_rl_full_state_twin")
+    suite.assert_true("agents" in full, "v18_rl_full_state_agents")
+
+    # Test serialization
+    rdata = rl.to_dict()
+    rl2 = RealityLayer()
+    rl2.from_dict(rdata)
+    suite.assert_true(hasattr(rl2, "reality_twin"), "v18_rl_from_dict")
+
+    # ======================== ArcDesktop Integration ========================
+
+    app = ArcDesktop()
+    suite.assert_true(hasattr(app, "reality"), "v18_desktop_has_reality")
+    suite.assert_true(isinstance(app.reality, RealityLayer), "v18_desktop_reality_type")
+
+    # Test reality layer interaction
+    app.mission = "build a smart greenhouse"
+    app.twin = __import__('demo').DigitalTwinMind()
+    app.reality = RealityLayer()
+    app.reality.reality_twin.register_device("gh1", "Greenhouse Controller", "iot", ["sensor", "actuator"])
+    app.reality.understand_goal("build a smart greenhouse")
+
+    # Verify devices registered
+    env = app.reality.reality_twin.get_environment_summary()
+    suite.assert_equals(env["devices"], 1, "v18_desktop_reality_device")
+
+    return suite
+
+
+# ============================================================
 # B-TREE DB TESTS
 # ============================================================
 
@@ -3799,6 +4160,7 @@ def main():
         ("Arc AI Module", test_arc_ai),
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
         ("Arc v17.0.0 Living Software Engine", test_arc_v17),
+        ("Arc v18.0.0 Reality Layer", test_arc_v18),
     ]
 
     for name, test_func in test_funcs:
@@ -3817,7 +4179,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v17.0.0 Living Software Engine")
+    print(f"  OVERALL RESULTS — v18.0.0 Reality Layer")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")

@@ -3991,6 +3991,7 @@ class ArcDesktop:
         self._conversation_lines = []
         self.twin = digital_twin or DigitalTwinMind()
         self.living = LivingSoftwareEngine()
+        self.reality = RealityLayer()
 
     def available(self):
         return _HAVE_TK
@@ -4132,6 +4133,8 @@ class ArcDesktop:
             self.civilization.start_mission(intent)
             # Generate living app from intent
             self._living_app = self.living.create_app(intent)
+            # Analyze reality context for this intent
+            self.reality.understand_goal(intent)
             self._init_knowledge()
             self._init_timeline()
             self.intent_entry.place_forget()
@@ -4218,6 +4221,7 @@ class ArcDesktop:
         self._render_knowledge_graph()
         self._render_suggestions_panel()
         self._render_living_apps()
+        self._render_reality_layer()
         self._render_timeline()
         self._render_agent_chat()
 
@@ -4341,6 +4345,37 @@ class ArcDesktop:
         text = "  ·  ".join(parts)
         self.canvas.create_text(ax + 15, ay + 20, text=self._truncate(text, int(aw / 5.5)),
                                 fill=self.FG_CYAN, font=("Segoe UI", 8), anchor="w", tags="living_text")
+
+    # ================================================================
+    # REALITY LAYER — Physical World Intelligence
+    # ================================================================
+
+    def _render_reality_layer(self):
+        w = self.root.winfo_screenwidth()
+        if not hasattr(self, "reality"):
+            return
+        rx = 290
+        ry = 155
+        rw = w - 320
+        rh = 36
+
+        if rw < 200:
+            return
+
+        self.canvas.create_rectangle(rx, ry, rx + rw, ry + rh,
+                                     fill="#0a0a14", outline="#1a2a1e", tags="reality_bg")
+
+        env = self.reality.reality_twin.get_environment_summary()
+        parts = [
+            f"◈ Reality Layer",
+            f"Devices: {env['devices']} ({env['online_devices']} online)",
+            f"Sensors: {env['sensors']}",
+            f"Spaces: {env['spaces']}",
+            f"Agents: {len(self.reality.reality_agents)}",
+        ]
+        text = "  ·  ".join(parts)
+        self.canvas.create_text(rx + 15, ry + 18, text=self._truncate(text, int(rw / 5.5)),
+                                fill="#44ddbb", font=("Segoe UI", 8), anchor="w", tags="reality_text")
 
     # ================================================================
     # KNOWLEDGE GRAPH — Connected, Hierarchical, Living
@@ -4595,6 +4630,7 @@ class ArcDesktop:
                 if self.civilization:
                     state["civilization"] = self.civilization.to_dict()
                 state["living"] = self.living.to_dict()
+                state["reality"] = self.reality.to_dict()
                 import json
                 save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".digital_twin.json")
                 with open(save_path, "w") as f:
@@ -5922,6 +5958,664 @@ class LivingSoftwareEngine:
             self.interface.from_dict(data["interface"])
         if "capabilities" in data:
             self.capabilities.from_dict(data["capabilities"])
+
+
+# ============================================================
+# REALITY LAYER — Bridge Between Digital Intelligence & Physical Reality
+# ============================================================
+# v18.0.0 — Phase 5: Computing extends beyond the screen.
+# Devices, robots, sensors, spaces become intelligent nodes
+# in a unified reality intelligence network.
+
+class DeviceNode:
+    """Represents any connected device in the ecosystem — phone, robot, sensor, camera, computer, wearable."""
+
+    def __init__(self, device_id, name, device_type, capabilities=None):
+        self.device_id = device_id
+        self.name = name
+        self.device_type = device_type
+        self.capabilities = capabilities or []
+        self.status = "offline"
+        self.location = None
+        self.last_seen = 0
+        self.metrics = {}
+        self._command_log = []
+
+    def connect(self):
+        self.status = "online"
+        self.last_seen = __import__("time").time()
+        return True
+
+    def disconnect(self):
+        self.status = "offline"
+        return True
+
+    def send_command(self, command):
+        if self.status != "online":
+            return False
+        self._command_log.append({"command": command, "time": __import__("time").time()})
+        return True
+
+    def get_telemetry(self):
+        return {
+            "device_id": self.device_id,
+            "name": self.name,
+            "type": self.device_type,
+            "status": self.status,
+            "location": self.location,
+            "last_seen": self.last_seen,
+            "metrics": self.metrics,
+            "commands_sent": len(self._command_log),
+        }
+
+    def to_dict(self):
+        return {
+            "device_id": self.device_id, "name": self.name,
+            "device_type": self.device_type, "capabilities": self.capabilities,
+            "status": self.status, "location": self.location,
+            "last_seen": self.last_seen, "metrics": self.metrics,
+        }
+
+    def from_dict(self, data):
+        self.device_id = data["device_id"]
+        self.name = data["name"]
+        self.device_type = data["device_type"]
+        self.capabilities = data.get("capabilities", [])
+        self.status = data.get("status", "offline")
+        self.location = data.get("location")
+        self.last_seen = data.get("last_seen", 0)
+        self.metrics = data.get("metrics", {})
+
+
+class SpatialNode:
+    """A node in spatial space — represents objects, devices, workspaces in 3D."""
+
+    def __init__(self, node_id, name, position=None):
+        self.node_id = node_id
+        self.name = name
+        self.position = position or {"x": 0, "y": 0, "z": 0}
+        self.connections = []
+        self.data = {}
+        self.node_type = "generic"
+
+    def link_to(self, other_node):
+        if other_node.node_id not in self.connections:
+            self.connections.append(other_node.node_id)
+            other_node.connections.append(self.node_id)
+
+    def move_to(self, x, y, z):
+        self.position = {"x": x, "y": y, "z": z}
+
+    def to_dict(self):
+        return {
+            "node_id": self.node_id, "name": self.name,
+            "position": self.position, "connections": self.connections,
+            "data": self.data, "node_type": self.node_type,
+        }
+
+    def from_dict(self, data):
+        self.node_id = data["node_id"]
+        self.name = data["name"]
+        self.position = data.get("position", {"x": 0, "y": 0, "z": 0})
+        self.connections = data.get("connections", [])
+        self.data = data.get("data", {})
+        self.node_type = data.get("node_type", "generic")
+
+
+class SensorReading:
+    """Represents a single sensor reading with metadata."""
+
+    def __init__(self, sensor_id, sensor_type, value, unit, timestamp=None):
+        self.sensor_id = sensor_id
+        self.sensor_type = sensor_type
+        self.value = value
+        self.unit = unit
+        self.timestamp = timestamp or __import__("time").time()
+
+    def to_dict(self):
+        return {
+            "sensor_id": self.sensor_id, "sensor_type": self.sensor_type,
+            "value": self.value, "unit": self.unit, "timestamp": self.timestamp,
+        }
+
+
+class SensorNetwork:
+    """Manages sensors — register, record, query, analyze readings."""
+
+    def __init__(self):
+        self.sensors = {}
+        self.readings = []
+
+    def register_sensor(self, sensor_id, sensor_type, name, location=None):
+        self.sensors[sensor_id] = {
+            "sensor_id": sensor_id,
+            "sensor_type": sensor_type,
+            "name": name,
+            "location": location,
+            "registered": __import__("time").time(),
+        }
+        return True
+
+    def record_reading(self, sensor_id, sensor_type, value, unit):
+        reading = SensorReading(sensor_id, sensor_type, value, unit)
+        self.readings.append(reading)
+        if len(self.readings) > 1000:
+            self.readings = self.readings[-500:]
+        return reading
+
+    def get_readings(self, sensor_id=None, sensor_type=None, limit=10):
+        results = self.readings
+        if sensor_id:
+            results = [r for r in results if r.sensor_id == sensor_id]
+        if sensor_type:
+            results = [r for r in results if r.sensor_type == sensor_type]
+        return results[-limit:]
+
+    def analyze(self, sensor_id):
+        readings = self.get_readings(sensor_id, limit=50)
+        if not readings:
+            return {"min": None, "max": None, "avg": None, "count": 0}
+        values = [r.value for r in readings if isinstance(r.value, (int, float))]
+        if not values:
+            return {"min": None, "max": None, "avg": None, "count": len(readings)}
+        return {
+            "min": min(values), "max": max(values),
+            "avg": sum(values) / len(values), "count": len(values),
+        }
+
+    def get_sensor_summary(self):
+        return {sid: {"type": s["sensor_type"], "name": s["name"]} for sid, s in self.sensors.items()}
+
+    def to_dict(self):
+        return {
+            "sensors": self.sensors,
+            "readings": [r.to_dict() for r in self.readings[-100:]],
+        }
+
+    def from_dict(self, data):
+        self.sensors = data.get("sensors", {})
+        self.readings = [SensorReading(**r) for r in data.get("readings", [])]
+
+
+class RealityTwin:
+    """Digital Twin of Reality — devices, spaces, machines, sensors, physical systems."""
+
+    def __init__(self):
+        self.devices = {}
+        self.spaces = {}
+        self.machines = {}
+        self.sensor_network = SensorNetwork()
+        self.spatial_nodes = {}
+
+    def register_device(self, device_id, name, device_type, capabilities=None):
+        device = DeviceNode(device_id, name, device_type, capabilities)
+        self.devices[device_id] = device
+        return device
+
+    def get_device(self, device_id):
+        return self.devices.get(device_id)
+
+    def get_online_devices(self):
+        return [d for d in self.devices.values() if d.status == "online"]
+
+    def track_space(self, space_id, name, dimensions=None):
+        self.spaces[space_id] = {
+            "space_id": space_id,
+            "name": name,
+            "dimensions": dimensions or {"width": 0, "height": 0, "depth": 0},
+            "devices": [],
+            "created": __import__("time").time(),
+        }
+        return self.spaces[space_id]
+
+    def add_spatial_node(self, node_id, name, position=None):
+        node = SpatialNode(node_id, name, position)
+        self.spatial_nodes[node_id] = node
+        return node
+
+    def get_environment_summary(self):
+        return {
+            "devices": len(self.devices),
+            "online_devices": len(self.get_online_devices()),
+            "spaces": len(self.spaces),
+            "sensors": len(self.sensor_network.sensors),
+            "spatial_nodes": len(self.spatial_nodes),
+            "machines": len(self.machines),
+        }
+
+    def to_dict(self):
+        return {
+            "devices": {did: d.to_dict() for did, d in self.devices.items()},
+            "spaces": self.spaces,
+            "sensor_network": self.sensor_network.to_dict(),
+            "spatial_nodes": {nid: n.to_dict() for nid, n in self.spatial_nodes.items()},
+            "machines": self.machines,
+        }
+
+    def from_dict(self, data):
+        if "devices" in data:
+            self.devices = {}
+            for did, ddata in data["devices"].items():
+                device = DeviceNode(ddata["device_id"], ddata["name"], ddata["device_type"])
+                device.from_dict(ddata)
+                self.devices[did] = device
+        self.spaces = data.get("spaces", {})
+        if "sensor_network" in data:
+            self.sensor_network.from_dict(data["sensor_network"])
+        if "spatial_nodes" in data:
+            self.spatial_nodes = {}
+            for nid, ndata in data["spatial_nodes"].items():
+                node = SpatialNode(ndata["node_id"], ndata["name"])
+                node.from_dict(ndata)
+                self.spatial_nodes[nid] = node
+        self.machines = data.get("machines", {})
+
+
+class RealityAgent:
+    """Specialized agent for physical environment management."""
+
+    AGENT_TYPES = [
+        ("reality_manager", "Reality Manager Agent", "Orchestrates physical environment coordination", "#44ddff"),
+        ("robot_controller", "Robot Control Agent", "Controls and monitors robotic systems", "#ff8844"),
+        ("environment_monitor", "Environment Monitor Agent", "Tracks environmental conditions", "#44ff88"),
+        ("sensor_analyst", "Sensor Analysis Agent", "Analyzes sensor data for patterns and insights", "#88ddff"),
+        ("simulation_runner", "Simulation Agent", "Runs simulations of physical systems", "#cc88ff"),
+        ("safety_guardian", "Safety Guardian Agent", "Ensures safe operation of all physical systems", "#ff4466"),
+    ]
+
+    def __init__(self, agent_type, name, role, color):
+        self.agent_type = agent_type
+        self.name = name
+        self.role = role
+        self.color = color
+        self.active = False
+        self.tasks_completed = 0
+        self.current_task = None
+
+    @classmethod
+    def create_team(cls):
+        return [cls(at, n, r, c) for at, n, r, c in cls.AGENT_TYPES]
+
+    def assign_task(self, task):
+        self.current_task = task
+        self.active = True
+
+    def complete_task(self):
+        self.tasks_completed += 1
+        self.current_task = None
+        self.active = False
+
+    def summary(self):
+        status = f"active: {self.current_task}" if self.active else "idle"
+        return f"{self.name} ({self.agent_type}) — {self.tasks_completed} tasks — {status}"
+
+
+class DeviceOrchestrator:
+    """Coordinates multiple devices to work together toward a goal."""
+
+    def __init__(self):
+        self.workflows = []
+        self.active_orchestrations = []
+
+    def create_workflow(self, workflow_id, name, steps):
+        workflow = {
+            "workflow_id": workflow_id,
+            "name": name,
+            "steps": steps,
+            "created": __import__("time").time(),
+            "status": "ready",
+        }
+        self.workflows.append(workflow)
+        return workflow
+
+    def orchestrate(self, workflow_id, devices):
+        workflow = next((w for w in self.workflows if w["workflow_id"] == workflow_id), None)
+        if not workflow:
+            return False
+        orchestration = {
+            "workflow_id": workflow_id,
+            "devices": [d.device_id for d in devices],
+            "started": __import__("time").time(),
+            "status": "running",
+            "completed_steps": [],
+        }
+        self.active_orchestrations.append(orchestration)
+        return orchestration
+
+    def get_active_orchestrations(self):
+        return list(self.active_orchestrations)
+
+    def to_dict(self):
+        return {"workflows": self.workflows}
+
+    def from_dict(self, data):
+        self.workflows = data.get("workflows", [])
+
+
+class EnvironmentManager:
+    """Autonomous environment optimization — lighting, temperature, device arrangement."""
+
+    def __init__(self):
+        self.configurations = {}
+        self.active_config = None
+        self._optimization_log = []
+
+    def analyze_environment(self, sensor_data):
+        analysis = {}
+        if "temperature" in sensor_data:
+            temp = sensor_data["temperature"]
+            if temp > 28:
+                analysis["action"] = "cooling_recommended"
+                analysis["reason"] = f"Temperature {temp}°C exceeds comfort range"
+            elif temp < 16:
+                analysis["action"] = "heating_recommended"
+                analysis["reason"] = f"Temperature {temp}°C below comfort range"
+            else:
+                analysis["action"] = "temperature_optimal"
+        if "lighting" in sensor_data:
+            lux = sensor_data["lighting"]
+            if lux < 100:
+                analysis["lighting_action"] = "increase_lighting"
+            elif lux > 1000:
+                analysis["lighting_action"] = "decrease_lighting"
+            else:
+                analysis["lighting_action"] = "lighting_optimal"
+        if "noise" in sensor_data:
+            db = sensor_data["noise"]
+            if db > 60:
+                analysis["noise_action"] = "noise_reduction_recommended"
+        return analysis
+
+    def optimize(self, goal, environment_state):
+        if goal == "comfortable_workspace":
+            return {
+                "temperature": 22,
+                "lighting": 500,
+                "humidity": 45,
+                "device_arrangement": "ergonomic",
+                "information_display": "focus_mode",
+            }
+        elif goal == "increase_efficiency":
+            return {
+                "machine_schedule": "optimized",
+                "energy_mode": "efficient",
+                "maintenance_interval": "adjusted",
+            }
+        elif goal == "focus_mode":
+            return {
+                "lighting": 300,
+                "noise_cancellation": True,
+                "notifications": "silent",
+                "display": "minimal",
+            }
+        return {}
+
+    def apply_config(self, config_name, config):
+        self.configurations[config_name] = config
+        self.active_config = config_name
+        self._optimization_log.append({
+            "config": config_name, "time": __import__("time").time(),
+        })
+        return True
+
+    def get_optimization_history(self):
+        return list(self._optimization_log)
+
+    def to_dict(self):
+        return {"configurations": self.configurations, "active_config": self.active_config}
+
+    def from_dict(self, data):
+        self.configurations = data.get("configurations", {})
+        self.active_config = data.get("active_config")
+
+
+class SpatialInterface:
+    """3D workspace management — spatial information, context-aware environments."""
+
+    def __init__(self):
+        self.workspaces = {}
+        self.active_workspace = None
+
+    def create_workspace(self, workspace_id, name, layout="grid"):
+        workspace = {
+            "workspace_id": workspace_id,
+            "name": name,
+            "layout": layout,
+            "nodes": [],
+            "connections": [],
+            "created": __import__("time").time(),
+        }
+        self.workspaces[workspace_id] = workspace
+        self.active_workspace = workspace_id
+        return workspace
+
+    def add_node(self, workspace_id, node):
+        ws = self.workspaces.get(workspace_id)
+        if not ws:
+            return False
+        ws["nodes"].append(node.to_dict() if hasattr(node, "to_dict") else node)
+        return True
+
+    def connect_nodes(self, workspace_id, node1_id, node2_id):
+        ws = self.workspaces.get(workspace_id)
+        if not ws:
+            return False
+        ws["connections"].append({"from": node1_id, "to": node2_id})
+        return True
+
+    def get_active_workspace(self):
+        return self.workspaces.get(self.active_workspace)
+
+    def to_dict(self):
+        return {"workspaces": self.workspaces, "active_workspace": self.active_workspace}
+
+    def from_dict(self, data):
+        self.workspaces = data.get("workspaces", {})
+        self.active_workspace = data.get("active_workspace")
+
+
+class PersonalRealityAssistant:
+    """AI layer that understands the user's environment — devices, location, projects, technology."""
+
+    def __init__(self):
+        self.context = {
+            "location": None,
+            "available_devices": [],
+            "active_projects": [],
+            "environment_state": {},
+        }
+
+    def understand_context(self, reality_twin):
+        """Analyze the current environment and build context."""
+        summary = reality_twin.get_environment_summary()
+        devices = list(reality_twin.devices.values())
+        self.context["available_devices"] = [d.name for d in devices if d.status == "online"]
+        self.context["device_summary"] = summary
+        return self.context
+
+    def analyze_available_resources(self, goal, reality_twin):
+        """Analyze what resources are available for a given goal."""
+        resources = []
+        for device in reality_twin.devices.values():
+            if device.status != "online":
+                continue
+            if goal == "testing":
+                if "simulation" in device.capabilities:
+                    resources.append(f"{device.name} — simulation available")
+            elif goal == "monitoring":
+                if "sensor" in device.capabilities or "camera" in device.capabilities:
+                    resources.append(f"{device.name} — monitoring capable")
+            elif goal == "automation":
+                if "actuator" in device.capabilities or "control" in device.capabilities:
+                    resources.append(f"{device.name} — automation capable")
+        return resources
+
+    def suggest_actions(self, goal, reality_twin):
+        """Suggest actions based on user goal and available environment."""
+        suggestions = []
+        online = reality_twin.get_online_devices()
+        if not online:
+            suggestions.append("No devices online. Try connecting devices first.")
+            return suggestions
+        if goal and "test" in goal.lower():
+            suggestions.append(f"Found {len(online)} online devices ready for testing")
+            suggestions.append("Creating test workflow with available hardware...")
+        elif goal and "monitor" in goal.lower():
+            suggestions.append("Setting up environment monitoring...")
+            suggestions.append(f"{len(reality_twin.sensor_network.sensors)} sensors available")
+        elif goal and ("create" in goal.lower() or "build" in goal.lower()):
+            suggestions.append(f"Designing system with {len(online)} available nodes...")
+        return suggestions
+
+
+class HumanMachineCollaborator:
+    """Enables collaboration between humans and intelligent systems — design, build, optimize."""
+
+    def __init__(self):
+        self.collaborations = []
+
+    def start_collaboration(self, goal, context):
+        collab = {
+            "goal": goal,
+            "started": __import__("time").time(),
+            "context": context,
+            "phases": ["understand", "analyze", "generate", "review", "refine"],
+            "current_phase": "understand",
+            "results": [],
+        }
+        self.collaborations.append(collab)
+        return collab
+
+    def generate_design_options(self, goal, constraints=None):
+        """Generate design alternatives for a human to review."""
+        options = []
+        if "drone" in goal.lower():
+            options.append({
+                "name": "Lightweight carbon frame",
+                "weight": 250,
+                "battery": "30 min",
+                "payload": "500g",
+                "confidence": 0.85,
+            })
+            options.append({
+                "name": "Aluminum alloy frame",
+                "weight": 350,
+                "battery": "25 min",
+                "payload": "750g",
+                "confidence": 0.78,
+            })
+        elif "greenhouse" in goal.lower() or "garden" in goal.lower():
+            options.append({
+                "name": "Automated greenhouse",
+                "sensors": ["temperature", "humidity", "soil_moisture", "light"],
+                "actuators": ["irrigation", "ventilation", "shading"],
+                "ai_control": True,
+            })
+        else:
+            options.append({
+                "name": f"Prototype for {goal}",
+                "description": f"AI-generated design based on requirements",
+                "confidence": 0.7,
+            })
+        collab = self.collaborations[-1] if self.collaborations else None
+        if collab:
+            collab["results"].extend(options)
+            collab["current_phase"] = "generate"
+        return options
+
+
+class RealityLayer:
+    """Top-level orchestrator — connects digital intelligence to the physical world."""
+
+    def __init__(self):
+        self.reality_twin = RealityTwin()
+        self.device_orchestrator = DeviceOrchestrator()
+        self.environment_manager = EnvironmentManager()
+        self.spatial_interface = SpatialInterface()
+        self.reality_assistant = PersonalRealityAssistant()
+        self.human_machine = HumanMachineCollaborator()
+        self.reality_agents = RealityAgent.create_team()
+
+    def understand_goal(self, goal):
+        """Analyze a user goal and determine what resources are available."""
+        context = self.reality_assistant.understand_context(self.reality_twin)
+        resources = self.reality_assistant.analyze_available_resources(goal, self.reality_twin)
+        suggestions = self.reality_assistant.suggest_actions(goal, self.reality_twin)
+        return {
+            "goal": goal,
+            "context": context,
+            "resources": resources,
+            "suggestions": suggestions,
+        }
+
+    def coordinate_agents(self, task):
+        """Assign a task to the appropriate reality agents."""
+        assignments = []
+        for agent in self.reality_agents:
+            if agent.agent_type == "robot_controller" and ("robot" in task.lower() or "drone" in task.lower()):
+                agent.assign_task(task)
+                assignments.append(agent)
+            elif agent.agent_type == "environment_monitor" and "monitor" in task.lower():
+                agent.assign_task(task)
+                assignments.append(agent)
+            elif agent.agent_type == "sensor_analyst" and ("sensor" in task.lower() or "data" in task.lower()):
+                agent.assign_task(task)
+                assignments.append(agent)
+            elif agent.agent_type == "simulation_runner" and "simulate" in task.lower():
+                agent.assign_task(task)
+                assignments.append(agent)
+            elif agent.agent_type == "safety_guardian" and ("safe" in task.lower() or "security" in task.lower()):
+                agent.assign_task(task)
+                assignments.append(agent)
+        return assignments
+
+    def control_systems(self, commands):
+        """Execute commands across the physical system."""
+        results = []
+        for cmd in commands:
+            device = self.reality_twin.get_device(cmd.get("device_id"))
+            if device and device.send_command(cmd.get("action")):
+                results.append({"device": device.name, "command": cmd.get("action"), "status": "sent"})
+            else:
+                results.append({"device": cmd.get("device_id"), "command": cmd.get("action"), "status": "failed"})
+        return results
+
+    def learn_from_environment(self):
+        """Analyze sensor data and update environment understanding."""
+        summary = self.reality_twin.get_environment_summary()
+        sensor_summary = self.reality_twin.sensor_network.get_sensor_summary()
+        return {
+            "environment": summary,
+            "sensors": sensor_summary,
+            "timestamp": __import__("time").time(),
+        }
+
+    def get_full_state(self):
+        return {
+            "reality_twin": self.reality_twin.to_dict(),
+            "device_orchestrator": self.device_orchestrator.to_dict(),
+            "environment_manager": self.environment_manager.to_dict(),
+            "spatial_interface": self.spatial_interface.to_dict(),
+            "agents": [a.summary() for a in self.reality_agents],
+        }
+
+    def to_dict(self):
+        return {
+            "reality_twin": self.reality_twin.to_dict(),
+            "device_orchestrator": self.device_orchestrator.to_dict(),
+            "environment_manager": self.environment_manager.to_dict(),
+            "spatial_interface": self.spatial_interface.to_dict(),
+        }
+
+    def from_dict(self, data):
+        if "reality_twin" in data:
+            self.reality_twin.from_dict(data["reality_twin"])
+        if "device_orchestrator" in data:
+            self.device_orchestrator.from_dict(data["device_orchestrator"])
+        if "environment_manager" in data:
+            self.environment_manager.from_dict(data["environment_manager"])
+        if "spatial_interface" in data:
+            self.spatial_interface.from_dict(data["spatial_interface"])
 
 
 # ============================================================
