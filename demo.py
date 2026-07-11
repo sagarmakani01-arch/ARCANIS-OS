@@ -3978,21 +3978,11 @@ class ArcDesktop:
     FONT_XL = ("Segoe UI", 52)
     FONT_MONO = ("Consolas", 10)
 
-    AGENT_DEFS = [
-        ("Research", "researcher", "Gathers knowledge, finds papers, maps domains", "#33bbcc"),
-        ("Engineering", "engineer", "Designs architecture, plans systems", "#5533cc"),
-        ("Coding", "coder", "Writes, tests, and refines code", "#7744ff"),
-        ("Learning", "learner", "Creates learning paths, tracks progress", "#3366dd"),
-        ("Design", "designer", "Visualizes, prototypes, creates UI/UX", "#cc44aa"),
-        ("Planning", "planner", "Defines milestones, manages timeline", "#8888bb"),
-        ("Critic", "critic", "Reviews, finds gaps, suggests improvements", "#ff6644"),
-    ]
-
     def __init__(self, digital_twin=None):
         self.root = None
         self.canvas = None
         self.mission = None
-        self.agents = {}
+        self.civilization = None
         self.knowledge_nodes = []
         self.timeline_entries = []
         self.active_agent = None
@@ -4136,7 +4126,9 @@ class ArcDesktop:
             self.mission = intent
             self.twin.remember_mission(intent)
             self.twin.context.track_action("mission_start", intent)
-            self._init_agents()
+            # Start Agent Civilization
+            self.civilization = AgentCivilization(digital_twin=self.twin)
+            self.civilization.start_mission(intent)
             self._init_knowledge()
             self._init_timeline()
             self.intent_entry.place_forget()
@@ -4145,19 +4137,6 @@ class ArcDesktop:
     # ================================================================
     # AGENT SYSTEM — Specialized Autonomous Collaborators
     # ================================================================
-
-    def _init_agents(self):
-        self.agents = {}
-        for name, key, desc, color in self.AGENT_DEFS:
-            self.agents[key] = {
-                "name": name,
-                "role": desc,
-                "color": color,
-                "status": "idle",
-                "icon": "◎",
-                "active": False,
-                "tasks": [],
-            }
 
     def _init_knowledge(self):
         """Build hierarchical knowledge graph from mission."""
@@ -4216,7 +4195,8 @@ class ArcDesktop:
                                 fill=self.FG_BRIGHT, font=("Segoe UI", 12, "bold"), anchor="w", tags="ms_title")
 
         # Agent status strip
-        self.canvas.create_text(w - 200, 15, text="Agents: 7 online",
+        agent_count = len(self.civilization.agents) if self.civilization else 0
+        self.canvas.create_text(w - 200, 15, text=f"Agents: {agent_count} online",
                                 fill="#445566", font=("Segoe UI", 9), tags="agent_count")
 
         # New mission button
@@ -4241,7 +4221,7 @@ class ArcDesktop:
         return text if len(text) <= n else text[:n-3] + "..."
 
     # ================================================================
-    # AGENTS PANEL — 7 Specialized Collaborators
+    # AGENTS PANEL — Dynamic Civilization Workforce
     # ================================================================
 
     def _render_agents_panel(self):
@@ -4251,12 +4231,18 @@ class ArcDesktop:
         a_height = 70
         gap = 6
 
-        self.canvas.create_rectangle(ax, ay, ax + aw, ay + 7 * (a_height + gap) + 10,
+        agents_list = list(self.civilization.agents.items()) if self.civilization else []
+        count = len(agents_list)
+        if count == 0:
+            return
+
+        panel_h = count * (a_height + gap) + 15
+        self.canvas.create_rectangle(ax, ay, ax + aw, ay + panel_h,
                                      fill=self.BG_DEEP, outline="#151525", tags="agents_bg")
-        self.canvas.create_text(ax + aw // 2, ay + 15, text="AI  AGENTS",
+        self.canvas.create_text(ax + aw // 2, ay + 15, text=f"AI  CIVILIZATION  ·  {count} agents",
                                 fill=self.FG_GLOW, font=("Segoe UI", 8, "bold"), tags="agents_header")
 
-        for i, (name, key, desc, color) in enumerate(self.AGENT_DEFS):
+        for i, (key, agent) in enumerate(agents_list):
             cy = ay + 35 + i * (a_height + gap)
 
             # Agent card bg
@@ -4264,16 +4250,16 @@ class ArcDesktop:
                                          fill=self.BG_CARD, outline="#1a1a2e", tags=f"agent_{key}_bg")
 
             # Status dot
-            status_color = "#44cc44" if self.agents.get(key, {}).get("status") == "idle" else "#888888"
+            status_color = {"idle": "#44cc44", "working": "#ffcc00", "blocked": "#ff6644"}.get(agent.status, "#888888")
             self.canvas.create_oval(ax + 15, cy + 10, ax + 23, cy + 18,
                                     fill=status_color, outline="", tags=f"agent_{key}_status")
 
             # Agent name
-            self.canvas.create_text(ax + 32, cy + 14, text=name,
-                                    fill=color, font=("Segoe UI", 10, "bold"), anchor="w", tags=f"agent_{key}_name")
+            self.canvas.create_text(ax + 32, cy + 14, text=agent.name,
+                                    fill=agent.color, font=("Segoe UI", 10, "bold"), anchor="w", tags=f"agent_{key}_name")
 
             # Agent role (truncated)
-            self.canvas.create_text(ax + 32, cy + 32, text=self._truncate(desc, 30),
+            self.canvas.create_text(ax + 32, cy + 32, text=self._truncate(agent.role, 30),
                                     fill=self.FG_SOFT, font=("Segoe UI", 7), anchor="w", tags=f"agent_{key}_role")
 
             # Click to activate
@@ -4300,6 +4286,12 @@ class ArcDesktop:
                                      fill=bg_color, outline="#1a1a2e", tags="suggestions_bg")
 
         parts = []
+        if self.civilization and self.civilization.manager.goal:
+            progress = self.civilization.manager.progress
+            parts.append(f"🎯 {self.civilization.manager.goal[:30]}...")
+            parts.append(f"📊 {int(progress*100)}% complete")
+            if self.civilization.manager.status == "completed":
+                parts.append("✅ Mission complete!")
         if self._twin_suggestions:
             parts.append("💡 " + self._twin_suggestions[0])
         if self._twin_obstacles:
@@ -4429,9 +4421,9 @@ class ArcDesktop:
         # Active agent indicator
         active_name = "All Agents"
         active_color = self.FG_GLOW
-        if self.active_agent and self.active_agent in self.agents:
-            active_name = self.agents[self.active_agent]["name"]
-            active_color = self.agents[self.active_agent]["color"]
+        if self.active_agent and self.civilization and self.active_agent in self.civilization.agents:
+            active_name = self.civilization.agents[self.active_agent].name
+            active_color = self.civilization.agents[self.active_agent].color
 
         self.canvas.create_text(cx + cw // 2, cy + 15, text=f"CHAT  ·  {active_name}",
                                 fill=active_color, font=("Segoe UI", 8, "bold"), tags="chat_header")
@@ -4471,10 +4463,15 @@ class ArcDesktop:
             # Store in Digital Twin memory
             self.twin.memory.store("conversation", msg, tags=[target], source="user_chat")
 
-            # Generate response using Digital Twin context
-            if target in self.agents:
-                agent = self.agents[target]
-                # Check knowledge graph for relevant context
+            # Generate response using Agent Civilization or Digital Twin
+            if target != "system" and self.civilization and target in self.civilization.agents:
+                agent = self.civilization.agents[target]
+                # Send via civilization communication network
+                self.civilization.communicate(target, msg, "user")
+                agent.memory.store_personal(f"User said: {msg}", "chat")
+                agent.memory.store_mission(f"Working on: {msg}", "user_request")
+
+                # Context from knowledge graph
                 related = self.twin.knowledge_graph.get_connections(target, depth=1)
                 context_hint = ""
                 if related:
@@ -4485,14 +4482,18 @@ class ArcDesktop:
                             labels.append(node.get("label", cid))
                     if labels:
                         context_hint = f" (related: {', '.join(labels)})"
-                response = f"{agent['name']}: I'll work on '{msg}' for {self._truncate(self.mission, 20)}{context_hint}"
+                task_hint = f" · Task: {agent.current_task}" if agent.current_task else ""
+                response = f"{agent.name}: Working on '{msg}'{task_hint}{context_hint}"
             else:
-                # Use chief of staff for system-level responses
+                # Use civilization mission manager or chief of staff
+                civ_summary = ""
+                if self.civilization:
+                    civ_summary = f" · {self.civilization.manager.progress*100:.0f}% complete"
                 suggestions = self.twin.chief.get_suggestions()
                 if suggestions and "continue" in msg.lower():
-                    response = f"System: {suggestions[0]}"
+                    response = f"System: {suggestions[0]}{civ_summary}"
                 else:
-                    response = f"System: Processing request for '{self._truncate(self.mission, 20)}'"
+                    response = f"System: Processing for '{self._truncate(self.mission, 20)}'{civ_summary}"
 
             self._conversation.append((target, response))
             self._conversation_lines.append(response)
@@ -4501,32 +4502,45 @@ class ArcDesktop:
 
     def _activate_agent(self, key):
         self.active_agent = key
-        if key in self.agents:
-            agent = self.agents[key]
-            self._conversation_lines.append(f"--- Focused on {agent['name']} ---")
+        if self.civilization and key in self.civilization.agents:
+            agent = self.civilization.agents[key]
+            self._conversation_lines.append(f"--- Focused on {agent.name} ---")
             self.twin.context.track_action("agent_activate", key)
             self._render_agent_chat()
             self._show_agent_detail(key)
 
     def _show_agent_detail(self, key):
-        if key not in self.agents:
+        if not self.civilization or key not in self.civilization.agents:
             return
-        agent = self.agents[key]
+        agent = self.civilization.agents[key]
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
         try:
             self.canvas.delete("agent_detail")
-            dw, dh = 320, 200
-            dx, dy = w - dw - 40, h // 2 - dh // 2
+            dw, dh = 320, 240
+            dx, dy = w - dw - 40, h // 2 - dh // 2 - 40
             self.canvas.create_rectangle(dx, dy, dx + dw, dy + dh,
-                                         fill=self.BG_CARD, outline=self.FG_GLOW, tags="agent_detail")
-            self.canvas.create_text(dx + dw // 2, dy + 25, text=agent["name"],
-                                    fill=agent["color"], font=("Segoe UI", 14, "bold"), tags="agent_detail")
-            self.canvas.create_text(dx + 20, dy + 55, text=f"Role: {agent['role']}",
+                                         fill=self.BG_CARD, outline=agent.color, tags="agent_detail")
+            self.canvas.create_text(dx + dw // 2, dy + 22, text=agent.name,
+                                    fill=agent.color, font=("Segoe UI", 14, "bold"), tags="agent_detail")
+            self.canvas.create_text(dx + 15, dy + 50, text=f"Role: {agent.role}",
                                     fill=self.FG_SOFT, font=("Segoe UI", 9), anchor="w", tags="agent_detail")
-            self.canvas.create_text(dx + 20, dy + 80, text=f"Status: {agent['status']}",
+            self.canvas.create_text(dx + 15, dy + 70, text=f"Status: {agent.status}  ·  Tasks done: {agent.tasks_completed}",
                                     fill=self.FG_BRIGHT, font=("Segoe UI", 9), anchor="w", tags="agent_detail")
-            self.canvas.create_text(dx + dw // 2, dy + dh - 30, text="Click chat input to talk to this agent",
+            skills_text = "Skills: " + ", ".join(f"{s}({int(l*100)}%)" for s, l in sorted(agent.skills.items())[:4])
+            self.canvas.create_text(dx + 15, dy + 95, text=skills_text,
+                                    fill=self.FG_SOFT, font=("Segoe UI", 8), anchor="w", tags="agent_detail")
+            tools_text = "Tools: " + (", ".join(agent.tools[:4]) if agent.tools else "none")
+            self.canvas.create_text(dx + 15, dy + 115, text=tools_text,
+                                    fill=self.FG_SOFT, font=("Segoe UI", 8), anchor="w", tags="agent_detail")
+            # Task info
+            task_info = f"Current: {agent.current_task or 'idle'}"
+            if agent.improvement_needed():
+                task_info += "  ⚠ needs training"
+            self.canvas.create_text(dx + 15, dy + 140, text=task_info,
+                                    fill="#ffcc00" if agent.improvement_needed() else self.FG_SOFT,
+                                    font=("Segoe UI", 8), anchor="w", tags="agent_detail")
+            self.canvas.create_text(dx + dw // 2, dy + dh - 20, text="Chat to communicate with this agent",
                                     fill=self.FG_SOFT, font=("Segoe UI", 8), tags="agent_detail")
         except Exception:
             pass
@@ -4539,6 +4553,8 @@ class ArcDesktop:
         if self.root:
             try:
                 state = self.twin.save_state()
+                if self.civilization:
+                    state["civilization"] = self.civilization.to_dict()
                 import json
                 save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".digital_twin.json")
                 with open(save_path, "w") as f:
@@ -4546,6 +4562,741 @@ class ArcDesktop:
             except Exception:
                 pass
             self.root.destroy()
+
+
+# ============================================================
+# AGENT CIVILIZATION — Autonomous Intelligence Workforce
+# ============================================================
+# Agents are not isolated assistants. They are an intelligent
+# organization that collaborates to achieve complex goals.
+
+class AgentMemory:
+    """Personal memory for a single agent — what the agent learned."""
+
+    def __init__(self):
+        self._personal = []
+        self._mission = []
+        self._shared_tags = []
+
+    def store_personal(self, content, context=None):
+        import time
+        self._personal.append({"content": content, "context": context, "time": time.time()})
+
+    def store_mission(self, content, context=None):
+        import time
+        self._mission.append({"content": content, "context": context, "time": time.time()})
+
+    def recall_personal(self, query=None, limit=5):
+        if not query:
+            return list(self._personal[-limit:])
+        q = query.lower()
+        results = [m for m in self._personal if q in m["content"].lower()]
+        return results[-limit:]
+
+    def recall_mission(self, query=None, limit=5):
+        if not query:
+            return list(self._mission[-limit:])
+        q = query.lower()
+        results = [m for m in self._mission if q in m["content"].lower()]
+        return results[-limit:]
+
+    def to_dict(self):
+        return {"personal": self._personal, "mission": self._mission}
+
+    def from_dict(self, data):
+        self._personal = data.get("personal", [])
+        self._mission = data.get("mission", [])
+
+
+class AgentSafetyCage:
+    """Permissions and restrictions for one agent."""
+
+    def __init__(self):
+        self._tools_allowed = []
+        self._tools_denied = []
+        self._max_tasks = 10
+        self._requires_approval = []
+
+    def allow_tool(self, tool):
+        if tool not in self._tools_allowed:
+            self._tools_allowed.append(tool)
+
+    def deny_tool(self, tool):
+        if tool not in self._tools_denied:
+            self._tools_denied.append(tool)
+
+    def can_use(self, tool):
+        if tool in self._tools_denied:
+            return False
+        if self._tools_allowed and tool not in self._tools_allowed:
+            return False
+        return True
+
+    def needs_approval(self, action):
+        return action in self._requires_approval
+
+
+class Agent:
+    """Individual AI agent with purpose, skills, memory, tools, permissions."""
+
+    def __init__(self, agent_id, name, role, color="#7744ff"):
+        self.id = agent_id
+        self.name = name
+        self.role = role
+        self.color = color
+        self.skills = {}
+        self.tools = []
+        self.memory = AgentMemory()
+        self.cage = AgentSafetyCage()
+        self.performance = []
+        self.status = "idle"
+        self.current_task = None
+        self.tasks_completed = 0
+        self.created = __import__("time").time()
+
+    def assign_task(self, task):
+        self.current_task = task
+        self.status = "working"
+        self.memory.store_mission(f"Assigned: {task}", "task_assignment")
+
+    def add_skill(self, name, level=0.5):
+        self.skills[name] = max(0.0, min(1.0, level))
+
+    def add_tool(self, tool_name):
+        if tool_name not in self.tools:
+            self.tools.append(tool_name)
+
+    def complete_task(self, outcome="completed"):
+        self.tasks_completed += 1
+        self.status = "idle"
+        entry = {"task": self.current_task, "outcome": outcome, "time": __import__("time").time()}
+        self.performance.append(entry)
+        self.memory.store_mission(f"Completed: {self.current_task} ({outcome})", "task_complete")
+        self.current_task = None
+        return entry
+
+    def feedback(self, rating, comment=""):
+        """Record user feedback (0.0 to 1.0)."""
+        entry = {"rating": max(0.0, min(1.0, rating)), "comment": comment, "time": __import__("time").time()}
+        self.performance.append(entry)
+        return entry
+
+    def improvement_needed(self):
+        """Check if agent needs improvement based on recent performance."""
+        recent = [p for p in self.performance[-5:] if "rating" in p]
+        if not recent:
+            return False
+        avg = sum(r["rating"] for r in recent) / len(recent)
+        return avg < 0.4
+
+    def summary(self):
+        return f"{self.name} ({self.role}) | Tasks: {self.tasks_completed} | Skills: {len(self.skills)} | Tools: {len(self.tools)} | Status: {self.status}"
+
+    def to_dict(self):
+        return {
+            "id": self.id, "name": self.name, "role": self.role, "color": self.color,
+            "skills": self.skills, "tools": self.tools, "status": self.status,
+            "tasks_completed": self.tasks_completed, "current_task": self.current_task,
+            "performance": self.performance, "memory": self.memory.to_dict(),
+        }
+
+    def from_dict(self, data):
+        self.id = data["id"]
+        self.name = data["name"]
+        self.role = data["role"]
+        self.color = data.get("color", "#7744ff")
+        self.skills = data.get("skills", {})
+        self.tools = data.get("tools", [])
+        self.status = data.get("status", "idle")
+        self.tasks_completed = data.get("tasks_completed", 0)
+        self.current_task = data.get("current_task")
+        self.performance = data.get("performance", [])
+        if "memory" in data:
+            self.memory.from_dict(data["memory"])
+
+
+class AgentCommunicationNetwork:
+    """Internal communication layer — agents share, debate, review, request, combine."""
+
+    def __init__(self):
+        self._messages = []
+        self._channels = {}
+
+    def send(self, from_agent, to_agent, subject, body, channel="general"):
+        import time
+        msg = {
+            "id": len(self._messages),
+            "from": from_agent,
+            "to": to_agent,
+            "subject": subject,
+            "body": body,
+            "channel": channel,
+            "time": time.time(),
+            "read": False,
+        }
+        self._messages.append(msg)
+        if channel not in self._channels:
+            self._channels[channel] = []
+        self._channels[channel].append(msg)
+        return msg
+
+    def broadcast(self, from_agent, subject, body, channel="broadcast"):
+        return self.send(from_agent, "*", subject, body, channel)
+
+    def inbox(self, agent_id, limit=10):
+        return [m for m in self._messages if m["to"] == agent_id or m["to"] == "*"][-limit:]
+
+    def outbox(self, agent_id, limit=10):
+        return [m for m in self._messages if m["from"] == agent_id][-limit:]
+
+    def get_channel(self, channel, limit=20):
+        return self._channels.get(channel, [])[-limit:]
+
+    def conversation_between(self, agent_a, agent_b, limit=20):
+        conv = [m for m in self._messages
+                if (m["from"] == agent_a and m["to"] == agent_b) or
+                   (m["from"] == agent_b and m["to"] == agent_a)]
+        return conv[-limit:]
+
+    def mark_read(self, msg_id):
+        for m in self._messages:
+            if m["id"] == msg_id:
+                m["read"] = True
+
+    def recent_activity(self, n=10):
+        return sorted(self._messages, key=lambda m: m["time"], reverse=True)[:n]
+
+    def to_dict(self):
+        return {"messages": self._messages}
+
+    def from_dict(self, data):
+        self._messages = data.get("messages", [])
+        self._channels = {}
+        for m in self._messages:
+            ch = m.get("channel", "general")
+            if ch not in self._channels:
+                self._channels[ch] = []
+            self._channels[ch].append(m)
+
+
+class MissionManager:
+    """Central intelligence — understands goals, breaks into tasks, assigns agents, tracks progress."""
+
+    def __init__(self, communication_network=None):
+        self.goal = None
+        self.tasks = []
+        self.assignments = {}
+        self.progress = 0.0
+        self.status = "idle"
+        self.network = communication_network or AgentCommunicationNetwork()
+
+    def define_goal(self, goal):
+        self.goal = goal
+        self.tasks = []
+        self.assignments = {}
+        self.progress = 0.0
+        self.status = "planning"
+        self._break_down(goal)
+        return self.tasks
+
+    def _break_down(self, goal):
+        """Break a goal into tasks based on keywords and structure."""
+        gl = goal.lower()
+        tasks = []
+
+        # Always include core phases
+        tasks.append({"id": "research", "name": "Research & Gather Knowledge", "phase": "research", "depends_on": []})
+        tasks.append({"id": "plan", "name": "Plan & Design Approach", "phase": "planning", "depends_on": ["research"]})
+
+        if any(w in gl for w in ["build", "create", "make", "develop", "code", "program", "robot", "product"]):
+            tasks.append({"id": "design", "name": "Design Architecture", "phase": "design", "depends_on": ["plan"]})
+            tasks.append({"id": "implement", "name": "Implement & Build", "phase": "build", "depends_on": ["design"]})
+            tasks.append({"id": "test", "name": "Test & Validate", "phase": "testing", "depends_on": ["implement"]})
+        if any(w in gl for w in ["learn", "study", "understand", "research"]):
+            tasks.append({"id": "learn", "name": "Learn & Master Concepts", "phase": "learning", "depends_on": ["research"]})
+        if any(w in gl for w in ["company", "startup", "business", "venture"]):
+            tasks.append({"id": "market", "name": "Market Analysis", "phase": "business", "depends_on": ["research"]})
+            tasks.append({"id": "strategy", "name": "Business Strategy", "phase": "business", "depends_on": ["market"]})
+            tasks.append({"id": "finance", "name": "Financial Planning", "phase": "business", "depends_on": ["strategy"]})
+
+        tasks.append({"id": "review", "name": "Review & Improve", "phase": "review", "depends_on": [t["id"] for t in tasks if t["id"] not in ["review"]]})
+        tasks.append({"id": "deliver", "name": "Deliver Results", "phase": "delivery", "depends_on": ["review"]})
+        self.tasks = tasks
+
+    def get_available_tasks(self):
+        """Get tasks whose dependencies are met."""
+        completed_ids = {a["task_id"] for a in self.assignments.values() if a.get("completed")}
+        return [t for t in self.tasks if t["id"] not in completed_ids and all(d in completed_ids for d in t.get("depends_on", []))]
+
+    def assign(self, task_id, agent_id):
+        if task_id not in {t["id"] for t in self.tasks}:
+            return False
+        if any(a.get("agent_id") == agent_id for a in self.assignments.values() if not a.get("completed")):
+            return False
+        self.assignments[task_id] = {"agent_id": agent_id, "task_id": task_id, "completed": False, "result": None}
+        self.network.send("MissionManager", agent_id, "Task Assignment", f"Assigned: {task_id}", "assignments")
+        return True
+
+    def complete_task(self, task_id, result=None):
+        if task_id in self.assignments:
+            self.assignments[task_id]["completed"] = True
+            self.assignments[task_id]["result"] = result
+            self._update_progress()
+            self.network.broadcast("MissionManager", f"Task completed: {task_id}", "progress")
+            return True
+        return False
+
+    def _update_progress(self):
+        if not self.tasks:
+            return
+        completed = sum(1 for a in self.assignments.values() if a.get("completed"))
+        self.progress = completed / len(self.tasks)
+        if self.progress >= 1.0:
+            self.status = "completed"
+        else:
+            self.status = "in_progress"
+
+    def get_task(self, task_id):
+        for t in self.tasks:
+            if t["id"] == task_id:
+                return t
+        return None
+
+    def get_agent_tasks(self, agent_id):
+        return [a for a in self.assignments.values() if a["agent_id"] == agent_id]
+
+    def summary(self):
+        completed = sum(1 for a in self.assignments.values() if a.get("completed"))
+        total = len(self.tasks)
+        return f"Mission: {self.goal} | Progress: {completed}/{total} ({self.progress*100:.0f}%) | Status: {self.status}"
+
+    def organization_chart(self):
+        """Return agent organization structure."""
+        org = {"name": "Mission Manager", "children": []}
+        phases = {}
+        for t in self.tasks:
+            phase = t.get("phase", "general")
+            if phase not in phases:
+                phases[phase] = []
+            assignment = self.assignments.get(t["id"], {})
+            phases[phase].append({"task": t["name"], "agent": assignment.get("agent_id"), "done": assignment.get("completed", False)})
+        for phase, items in phases.items():
+            org["children"].append({"name": phase.capitalize(), "items": items})
+        return org
+
+    def to_dict(self):
+        return {
+            "goal": self.goal, "tasks": self.tasks,
+            "assignments": {k: v for k, v in self.assignments.items()},
+            "progress": self.progress, "status": self.status,
+        }
+
+    def from_dict(self, data):
+        self.goal = data.get("goal")
+        self.tasks = data.get("tasks", [])
+        self.assignments = {k: v for k, v in data.get("assignments", {}).items()}
+        self.progress = data.get("progress", 0.0)
+        self.status = data.get("status", "idle")
+
+
+class AgentMarketplace:
+    """Registry of available agent types that can be spawned."""
+
+    BUILTIN_TYPES = [
+        {"type": "researcher", "name": "Research Agent", "role": "Gathers knowledge, finds papers, analyzes information", "color": "#33bbcc", "skills": {"research": 0.8, "analysis": 0.7}},
+        {"type": "engineer", "name": "Engineering Agent", "role": "Designs architecture, plans systems, builds solutions", "color": "#5533cc", "skills": {"engineering": 0.8, "design": 0.7}},
+        {"type": "coder", "name": "Coding Agent", "role": "Writes, tests, and refines code across languages", "color": "#7744ff", "skills": {"programming": 0.8, "debugging": 0.7}},
+        {"type": "designer", "name": "Design Agent", "role": "Creates visual designs, prototypes, UI/UX", "color": "#cc44aa", "skills": {"design": 0.8, "creativity": 0.7}},
+        {"type": "analyst", "name": "Analysis Agent", "role": "Analyzes data, identifies patterns, generates insights", "color": "#3366dd", "skills": {"analysis": 0.8, "statistics": 0.6}},
+        {"type": "planner", "name": "Planning Agent", "role": "Defines milestones, manages timelines, tracks progress", "color": "#8888bb", "skills": {"planning": 0.8, "organization": 0.7}},
+        {"type": "critic", "name": "Critic Agent", "role": "Reviews work, finds gaps, suggests improvements", "color": "#ff6644", "skills": {"critique": 0.8, "quality": 0.7}},
+        {"type": "mentor", "name": "Learning Mentor", "role": "Creates learning paths, explains concepts, tracks progress", "color": "#44bb88", "skills": {"teaching": 0.8, "communication": 0.7}},
+    ]
+
+    def __init__(self):
+        self._types = {t["type"]: t for t in self.BUILTIN_TYPES}
+        self._installed = {}
+
+    def register_type(self, agent_type, name, role, color="#7744ff", skills=None):
+        self._types[agent_type] = {"type": agent_type, "name": name, "role": role, "color": color, "skills": skills or {}}
+
+    def install(self, agent_type):
+        if agent_type in self._types:
+            self._installed[agent_type] = self._types[agent_type]
+            return True
+        return False
+
+    def spawn(self, agent_type, agent_id=None):
+        if agent_type not in self._installed and agent_type not in self._types:
+            return None
+        info = self._types.get(agent_type) or self._installed.get(agent_type)
+        if not info:
+            return None
+        agent = Agent(agent_id or agent_type, info["name"], info["role"], info["color"])
+        for skill, level in info.get("skills", {}).items():
+            agent.add_skill(skill, level)
+        return agent
+
+    def available_types(self):
+        return list(self._types.keys())
+
+    def installed_types(self):
+        return list(self._installed.keys())
+
+    def get_info(self, agent_type):
+        return self._types.get(agent_type) or self._installed.get(agent_type)
+
+
+class AgentTraining:
+    """System for agent improvement through feedback and performance analysis."""
+
+    def __init__(self):
+        self._records = {}
+        self._improvements = []
+
+    def record_feedback(self, agent_id, rating, comment=""):
+        if agent_id not in self._records:
+            self._records[agent_id] = []
+        entry = {"rating": max(0.0, min(1.0, rating)), "comment": comment, "time": __import__("time").time()}
+        self._records[agent_id].append(entry)
+        self._analyze(agent_id)
+        return entry
+
+    def _analyze(self, agent_id):
+        records = self._records.get(agent_id, [])
+        if len(records) < 3:
+            return
+        recent = records[-3:]
+        avg = sum(r["rating"] for r in recent) / len(recent)
+        if avg < 0.3:
+            improvement = f"Agent {agent_id}: Performance critically low ({avg:.0%}). Recommend retraining or replacement."
+            self._improvements.append(improvement)
+        elif avg < 0.5:
+            improvement = f"Agent {agent_id}: Below average ({avg:.0%}). Additional training suggested."
+            self._improvements.append(improvement)
+
+    def get_improvements(self, agent_id=None):
+        if agent_id:
+            return [i for i in self._improvements if agent_id in i]
+        return list(self._improvements)
+
+    def get_average_rating(self, agent_id):
+        records = self._records.get(agent_id, [])
+        if not records:
+            return None
+        return sum(r["rating"] for r in records) / len(records)
+
+    def get_performance_summary(self):
+        summary = {}
+        for agent_id, records in self._records.items():
+            ratings = [r["rating"] for r in records if "rating" in r]
+            summary[agent_id] = {
+                "total_feedback": len(records),
+                "avg_rating": sum(ratings) / len(ratings) if ratings else None,
+                "trend": "improving" if len(ratings) >= 2 and ratings[-1] > ratings[-2] else "declining" if len(ratings) >= 2 else "stable",
+            }
+        return summary
+
+
+class WorkflowEngine:
+    """Learns repeated workflows and automates them."""
+
+    def __init__(self):
+        self._workflows = {}
+        self._patterns = []
+
+    def record_workflow(self, name, steps):
+        import time
+        self._workflows[name] = {
+            "name": name,
+            "steps": steps,
+            "count": 1,
+            "last_used": time.time(),
+            "created": time.time(),
+        }
+        return self._workflows[name]
+
+    def execute_step(self, workflow_name, step_index=0):
+        wf = self._workflows.get(workflow_name)
+        if not wf or step_index >= len(wf["steps"]):
+            return None
+        wf["last_used"] = __import__("time").time()
+        return wf["steps"][step_index]
+
+    def learn_from_sequence(self, actions):
+        """Detect patterns in repeated action sequences."""
+        if len(actions) < 3:
+            return None
+        pattern = tuple(actions[-3:])
+        # Update pattern count
+        found = False
+        for p in self._patterns:
+            if p["pattern"] == pattern:
+                p["count"] += 1
+                found = True
+                break
+        if not found:
+            self._patterns.append({"pattern": pattern, "count": 1})
+
+        # Check if pattern appears frequently
+        frequent = [p for p in self._patterns if p["count"] >= 3]
+        if frequent:
+            pat = frequent[-1]
+            name = " → ".join(pat["pattern"])
+            if name not in self._workflows:
+                self.record_workflow(name, list(pat["pattern"]))
+            return name
+        return None
+
+    def get_suggested_workflows(self, context=""):
+        """Suggest workflows based on context."""
+        if not context:
+            return list(self._workflows.keys())
+        ctx = context.lower()
+        matches = []
+        for name, wf in self._workflows.items():
+            if any(ctx in step.lower() for step in wf["steps"]):
+                matches.append(name)
+        return matches
+
+    def get_workflow(self, name):
+        return self._workflows.get(name)
+
+    def list_workflows(self):
+        return {k: {"steps": len(v["steps"]), "count": v["count"]} for k, v in self._workflows.items()}
+
+    def to_dict(self):
+        return {"workflows": self._workflows, "patterns": self._patterns}
+
+    def from_dict(self, data):
+        self._workflows = data.get("workflows", {})
+        self._patterns = data.get("patterns", [])
+
+
+class SafetyArchitecture:
+    """Permission boundaries, activity logs, user approval controls for the civilization."""
+
+    def __init__(self):
+        self._logs = []
+        self._pending_approvals = []
+        self._global_restrictions = []
+
+    def log_activity(self, agent_id, action, details=None):
+        import time
+        entry = {"agent": agent_id, "action": action, "details": details, "time": time.time()}
+        self._logs.append(entry)
+        if len(self._logs) > 500:
+            self._logs = self._logs[-250:]
+        return entry
+
+    def require_approval(self, agent_id, action, reason=""):
+        req = {"id": len(self._pending_approvals), "agent": agent_id, "action": action, "reason": reason, "approved": None}
+        self._pending_approvals.append(req)
+        return req
+
+    def approve(self, request_id):
+        for req in self._pending_approvals:
+            if req["id"] == request_id:
+                req["approved"] = True
+                return True
+        return False
+
+    def deny(self, request_id):
+        for req in self._pending_approvals:
+            if req["id"] == request_id:
+                req["approved"] = False
+                return True
+        return False
+
+    def get_pending(self):
+        return [r for r in self._pending_approvals if r["approved"] is None]
+
+    def get_logs(self, agent_id=None, n=20):
+        if agent_id:
+            return [l for l in self._logs if l["agent"] == agent_id][-n:]
+        return list(self._logs[-n:])
+
+    def restrict_global(self, action):
+        if action not in self._global_restrictions:
+            self._global_restrictions.append(action)
+
+    def is_restricted(self, action):
+        return action in self._global_restrictions
+
+    def to_dict(self):
+        return {"logs": self._logs, "restrictions": self._global_restrictions}
+
+    def from_dict(self, data):
+        self._logs = data.get("logs", [])
+        self._global_restrictions = data.get("restrictions", [])
+
+
+class AgentCivilization:
+    """Top-level orchestrator — manages agents, communication, missions, and evolution."""
+
+    def __init__(self, digital_twin=None):
+        self.network = AgentCommunicationNetwork()
+        self.manager = MissionManager(self.network)
+        self.marketplace = AgentMarketplace()
+        self.training = AgentTraining()
+        self.safety = SafetyArchitecture()
+        self.workflows = WorkflowEngine()
+        self.twin = digital_twin
+        self.agents = {}
+        self._active = False
+
+    def start_mission(self, goal):
+        """Initialize a civilization for a new mission."""
+        self.manager.define_goal(goal)
+        self._spawn_team(goal)
+        self._assign_initial_tasks()
+        self._active = True
+        self.safety.log_activity("system", "mission_start", {"goal": goal})
+        return self._mission_summary()
+
+    def _spawn_team(self, goal):
+        """Spawn agents based on mission type."""
+        gl = goal.lower()
+        needed = ["researcher", "planner", "critic"]
+
+        if any(w in gl for w in ["build", "create", "make", "develop", "code", "program"]):
+            needed.extend(["engineer", "coder", "designer"])
+        if any(w in gl for w in ["research", "study", "learn", "understand"]):
+            needed.extend(["researcher", "mentor"])
+            needed = list(dict.fromkeys(needed))
+        if any(w in gl for w in ["company", "startup", "business", "venture"]):
+            needed.extend(["analyst", "planner"])
+            needed = list(dict.fromkeys(needed))
+        if any(w in gl for w in ["data", "analysis", "analytics"]):
+            needed.append("analyst")
+            needed = list(dict.fromkeys(needed))
+
+        # Ensure basic team
+        if "researcher" not in needed:
+            needed.append("researcher")
+        if "planner" not in needed:
+            needed.append("planner")
+
+        for atype in needed:
+            if atype not in self.agents:
+                agent = self.marketplace.spawn(atype)
+                if agent:
+                    self.agents[atype] = agent
+
+        for atype, agent in self.agents.items():
+            self.network.broadcast(atype, f"{agent.name} ready for mission: {goal}", "status")
+
+    def _assign_initial_tasks(self):
+        """Assign available tasks to appropriate agents."""
+        available = self.manager.get_available_tasks()
+        for task in available:
+            agent_id = self._best_agent_for(task)
+            if agent_id:
+                self.manager.assign(task["id"], agent_id)
+                if agent_id in self.agents:
+                    self.agents[agent_id].assign_task(task["name"])
+                    self.network.send("MissionManager", agent_id, "Task", task["name"], "assignments")
+
+    def _best_agent_for(self, task):
+        """Find the most suitable agent for a task based on skills."""
+        task_name = task["name"].lower()
+        keyword_map = {
+            "research": "researcher", "knowledge": "researcher", "gather": "researcher",
+            "plan": "planner", "design": "designer", "architecture": "engineer",
+            "build": "engineer", "implement": "coder", "code": "coder", "program": "coder",
+            "test": "critic", "review": "critic", "validate": "critic",
+            "learn": "mentor", "study": "mentor",
+            "market": "analyst", "analy": "analyst", "data": "analyst",
+            "finance": "analyst", "strategy": "planner",
+        }
+        for keyword, agent_type in keyword_map.items():
+            if keyword in task_name and agent_type in self.agents:
+                return agent_type
+        # Fallback to first available
+        for atype in self.agents:
+            agent = self.agents[atype]
+            if agent.status == "idle":
+                return atype
+        return None
+
+    def communicate(self, from_agent, message, to_agent=None):
+        """Send a message from one agent to another (or broadcast)."""
+        if to_agent:
+            self.network.send(from_agent, to_agent, "Message", message, "chat")
+        else:
+            self.network.broadcast(from_agent, message, "chat")
+        self.safety.log_activity(from_agent, "communicate", {"to": to_agent or "all", "message": message[:50]})
+
+    def complete_agent_task(self, agent_id, result=None):
+        """Mark an agent's current task as complete."""
+        agent = self.agents.get(agent_id)
+        if not agent:
+            return False
+        completed = agent.complete_task("completed")
+        # Find and complete the corresponding mission manager task
+        for task_id, assignment in list(self.manager.assignments.items()):
+            if assignment["agent_id"] == agent_id and not assignment["completed"]:
+                self.manager.complete_task(task_id, result)
+                break
+        self.manager._update_progress()
+        # Assign next task if available
+        self._assign_initial_tasks()
+        return True
+
+    def get_activity_feed(self, n=10):
+        """Get recent activity for visualization."""
+        messages = self.network.recent_activity(n)
+        logs = self.safety.get_logs(n=n)
+        feed = []
+        for m in messages:
+            feed.append(f"{m['from']} → {m['to']}: {m['subject']}")
+        for l in logs:
+            feed.append(f"[{l['agent']}] {l['action']}")
+        return feed[-n:]
+
+    def organization_chart(self):
+        """Visual organization structure."""
+        org = self.manager.organization_chart()
+        # Add agent details
+        org["agents"] = {aid: {"name": a.name, "role": a.role, "status": a.status, "tasks": a.tasks_completed} for aid, a in self.agents.items()}
+        return org
+
+    def _mission_summary(self):
+        return {
+            "goal": self.manager.goal,
+            "agents": {aid: {"name": a.name, "status": a.status, "skills": len(a.skills)} for aid, a in self.agents.items()},
+            "tasks": len(self.manager.tasks),
+            "progress": self.manager.progress,
+            "activity": self.get_activity_feed(5),
+        }
+
+    def summary(self):
+        return f"Civilization: {len(self.agents)} agents | Goal: {self.manager.goal} | Progress: {self.manager.progress*100:.0f}% | Messages: {len(self.network._messages)}"
+
+    def to_dict(self):
+        return {
+            "agents": {aid: a.to_dict() for aid, a in self.agents.items()},
+            "manager": self.manager.to_dict(),
+            "network": self.network.to_dict(),
+            "safety": self.safety.to_dict(),
+            "workflows": self.workflows.to_dict(),
+        }
+
+    def from_dict(self, data):
+        if "agents" in data:
+            self.agents = {}
+            for aid, adata in data["agents"].items():
+                agent = Agent(adata.get("id", aid), adata["name"], adata["role"], adata.get("color", "#7744ff"))
+                agent.from_dict(adata)
+                self.agents[aid] = agent
+        if "manager" in data:
+            self.manager.from_dict(data["manager"])
+        if "network" in data:
+            self.network.from_dict(data["network"])
+        if "safety" in data:
+            self.safety.from_dict(data["safety"])
+        if "workflows" in data:
+            self.workflows.from_dict(data["workflows"])
 
 
 # ============================================================

@@ -2997,347 +2997,386 @@ def test_arc_v12():
 
 
 # ============================================================
-# ARC V15.0.0 TESTS — Digital Twin Mind (Personal Intelligence)
+# ARC V16.0.0 TESTS — Agent Civilization
 # ============================================================
 
-def test_arc_v15():
-    suite = TestSuite("Arc v15.0.0 Digital Twin Mind Tests")
+def test_arc_v16():
+    suite = TestSuite("Arc v16.0.0 Agent Civilization Tests")
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from demo import (DigitalTwinMind, MemorySystem, KnowledgeGraph,
-                      ContextEngine, LearningModel, ChiefOfStaff,
-                      SimulationEngine, PrivacyController, ArcDesktop, _HAVE_TK)
+    from demo import (AgentCivilization, Agent, AgentMemory, AgentSafetyCage,
+                      AgentCommunicationNetwork, MissionManager, AgentMarketplace,
+                      AgentTraining, SafetyArchitecture, WorkflowEngine, ArcDesktop)
 
-    # ======================== DigitalTwinMind ========================
+    # ======================== Agent ========================
 
-    suite.assert_true(hasattr(DigitalTwinMind, "remember_mission"), "v15_dtm_remember_mission")
-    suite.assert_true(hasattr(DigitalTwinMind, "continue_work"), "v15_dtm_continue_work")
-    suite.assert_true(hasattr(DigitalTwinMind, "get_personalized_greeting"), "v15_dtm_greeting")
-    suite.assert_true(hasattr(DigitalTwinMind, "save_state"), "v15_dtm_save")
-    suite.assert_true(hasattr(DigitalTwinMind, "load_state"), "v15_dtm_load")
-    suite.assert_true(hasattr(DigitalTwinMind, "summary"), "v15_dtm_summary")
+    a = Agent("test1", "Test Agent", "Testing", "#ff0000")
+    suite.assert_equals(a.id, "test1", "v16_agent_id")
+    suite.assert_equals(a.name, "Test Agent", "v16_agent_name")
+    suite.assert_equals(a.role, "Testing", "v16_agent_role")
+    suite.assert_equals(a.status, "idle", "v16_agent_status_initial")
+    suite.assert_equals(a.tasks_completed, 0, "v16_agent_tasks_initial")
 
-    d = DigitalTwinMind()
+    # Test add_skill
+    a.add_skill("python", 0.8)
+    a.add_skill("robotics", 0.4)
+    suite.assert_equals(len(a.skills), 2, "v16_agent_skills")
+    suite.assert_equals(a.skills["python"], 0.8, "v16_agent_skill_level")
 
-    # Test subsystems exist
-    suite.assert_true(hasattr(d, "memory"), "v15_dtm_memory")
-    suite.assert_true(hasattr(d, "knowledge_graph"), "v15_dtm_kg")
-    suite.assert_true(hasattr(d, "context"), "v15_dtm_context")
-    suite.assert_true(hasattr(d, "learning"), "v15_dtm_learning")
-    suite.assert_true(hasattr(d, "chief"), "v15_dtm_chief")
-    suite.assert_true(hasattr(d, "simulator"), "v15_dtm_sim")
-    suite.assert_true(hasattr(d, "privacy"), "v15_dtm_privacy")
+    # Test add_tool
+    a.add_tool("compiler")
+    a.add_tool("debugger")
+    suite.assert_equals(len(a.tools), 2, "v16_agent_tools")
 
-    # Test initial state
-    suite.assert_equals(d.memory.count(), 0, "v15_dtm_initial_memories")
-    suite.assert_equals(len(d.knowledge_graph._nodes), 0, "v15_dtm_initial_nodes")
-    suite.assert_equals(len(d.learning.get_skills()), 0, "v15_dtm_initial_skills")
+    # Test assign_task
+    a.assign_task("Build the control system")
+    suite.assert_equals(a.status, "working", "v16_agent_status_working")
+    suite.assert_equals(a.current_task, "Build the control system", "v16_agent_task")
 
-    # ======================== MemorySystem ========================
+    # Test complete_task
+    result = a.complete_task("completed")
+    suite.assert_equals(a.tasks_completed, 1, "v16_agent_tasks_done")
+    suite.assert_equals(a.status, "idle", "v16_agent_status_idle_after")
+    suite.assert_true("task" in result and "outcome" in result, "v16_agent_result_keys")
 
-    ms = MemorySystem()
-    suite.assert_true(hasattr(ms, "store"), "v15_mem_store")
-    suite.assert_true(hasattr(ms, "recall"), "v15_mem_recall")
-    suite.assert_true(hasattr(ms, "search_by_tag"), "v15_mem_search_tag")
-    suite.assert_true(hasattr(ms, "count"), "v15_mem_count")
-    suite.assert_true(hasattr(ms, "categories"), "v15_mem_categories")
-    suite.assert_true(hasattr(ms, "recent"), "v15_mem_recent")
-    suite.assert_true(hasattr(ms, "to_dict"), "v15_mem_to_dict")
-    suite.assert_true(hasattr(ms, "from_dict"), "v15_mem_from_dict")
+    # Test feedback
+    fb = a.feedback(0.9, "Great work")
+    suite.assert_equals(fb["rating"], 0.9, "v16_agent_feedback_rating")
 
-    # Test store and recall
-    id1 = ms.store("mission", "build a robot", tags=["active", "robotics"], source="user")
-    id2 = ms.store("note", "research motors", tags=["robotics"], source="user")
-    id3 = ms.store("code", "def move(): pass", tags=["python", "robotics"], source="user")
-    suite.assert_equals(ms.count(), 3, "v15_mem_count_3")
-    suite.assert_equals(ms.count("mission"), 1, "v15_mem_count_mission")
+    # Test improvement_needed
+    suite.assert_false(a.improvement_needed(), "v16_agent_no_improvement")
+    a.feedback(0.2, "Bad")
+    a.feedback(0.1, "Very bad")
+    a.feedback(0.3, "Poor")
+    suite.assert_true(a.improvement_needed(), "v16_agent_improvement_needed")
 
-    # Test recall by query
-    results = ms.recall(query="robot", limit=5)
-    suite.assert_true(len(results) >= 1, "v15_mem_recall_robot")
-
-    # Test recall by category
-    results = ms.recall(category="note", limit=5)
-    suite.assert_equals(len(results), 1, "v15_mem_recall_note")
-
-    # Test search by tag
-    results = ms.search_by_tag("python")
-    suite.assert_equals(len(results), 1, "v15_mem_tag_python")
-
-    # Test categories
-    cats = ms.categories()
-    suite.assert_true("mission" in cats, "v15_mem_cat_mission")
-    suite.assert_true("note" in cats, "v15_mem_cat_note")
-    suite.assert_true("code" in cats, "v15_mem_cat_code")
-
-    # Test recent
-    recent = ms.recent(2)
-    suite.assert_equals(len(recent), 2, "v15_mem_recent_2")
+    # Test summary
+    summary = a.summary()
+    suite.assert_true("Test Agent" in summary, "v16_agent_summary")
 
     # Test serialization
-    data = ms.to_dict()
-    ms2 = MemorySystem()
-    ms2.from_dict(data)
-    suite.assert_equals(ms2.count(), 3, "v15_mem_from_dict_count")
+    data = a.to_dict()
+    a2 = Agent("copy", "Copy", "Copying")
+    a2.from_dict(data)
+    suite.assert_equals(a2.name, "Test Agent", "v16_agent_from_dict_name")
+    suite.assert_equals(a2.tasks_completed, 1, "v16_agent_from_dict_tasks")
+    suite.assert_equals(len(a2.skills), 2, "v16_agent_from_dict_skills")
 
-    # ======================== KnowledgeGraph ========================
+    # ======================== AgentMemory ========================
 
-    kg = KnowledgeGraph()
-    suite.assert_true(hasattr(kg, "add_concept"), "v15_kg_add")
-    suite.assert_true(hasattr(kg, "relate"), "v15_kg_relate")
-    suite.assert_true(hasattr(kg, "get_connections"), "v15_kg_connections")
-    suite.assert_true(hasattr(kg, "query"), "v15_kg_query")
-    suite.assert_true(hasattr(kg, "path"), "v15_kg_path")
-    suite.assert_true(hasattr(kg, "to_dict"), "v15_kg_to_dict")
+    am = AgentMemory()
+    suite.assert_true(hasattr(am, "store_personal"), "v16_am_store_personal")
+    suite.assert_true(hasattr(am, "store_mission"), "v16_am_store_mission")
+    suite.assert_true(hasattr(am, "recall_personal"), "v16_am_recall_personal")
+    suite.assert_true(hasattr(am, "recall_mission"), "v16_am_recall_mission")
 
-    # Test add concepts
-    kg.add_concept("ai", "Artificial Intelligence", "cs")
-    kg.add_concept("ml", "Machine Learning", "cs")
-    kg.add_concept("nn", "Neural Networks", "cs")
-    kg.add_concept("cv", "Computer Vision", "cs")
-    kg.add_concept("robot", "Robotics", "engineering")
-    suite.assert_equals(len(kg._nodes), 5, "v15_kg_5_nodes")
+    am.store_personal("Learned about motors")
+    am.store_personal("Studied sensor fusion")
+    am.store_mission("Assigned to design task")
+    suite.assert_equals(len(am.recall_personal()), 2, "v16_am_personal_count")
+    suite.assert_equals(len(am.recall_mission()), 1, "v16_am_mission_count")
+    results = am.recall_personal("motor")
+    suite.assert_equals(len(results), 1, "v16_am_recall_query")
 
-    # Test relationships
-    kg.relate("ai", "ml", "includes")
-    kg.relate("ml", "nn", "includes")
-    kg.relate("ai", "cv", "includes")
-    kg.relate("ai", "robot", "applied_to")
-    suite.assert_equals(len(kg._edges), 4, "v15_kg_4_edges")
+    # ======================== AgentSafetyCage ========================
 
-    # Test get_connections
-    conns = kg.get_connections("ai")
-    suite.assert_true(len(conns) >= 3, "v15_kg_conn_ai")
-    conn_ids = [c[0] for c in conns]
-    suite.assert_true("ml" in conn_ids, "v15_kg_conn_ml")
-    suite.assert_true("cv" in conn_ids, "v15_kg_conn_cv")
-    suite.assert_true("robot" in conn_ids, "v15_kg_conn_robot")
+    cage = AgentSafetyCage()
+    suite.assert_true(hasattr(cage, "allow_tool"), "v16_cage_allow")
+    suite.assert_true(hasattr(cage, "can_use"), "v16_cage_can_use")
 
-    # Test query
-    results = kg.query(category="cs")
-    suite.assert_equals(len(results), 4, "v15_kg_query_cs")
-    results = kg.query(prefix="art")
-    suite.assert_equals(len(results), 1, "v15_kg_query_prefix")
+    cage.allow_tool("vim")
+    cage.deny_tool("rm")
+    suite.assert_true(cage.can_use("vim"), "v16_cage_use_allowed")
+    suite.assert_false(cage.can_use("rm"), "v16_cage_use_denied")
 
-    # Test path finding
-    path = kg.path("ai", "nn")
-    suite.assert_true(path is not None, "v15_kg_path_found")
-    suite.assert_true("ai" in path, "v15_kg_path_has_ai")
-    suite.assert_true("nn" in path, "v15_kg_path_has_nn")
+    # ======================== AgentCommunicationNetwork ========================
 
-    # Test no path
-    kg.add_concept("unrelated", "Unrelated", "other")
-    path = kg.path("ai", "unrelated")
-    suite.assert_equals(path, None, "v15_kg_path_none")
+    net = AgentCommunicationNetwork()
+    suite.assert_true(hasattr(net, "send"), "v16_net_send")
+    suite.assert_true(hasattr(net, "broadcast"), "v16_net_broadcast")
+    suite.assert_true(hasattr(net, "inbox"), "v16_net_inbox")
+    suite.assert_true(hasattr(net, "outbox"), "v16_net_outbox")
+    suite.assert_true(hasattr(net, "conversation_between"), "v16_net_conversation")
 
-    # Test serialization
-    data = kg.to_dict()
-    kg2 = KnowledgeGraph()
-    kg2.from_dict(data)
-    suite.assert_equals(len(kg2._nodes), 6, "v15_kg_from_dict_nodes")
+    # Test send
+    net.send("researcher", "engineer", "Requirements", "Need specs", "work")
+    net.send("engineer", "researcher", "Re: Requirements", "Here are the specs", "work")
+    suite.assert_equals(len(net._messages), 2, "v16_net_message_count")
 
-    # ======================== ContextEngine ========================
+    # Test broadcast
+    net.broadcast("Manager", "Status update", "general")
+    suite.assert_equals(len(net._messages), 3, "v16_net_broadcast")
 
-    ce = ContextEngine()
-    suite.assert_true(hasattr(ce, "set_mission"), "v15_ctx_set_mission")
-    suite.assert_true(hasattr(ce, "get_current"), "v15_ctx_get_current")
-    suite.assert_true(hasattr(ce, "track_action"), "v15_ctx_track")
-    suite.assert_true(hasattr(ce, "summary"), "v15_ctx_summary")
+    # Test inbox (includes broadcast messages)
+    inbox = net.inbox("engineer")
+    suite.assert_equals(len(inbox), 2, "v16_net_inbox_count")
 
-    # Test initial state
-    current = ce.get_current()
-    suite.assert_equals(current["mission"], None, "v15_ctx_initial_mission")
-    suite.assert_equals(len(current["active_projects"]), 0, "v15_ctx_initial_projects")
+    # Test outbox
+    outbox = net.outbox("engineer")
+    suite.assert_equals(len(outbox), 1, "v16_net_outbox_count")
 
-    # Test set_mission
-    ce.set_mission("build a robot")
-    current = ce.get_current()
-    suite.assert_equals(current["mission"], "build a robot", "v15_ctx_mission_set")
+    # Test conversation
+    conv = net.conversation_between("researcher", "engineer")
+    suite.assert_equals(len(conv), 2, "v16_net_conversation_count")
 
-    # Test track_action
-    ce.track_action("research", {"topic": "motors"})
-    current = ce.get_current()
-    suite.assert_equals(current["session_actions"], 2, "v15_ctx_actions_count")
+    # Test channel
+    channel = net.get_channel("work")
+    suite.assert_equals(len(channel), 2, "v16_net_channel_count")
 
-    # Test preferences
-    ce.set_preference("theme", "dark")
-    suite.assert_equals(ce.get_preference("theme"), "dark", "v15_ctx_pref")
-    suite.assert_equals(ce.get_preference("missing", "default"), "default", "v15_ctx_pref_default")
+    # Test recent_activity
+    activity = net.recent_activity(5)
+    suite.assert_equals(len(activity), 3, "v16_net_activity")
 
     # Test serialization
-    data = ce.to_dict()
-    ce2 = ContextEngine()
-    ce2.from_dict(data)
-    suite.assert_equals(ce2.get_current()["mission"], "build a robot", "v15_ctx_from_dict")
+    data = net.to_dict()
+    net2 = AgentCommunicationNetwork()
+    net2.from_dict(data)
+    suite.assert_equals(len(net2._messages), 3, "v16_net_from_dict")
 
-    # ======================== LearningModel ========================
+    # ======================== MissionManager ========================
 
-    lm = LearningModel()
-    suite.assert_true(hasattr(lm, "add_skill"), "v15_lm_add_skill")
-    suite.assert_true(hasattr(lm, "update_skill"), "v15_lm_update_skill")
-    suite.assert_true(hasattr(lm, "get_skill"), "v15_lm_get_skill")
-    suite.assert_true(hasattr(lm, "create_path"), "v15_lm_create_path")
-    suite.assert_true(hasattr(lm, "complete_step"), "v15_lm_complete_step")
-    suite.assert_true(hasattr(lm, "progress_summary"), "v15_lm_progress")
+    mm = MissionManager()
+    suite.assert_true(hasattr(mm, "define_goal"), "v16_mm_define")
+    suite.assert_true(hasattr(mm, "get_available_tasks"), "v16_mm_avail")
+    suite.assert_true(hasattr(mm, "assign"), "v16_mm_assign")
+    suite.assert_true(hasattr(mm, "complete_task"), "v16_mm_complete")
+    suite.assert_true(hasattr(mm, "organization_chart"), "v16_mm_org")
 
-    # Test add skills
-    lm.add_skill("Python", "programming", 0.7)
-    lm.add_skill("Robotics", "engineering", 0.2)
-    lm.add_skill("Deep Learning", "ai", 0.0)
-    suite.assert_equals(len(lm.get_skills()), 3, "v15_lm_3_skills")
+    # Test define_goal
+    tasks = mm.define_goal("build a humanoid robot with AI")
+    suite.assert_true(len(tasks) > 5, "v16_mm_tasks_count")
 
-    # Test update skill
-    lm.update_skill("Python", 0.1)
-    skill = lm.get_skill("Python")
-    suite.assert_true(skill["level"] > 0.7, "v15_lm_skill_updated")
+    # Verify specific task types exist
+    task_ids = [t["id"] for t in tasks]
+    suite.assert_true("research" in task_ids, "v16_mm_task_research")
+    suite.assert_true("plan" in task_ids, "v16_mm_task_plan")
+    suite.assert_true("design" in task_ids, "v16_mm_task_design")
+    suite.assert_true("implement" in task_ids, "v16_mm_task_implement")
+    suite.assert_true("test" in task_ids, "v16_mm_task_test")
+    suite.assert_true("review" in task_ids, "v16_mm_task_review")
 
-    # Test get skill by category
-    prog_skills = lm.get_skills("programming")
-    suite.assert_equals(len(prog_skills), 1, "v15_lm_cat_programming")
+    # Test business goal adds business tasks
+    tasks = mm.define_goal("start a tech company")
+    task_ids = [t["id"] for t in tasks]
+    suite.assert_true("market" in task_ids, "v16_mm_task_market")
+    suite.assert_true("strategy" in task_ids, "v16_mm_task_strategy")
+    suite.assert_true("finance" in task_ids, "v16_mm_task_finance")
 
-    # Test learning path
-    path = lm.create_path("Become an AI Engineer", [
-        "Linear Algebra", "Neural Networks", "Deep Learning", "Computer Vision", "AI Agents"
-    ])
-    suite.assert_equals(path["progress"], 0.0, "v15_lm_path_progress")
+    # Test get_available_tasks
+    mm.define_goal("simple project")
+    available = mm.get_available_tasks()
+    suite.assert_true(len(available) >= 1, "v16_mm_avail_nonempty")
 
-    # Test complete step
-    lm.complete_step("Become an AI Engineer", "Linear Algebra")
-    suite.assert_equals(lm.get_path("Become an AI Engineer")["progress"], 0.2, "v15_lm_step_done")
+    # Test assign
+    mm.assign(available[0]["id"], "agent1")
+    suite.assert_true(mm.assignments[available[0]["id"]]["agent_id"] == "agent1", "v16_mm_assigned")
 
-    # Test progress summary
-    summary = lm.progress_summary()
-    suite.assert_true("Become an AI Engineer" in summary, "v15_lm_summary")
-    suite.assert_equals(summary["Become an AI Engineer"], "20%", "v15_lm_summary_pct")
+    # Test complete_task
+    mm.complete_task(available[0]["id"], "done")
+    suite.assert_true(mm.assignments[available[0]["id"]]["completed"], "v16_mm_completed")
+
+    # Test organization chart
+    org = mm.organization_chart()
+    suite.assert_true("name" in org, "v16_mm_org_name")
+    suite.assert_true("children" in org, "v16_mm_org_children")
+
+    # Test summary
+    summary = mm.summary()
+    suite.assert_true("simple project" in summary, "v16_mm_summary")
 
     # Test serialization
-    data = lm.to_dict()
-    lm2 = LearningModel()
-    lm2.from_dict(data)
-    suite.assert_equals(len(lm2.get_skills()), 3, "v15_lm_from_dict")
+    data = mm.to_dict()
+    mm2 = MissionManager()
+    mm2.from_dict(data)
+    suite.assert_equals(mm2.goal, "simple project", "v16_mm_from_dict")
 
-    # ======================== ChiefOfStaff ========================
+    # ======================== AgentMarketplace ========================
 
-    cofs = ChiefOfStaff()
-    suite.assert_true(hasattr(cofs, "analyze_mission"), "v15_cofs_analyze")
-    suite.assert_true(hasattr(cofs, "get_suggestions"), "v15_cofs_suggestions")
-    suite.assert_true(hasattr(cofs, "get_obstacles"), "v15_cofs_obstacles")
+    mp = AgentMarketplace()
+    suite.assert_true(hasattr(mp, "available_types"), "v16_mp_available")
+    suite.assert_true(hasattr(mp, "spawn"), "v16_mp_spawn")
+    suite.assert_true(hasattr(mp, "register_type"), "v16_mp_register")
 
-    # Test analyze with data
-    mem = MemorySystem()
-    mem.store("mission", "building an AI", tags=["ai"], source="test")
-    result = cofs.analyze_mission("build a robot", mem, kg, lm)
-    suite.assert_true("suggestions" in result, "v15_cofs_result_suggestions")
-    suite.assert_true("obstacles" in result, "v15_cofs_result_obstacles")
+    # Test builtin types
+    types = mp.available_types()
+    suite.assert_true(len(types) >= 8, "v16_mp_builtin_count")
+    suite.assert_true("researcher" in types, "v16_mp_type_researcher")
+    suite.assert_true("engineer" in types, "v16_mp_type_engineer")
+    suite.assert_true("coder" in types, "v16_mp_type_coder")
 
-    # Test suggestions returned
-    suggestions = cofs.get_suggestions()
-    suite.assert_true(len(suggestions) > 0, "v15_cofs_has_suggestions")
-    obstacles = cofs.get_obstacles()
-    suite.assert_true(len(obstacles) > 0, "v15_cofs_has_obstacles")
+    # Test spawn
+    agent = mp.spawn("coder")
+    suite.assert_true(agent is not None, "v16_mp_spawn_coder")
+    suite.assert_equals(agent.name, "Coding Agent", "v16_mp_spawn_name")
 
-    # ======================== SimulationEngine ========================
+    # Test register custom type
+    mp.register_type("custom_agent", "Custom Agent", "Does custom things", "#00ff00", {"custom": 0.9})
+    suite.assert_true("custom_agent" in mp.available_types(), "v16_mp_registered")
+    custom = mp.spawn("custom_agent")
+    suite.assert_equals(custom.name, "Custom Agent", "v16_mp_custom_name")
 
-    sim = SimulationEngine()
-    suite.assert_true(hasattr(sim, "compare"), "v15_sim_compare")
-    suite.assert_true(hasattr(sim, "history"), "v15_sim_history")
+    # Test spawn non-existent
+    none_agent = mp.spawn("nonexistent")
+    suite.assert_equals(none_agent, None, "v16_mp_spawn_none")
 
-    # Test compare
-    result = sim.compare(
-        "Learn cybersecurity",
-        "Learn robotics",
-        context="building a robot with AI vision"
-    )
-    suite.assert_true("scenario_a" in result, "v15_sim_result_a")
-    suite.assert_true("scenario_b" in result, "v15_sim_result_b")
-    suite.assert_true("analysis" in result, "v15_sim_analysis")
-    suite.assert_true("recommendation" in result, "v15_sim_recommendation")
+    # ======================== AgentTraining ========================
 
-    # Test simulation favors robotics given robot context
-    result = sim.compare(
-        "cybersecurity focus",
-        "robotics engineering",
-        context="robot project with AI vision"
-    )
-    suite.assert_equals(result["recommendation"], "B", "v15_sim_rec_robotics")
+    training = AgentTraining()
+    suite.assert_true(hasattr(training, "record_feedback"), "v16_train_feedback")
+    suite.assert_true(hasattr(training, "get_improvements"), "v16_train_improvements")
+    suite.assert_true(hasattr(training, "get_performance_summary"), "v16_train_summary")
 
-    # Test history
-    history = sim.history()
-    suite.assert_equals(len(history), 2, "v15_sim_history_2")
+    # Test record feedback
+    training.record_feedback("agent1", 0.9, "Excellent")
+    training.record_feedback("agent1", 0.2, "Poor")
+    training.record_feedback("agent1", 0.1, "Very poor")
+    improvements = training.get_improvements("agent1")
+    suite.assert_true(len(improvements) >= 1, "v16_train_improvements_found")
 
-    # ======================== PrivacyController ========================
+    # Test average rating
+    avg = training.get_average_rating("agent1")
+    suite.assert_true(avg is not None, "v16_train_avg_exists")
 
-    pc = PrivacyController()
-    suite.assert_true(hasattr(pc, "grant"), "v15_priv_grant")
-    suite.assert_true(hasattr(pc, "check"), "v15_priv_check")
-    suite.assert_true(hasattr(pc, "audit"), "v15_priv_audit")
-    suite.assert_true(hasattr(pc, "explain"), "v15_priv_explain")
+    # Test performance summary
+    summary = training.get_performance_summary()
+    suite.assert_true("agent1" in summary, "v16_train_summary_agent")
+    suite.assert_true("avg_rating" in summary["agent1"], "v16_train_summary_rating")
 
-    # Test grant and check
-    suite.assert_false(pc.check("agent", "read"), "v15_priv_initial_denied")
-    pc.grant("agent", "read")
-    suite.assert_true(pc.check("agent", "read"), "v15_priv_granted")
-    pc.revoke("agent", "read")
-    suite.assert_false(pc.check("agent", "read"), "v15_priv_revoked")
+    # ======================== SafetyArchitecture ========================
 
-    # Test audit log
-    audit = pc.audit()
-    suite.assert_true(len(audit) >= 2, "v15_priv_audit_entries")
+    sa = SafetyArchitecture()
+    suite.assert_true(hasattr(sa, "log_activity"), "v16_sa_log")
+    suite.assert_true(hasattr(sa, "require_approval"), "v16_sa_approval")
+    suite.assert_true(hasattr(sa, "get_logs"), "v16_sa_get_logs")
 
-    # Test explain
-    explanation = pc.explain("Study robotics first", ["skill levels", "project goals"])
-    suite.assert_true("Study robotics first" in explanation, "v15_priv_explain_text")
+    # Test log
+    sa.log_activity("agent1", "read_file", {"path": "/data"})
+    sa.log_activity("agent2", "write_file", {"path": "/output"})
+    logs = sa.get_logs()
+    suite.assert_equals(len(logs), 2, "v16_sa_log_count")
 
-    # ======================== DigitalTwinMind Integration ========================
+    # Test filtered logs
+    agent_logs = sa.get_logs("agent1")
+    suite.assert_equals(len(agent_logs), 1, "v16_sa_log_filter")
 
-    dt = DigitalTwinMind()
+    # Test approval
+    req = sa.require_approval("agent1", "delete_data", "Needs to clean up")
+    suite.assert_equals(req["approved"], None, "v16_sa_approval_pending")
+    sa.approve(req["id"])
+    suite.assert_true(req["approved"], "v16_sa_approval_granted")
 
-    # Test remember_mission
-    dt.remember_mission("build a humanoid robot")
-    suite.assert_equals(dt.memory.count(), 1, "v15_dt_mission_memory")
-    suite.assert_equals(dt.context.get_current()["mission"], "build a humanoid robot", "v15_dt_mission_context")
+    # Test restrictions
+    sa.restrict_global("format_drive")
+    suite.assert_true(sa.is_restricted("format_drive"), "v16_sa_restricted")
+    suite.assert_false(sa.is_restricted("read_file"), "v16_sa_not_restricted")
 
-    # Test continue_work
-    result = dt.continue_work("continue my robot project")
-    suite.assert_true("current_mission" in result, "v15_dt_continue_mission")
-    suite.assert_true("suggestions" in result, "v15_dt_continue_suggestions")
-    suite.assert_true("knowledge_summary" in result, "v15_dt_continue_knowledge")
+    # ======================== WorkflowEngine ========================
 
-    # Test personalized greeting
-    greeting = dt.get_personalized_greeting()
-    suite.assert_true("greeting" in greeting, "v15_dt_greeting_msg")
-    suite.assert_true("recent_missions" in greeting, "v15_dt_greeting_missions")
-    suite.assert_true("skills_count" in greeting, "v15_dt_greeting_skills")
-    suite.assert_true(greeting["greeting"] in ["Good morning", "Good afternoon", "Good evening"], "v15_dt_greeting_time")
+    we = WorkflowEngine()
+    suite.assert_true(hasattr(we, "record_workflow"), "v16_we_record")
+    suite.assert_true(hasattr(we, "learn_from_sequence"), "v16_we_learn")
+    suite.assert_true(hasattr(we, "get_suggested_workflows"), "v16_we_suggest")
 
-    # Test save and load state
-    dt.learning.add_skill("Python", "programming", 0.8)
-    dt.knowledge_graph.add_concept("robot", "Robotics", "engineering")
-    state = dt.save_state()
-    suite.assert_true("memory" in state, "v15_dt_state_memory")
-    suite.assert_true("knowledge_graph" in state, "v15_dt_state_kg")
-    suite.assert_true("context" in state, "v15_dt_state_context")
-    suite.assert_true("learning" in state, "v15_dt_state_learning")
+    # Test record
+    we.record_workflow("Research", ["Search", "Read", "Summarize", "Save"])
+    workflow = we.get_workflow("Research")
+    suite.assert_true(workflow is not None, "v16_we_recorded")
+    suite.assert_equals(len(workflow["steps"]), 4, "v16_we_steps")
 
-    dt2 = DigitalTwinMind()
-    dt2.load_state(state)
-    suite.assert_equals(dt2.memory.count(), 1, "v15_dt_load_memory")
-    suite.assert_equals(len(dt2.learning.get_skills()), 1, "v15_dt_load_skills")
+    # Test learn from sequence (frequency-based)
+    we.learn_from_sequence(["Open", "Edit", "Save"])
+    we.learn_from_sequence(["Open", "Edit", "Save"])
+    we.learn_from_sequence(["Open", "Edit", "Save"])
+    learned = we.learn_from_sequence(["Open", "Edit", "Save"])
+    suite.assert_true(learned is not None, "v16_we_learned")
+    suite.assert_true("Open → Edit → Save" in we.list_workflows(), "v16_we_workflow_learned")
+
+    # Test suggest
+    suggestions = we.get_suggested_workflows("Edit")
+    suite.assert_true(len(suggestions) > 0, "v16_we_suggestions")
+
+    # Test list
+    wf_list = we.list_workflows()
+    suite.assert_true(len(wf_list) >= 2, "v16_we_list_count")
+
+    # ======================== AgentCivilization ========================
+
+    civ = AgentCivilization()
+    suite.assert_true(hasattr(civ, "start_mission"), "v16_civ_start")
+    suite.assert_true(hasattr(civ, "communicate"), "v16_civ_comm")
+    suite.assert_true(hasattr(civ, "complete_agent_task"), "v16_civ_complete")
+    suite.assert_true(hasattr(civ, "get_activity_feed"), "v16_civ_feed")
+    suite.assert_true(hasattr(civ, "organization_chart"), "v16_civ_org")
+    suite.assert_true(hasattr(civ, "summary"), "v16_civ_summary")
+
+    # Test start_mission — build goal
+    summary = civ.start_mission("build a robot")
+    suite.assert_true(len(civ.agents) >= 4, "v16_civ_agents_build")
+    suite.assert_equals(civ.manager.goal, "build a robot", "v16_civ_goal")
+
+    # Verify specific agent types
+    agent_types = list(civ.agents.keys())
+    suite.assert_true("researcher" in agent_types, "v16_civ_agent_researcher")
+    suite.assert_true("engineer" in agent_types, "v16_civ_agent_engineer")
+    suite.assert_true("coder" in agent_types, "v16_civ_agent_coder")
+    suite.assert_true("critic" in agent_types, "v16_civ_agent_critic")
+    suite.assert_true("planner" in agent_types, "v16_civ_agent_planner")
+
+    # Test start_mission — learn goal
+    civ2 = AgentCivilization()
+    civ2.start_mission("learn quantum physics")
+    agent_types2 = list(civ2.agents.keys())
+    suite.assert_true("mentor" in agent_types2, "v16_civ_agent_mentor")
+
+    # Test start_mission — business goal
+    civ3 = AgentCivilization()
+    civ3.start_mission("start a tech company")
+    agent_types3 = list(civ3.agents.keys())
+    suite.assert_true("analyst" in agent_types3, "v16_civ_agent_analyst")
+
+    # Test communicate
+    civ.communicate("researcher", "Found relevant papers")
+    civ.communicate("engineer", "Need design specs", "researcher")
+    activity = civ.get_activity_feed(5)
+    suite.assert_true(len(activity) > 0, "v16_civ_activity")
+
+    # Test complete_agent_task (next available task goes to appropriate agent)
+    if "researcher" in civ.agents:
+        result = civ.complete_agent_task("researcher", "Research complete")
+        suite.assert_true(result, "v16_civ_complete_ok")
+        # After research, 'plan' task becomes available and goes to planner
+        suite.assert_true(civ.agents["researcher"].status == "idle", "v16_civ_researcher_done")
+        suite.assert_equals(civ.agents.get("planner", civ.agents["researcher"]).status, "working" if "planner" in civ.agents else "idle", "v16_civ_next_agent_working")
+
+    # Test organization chart
+    org = civ.organization_chart()
+    suite.assert_true("agents" in org, "v16_civ_org_agents")
+    suite.assert_true("children" in org, "v16_civ_org_children")
+
+    # Test serialization
+    data = civ.to_dict()
+    civ4 = AgentCivilization()
+    civ4.from_dict(data)
+    suite.assert_equals(len(civ4.agents), len(civ.agents), "v16_civ_from_dict")
+    for aid in civ.agents:
+        suite.assert_true(aid in civ4.agents, f"v16_civ_from_dict_agent_{aid}")
 
     # ======================== ArcDesktop Integration ========================
 
-    suite.assert_true(hasattr(ArcDesktop, "_render_suggestions_panel"), "v15_desktop_suggestions")
+    app = ArcDesktop()
+    suite.assert_true(hasattr(app, "civilization"), "v16_desktop_has_civ")
+    suite.assert_equals(app.civilization, None, "v16_desktop_civ_none")
 
-    # Test ArcDesktop accepts digital_twin
-    custom_twin = DigitalTwinMind()
-    custom_twin.remember_mission("test mission")
-    app = ArcDesktop(digital_twin=custom_twin)
-    suite.assert_equals(app.twin, custom_twin, "v15_desktop_twin_injected")
-    suite.assert_equals(app.twin.memory.count(), 1, "v15_desktop_twin_memories")
+    # Test civilization created on intent
+    app.mission = "build a robot"
+    app.twin = __import__('demo').DigitalTwinMind()
+    app.civilization = AgentCivilization(digital_twin=app.twin)
+    app.civilization.start_mission("build a robot")
+    suite.assert_true(app.civilization is not None, "v16_desktop_civ_created")
+    suite.assert_true(len(app.civilization.agents) >= 4, "v16_desktop_civ_agents")
 
-    # Test ArcDesktop normal init creates twin
-    app2 = ArcDesktop()
-    suite.assert_true(hasattr(app2, "twin"), "v15_desktop_has_twin")
-    suite.assert_true(isinstance(app2.twin, DigitalTwinMind), "v15_desktop_twin_type")
+    # Verify ArcDesktop no longer has old AGENT_DEFS
+    suite.assert_false(hasattr(ArcDesktop, "AGENT_DEFS"), "v16_desktop_no_agent_defs")
+    suite.assert_false(hasattr(app, "_init_agents"), "v16_desktop_no_init_agents")
 
     return suite
 
@@ -3769,7 +3808,7 @@ def main():
         ("Arc Multithreading", test_arc_threading),
         ("Arc AI Module", test_arc_ai),
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
-        ("Arc v15.0.0 Digital Twin Mind", test_arc_v15),
+        ("Arc v16.0.0 Agent Civilization", test_arc_v16),
     ]
 
     for name, test_func in test_funcs:
@@ -3788,7 +3827,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v15.0.0 Digital Twin Mind")
+    print(f"  OVERALL RESULTS — v16.0.0 Agent Civilization")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")
