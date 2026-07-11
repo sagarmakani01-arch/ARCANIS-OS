@@ -4013,6 +4013,7 @@ class ArcDesktop:
 
         self._render_first_screen()
         self._animate_ambient()
+        self._tick()
         self.root.mainloop()
 
     # ================================================================
@@ -4022,78 +4023,77 @@ class ArcDesktop:
     def _render_first_screen(self):
         self.canvas.delete("all")
         self.mission_mode = False
+        import random as _r
 
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
         self._cx, self._cy = w // 2, h // 2
         cx, cy = self._cx, self._cy
 
-        # Star field background
         self._star_field = []
-        for i in range(80):
-            sx = __import__('random').randint(0, w)
-            sy = __import__('random').randint(0, h)
-            sr = __import__('random').randint(1, 2)
+        fills = ["#222244", "#333366", "#444488", "#5555aa"]
+        for i in range(120):
+            sx = _r.randint(0, w)
+            sy = _r.randint(0, h)
+            sr = _r.uniform(0.5, 2.0)
+            sf = _r.choice(fills)
             self._star_field.append((sx, sy, sr))
             self.canvas.create_oval(sx, sy, sx + sr, sy + sr,
-                                    fill="#222244", outline="", tags=f"star_{i}")
+                                    fill=sf, outline="", tags=f"star_{i}")
 
-        # Outer rings
-        for i, r in enumerate([300, 280, 260, 240, 220]):
-            alpha = max(5, 30 - i * 5)
-            color = f"#{alpha:02x}{alpha:02x}{60 + i * 10:02x}"
+        for i, r in enumerate([320, 290, 260, 230, 200]):
+            alpha = 8 + i * 4
+            blue = 40 + i * 12
+            color = f"#{alpha:02x}{alpha:02x}{blue:02x}"
             self.canvas.create_oval(cx - r, cy - r - 60, cx + r, cy + r - 60,
-                                    fill="", outline=color, width=1, tags=f"ambient_ring_{i}")
+                                    fill="", outline=color, width=2 if i < 2 else 1,
+                                    tags=f"ambient_ring_{i}")
 
-        # Core glow
-        self.canvas.create_oval(cx - 3, cy - 63, cx + 3, cy - 57,
-                                fill=self.FG_GLOW, outline="", tags="core_dot")
+        self.canvas.create_oval(cx - 5, cy - 65, cx + 5, cy - 55,
+                                fill=self.FG_GLOW, outline=self.ACCENT, width=2, tags="core_dot")
 
-        # ARCANIS title
-        self.canvas.create_text(cx, cy + 20, text="ARCANIS",
+        self.canvas.create_text(cx, cy + 15, text="ARCANIS",
                                 fill=self.FG_BRIGHT, font=self.FONT_XL, tags="main_title")
+        self.canvas.create_text(cx, cy + 65, text="OPERATING SYSTEM",
+                                fill="#445577", font=("Segoe UI", 11, "bold"), letter_spacing=4, tags="os_subtitle")
 
-        # Personalized greeting from Digital Twin
         greeting = self.twin.get_personalized_greeting()
         greeting_text = f"{greeting['greeting']}."
         if greeting["recent_missions"]:
-            greeting_text += f"  {greeting['memories_count']} memories  ·  {greeting['skills_count']} skills"
-        self.canvas.create_text(cx, cy + 80, text=greeting_text,
-                                fill=self.FG_SOFT, font=("Segoe UI", 13), tags="greeting")
+            greeting_text += f"  {greeting['memories_count']} memories  \xb7  {greeting['skills_count']} skills"
+        self.canvas.create_text(cx, cy + 105, text=greeting_text,
+                                fill=self.FG_SOFT, font=("Segoe UI", 12), tags="greeting")
 
-        # Active missions from Digital Twin
         if greeting["recent_missions"]:
-            mission_y = cy + 110
+            mission_y = cy + 130
             self.canvas.create_text(cx, mission_y, text="Your active missions:",
-                                    fill=self.FG_CYAN, font=("Segoe UI", 9, "bold"), tags="active_label")
+                                    fill=self.FG_CYAN, font=("Segoe UI", 8, "bold"), tags="active_label")
             for i, m in enumerate(greeting["recent_missions"]):
-                self.canvas.create_text(cx, mission_y + 20 + i * 18, text=f"  ◎  {self._truncate(m, 50)}",
-                                        fill="#555577", font=("Segoe UI", 9), tags=f"active_mission_{i}")
+                self.canvas.create_text(cx, mission_y + 18 + i * 16, text=f"\u25cb  {self._truncate(m, 50)}",
+                                        fill="#555577", font=("Segoe UI", 8), tags=f"active_mission_{i}")
 
-        # Tagline (position depends on whether missions shown)
-        tag_y = cy + 160 if greeting["recent_missions"] else cy + 85
+        tag_y = cy + 160 if greeting["recent_missions"] else cy + 135
         self.canvas.create_text(cx, tag_y, text="What future do you want to create?",
-                                fill=self.FG_SOFT, font=("Segoe UI", 16, "italic"), tags="tagline")
+                                fill=self.FG_SOFT, font=("Segoe UI", 14, "italic"), tags="tagline")
 
-        # Intent input (position depends on whether missions shown)
-        input_y = tag_y + 55
-        self.intent_entry = tk.Entry(self.root, bg=self.BG_DEEP, fg=self.FG_BRIGHT,
-                                     font=self.FONT_MED, insertbackground=self.FG_GLOW,
-                                     relief=tk.FLAT, bd=0, highlightthickness=0,
+        input_y = tag_y + 48
+        self.intent_entry = tk.Entry(self.root, bg="#0d0d20", fg=self.FG_BRIGHT,
+                                     font=("Segoe UI", 14), insertbackground=self.FG_GLOW,
+                                     relief=tk.FLAT, bd=1, highlightthickness=1,
+                                     highlightbackground="#1a1a3e", highlightcolor=self.ACCENT,
                                      width=50, justify="center")
-        self.intent_entry.place(x=cx - 300, y=input_y, width=600, height=45)
+        self.intent_entry.place(x=cx - 280, y=input_y, width=560, height=40)
         self.intent_entry.insert(0, "")
         self.intent_entry.bind("<Return>", self._on_intent)
         self.intent_entry.focus()
 
-        # Example hints
-        examples_y = input_y + 60
-        examples = "e.g. Build a humanoid robot  ·  Learn quantum physics  ·  Create a game  ·  Design a company"
+        examples_y = input_y + 55
+        examples = "e.g. Build a humanoid robot  \xb7  Learn quantum physics  \xb7  Create a game  \xb7  Design a company"
         self.canvas.create_text(cx, examples_y, text=examples,
-                                fill="#333355", font=("Segoe UI", 9), tags="examples")
+                                fill="#333355", font=("Segoe UI", 8), tags="examples")
 
-        self.canvas.create_text(cx, h - 40, text="Escape to exit  ·  Your intent becomes your world",
-                                fill="#222244", font=("Segoe UI", 10))
+        self.canvas.create_text(cx, h - 30, text="Escape to exit  \xb7  Your intent becomes your world",
+                                fill="#222244", font=("Segoe UI", 9))
 
     def _animate_ambient(self):
         try:
@@ -4124,23 +4124,36 @@ class ArcDesktop:
         except Exception:
             pass
 
+    def _tick(self):
+        try:
+            if getattr(self, "mission_mode", False) and hasattr(self, "civilization") and self.civilization:
+                self.civilization.manager.tick()
+                for agent in self.civilization.agents.values():
+                    if agent.status == "idle" and agent.current_task:
+                        agent.status = "working"
+                    if agent.status == "working":
+                        agent.tasks_completed += 1
+                        if agent.tasks_completed % 3 == 0:
+                            agent.current_task = None
+                            agent.status = "idle"
+                self._render_mission()
+            self.root.after(3000, self._tick)
+        except Exception:
+            self.root.after(5000, self._tick)
+
     def _on_intent(self, event=None):
         intent = self.intent_entry.get().strip()
         if intent:
             self.mission = intent
             self.twin.remember_mission(intent)
             self.twin.context.track_action("mission_start", intent)
-            # Start Agent Civilization
             self.civilization = AgentCivilization(digital_twin=self.twin)
             self.civilization.start_mission(intent)
-            # Generate living app from intent
             self._living_app = self.living.create_app(intent)
-            # Analyze reality context for this intent
             self.reality.understand_goal(intent)
-            # Analyze through world engine
             self.world.analyze_query(intent)
-            # Record task for evolution
             self.evolution.record_task_result("agent_research", True)
+            self.reality.reality_twin._simulate_discovery()
             self._init_knowledge()
             self._init_timeline()
             self.intent_entry.place_forget()
@@ -4242,43 +4255,49 @@ class ArcDesktop:
 
     def _render_agents_panel(self):
         w = self.root.winfo_screenwidth()
-        aw = 260
+        h = self.root.winfo_screenheight()
+        aw = 270
         ax, ay = 10, 60
-        a_height = 70
-        gap = 6
+        a_card_h = 58
+        gap = 5
 
         agents_list = list(self.civilization.agents.items()) if self.civilization else []
         count = len(agents_list)
         if count == 0:
             return
 
-        panel_h = count * (a_height + gap) + 15
+        max_visible = max(1, (h - 170) // (a_card_h + gap))
+        visible = agents_list[:max_visible]
+        panel_h = min(count, max_visible) * (a_card_h + gap) + 15
+        panel_h = max(panel_h, 60)
+
         self.canvas.create_rectangle(ax, ay, ax + aw, ay + panel_h,
                                      fill=self.BG_DEEP, outline="#151525", tags="agents_bg")
         self.canvas.create_text(ax + aw // 2, ay + 15, text=f"AI  CIVILIZATION  ·  {count} agents",
                                 fill=self.FG_GLOW, font=("Segoe UI", 8, "bold"), tags="agents_header")
 
-        for i, (key, agent) in enumerate(agents_list):
-            cy = ay + 35 + i * (a_height + gap)
+        for i, (key, agent) in enumerate(visible):
+            cy = ay + 30 + i * (a_card_h + gap)
 
-            # Agent card bg
-            self.canvas.create_rectangle(ax + 5, cy, ax + aw - 5, cy + a_height,
-                                         fill=self.BG_CARD, outline="#1a1a2e", tags=f"agent_{key}_bg")
+            bg_color = self.ACCENT + "18" if key == self.active_agent else self.BG_CARD
+            self.canvas.create_rectangle(ax + 5, cy, ax + aw - 5, cy + a_card_h,
+                                         fill=bg_color, outline="#1a1a2e", tags=f"agent_{key}_bg")
 
-            # Status dot
-            status_color = {"idle": "#44cc44", "working": "#ffcc00", "blocked": "#ff6644"}.get(agent.status, "#888888")
-            self.canvas.create_oval(ax + 15, cy + 10, ax + 23, cy + 18,
-                                    fill=status_color, outline="", tags=f"agent_{key}_status")
+            dot_color = {"idle": "#44cc44", "working": "#ffcc00", "blocked": "#ff6644"}.get(agent.status, "#888888")
+            self.canvas.create_oval(ax + 14, cy + 8, ax + 22, cy + 16,
+                                    fill=dot_color, outline="", tags=f"agent_{key}_status")
 
-            # Agent name
-            self.canvas.create_text(ax + 32, cy + 14, text=agent.name,
-                                    fill=agent.color, font=("Segoe UI", 10, "bold"), anchor="w", tags=f"agent_{key}_name")
+            self.canvas.create_text(ax + 30, cy + 12, text=agent.name,
+                                    fill=agent.color, font=("Segoe UI", 9, "bold"), anchor="w", tags=f"agent_{key}_name")
 
-            # Agent role (truncated)
-            self.canvas.create_text(ax + 32, cy + 32, text=self._truncate(agent.role, 30),
+            role_text = self._truncate(agent.role, 28)
+            self.canvas.create_text(ax + 30, cy + 27, text=role_text,
                                     fill=self.FG_SOFT, font=("Segoe UI", 7), anchor="w", tags=f"agent_{key}_role")
 
-            # Click to activate
+            task_text = self._truncate(agent.current_task or "idle", 26)
+            self.canvas.create_text(ax + 30, cy + 40, text=f"▸ {task_text}",
+                                    fill="#556688", font=("Segoe UI", 6), anchor="w", tags=f"agent_{key}_task")
+
             self.canvas.tag_bind(f"agent_{key}_bg", "<Button-1>", lambda e, k=key: self._activate_agent(k))
             self.canvas.tag_bind(f"agent_{key}_bg", "<Enter>", lambda e, k=key: self.canvas.itemconfig(f"agent_{k}_bg", outline=self.FG_GLOW))
             self.canvas.tag_bind(f"agent_{key}_bg", "<Leave>", lambda e, k=key: self.canvas.itemconfig(f"agent_{k}_bg", outline="#1a1a2e"))
@@ -4289,35 +4308,33 @@ class ArcDesktop:
 
     def _render_suggestions_panel(self):
         w = self.root.winfo_screenwidth()
-        sx = 290
-        sy = 65
-        sw = w - 320
-        sh = 40
+        rw = 270
+        rx = w - rw - 10
+        ry = 60
+        rh = 38
 
-        if sw < 200:
-            return
-
-        bg_color = "#0d0d1a"
-        self.canvas.create_rectangle(sx, sy, sx + sw, sy + sh,
-                                     fill=bg_color, outline="#1a1a2e", tags="suggestions_bg")
+        self.canvas.create_rectangle(rx, ry, rx + rw, ry + rh,
+                                     fill=self.BG_MID, outline="#1a1a2e", tags="suggestions_bg")
+        self.canvas.create_text(rx + 8, ry + 6, text="MISSION",
+                                fill="#445566", font=("Segoe UI", 6, "bold"), anchor="w", tags="suggestions_label")
 
         parts = []
         if self.civilization and self.civilization.manager.goal:
             progress = self.civilization.manager.progress
-            parts.append(f"🎯 {self.civilization.manager.goal[:30]}...")
-            parts.append(f"📊 {int(progress*100)}% complete")
+            parts.append(f"{(self.civilization.manager.goal[:28])}...")
+            parts.append(f"{int(progress*100)}%")
             if self.civilization.manager.status == "completed":
-                parts.append("✅ Mission complete!")
+                parts.append("complete")
         if self._twin_suggestions:
-            parts.append("💡 " + self._twin_suggestions[0])
+            parts.append(self._twin_suggestions[0][:30])
         if self._twin_obstacles:
-            parts.append("⚠ " + self._twin_obstacles[0])
+            parts.append("!" + self._twin_obstacles[0][:25])
         if not parts:
-            parts.append("Your Digital Twin is ready. Start your mission to receive guidance.")
+            parts.append("Digital Twin ready. Start a mission.")
 
-        text = "  ·  ".join(parts)
-        self.canvas.create_text(sx + 15, sy + 20, text=self._truncate(text, int(sw / 6)),
-                                fill=self.FG_SOFT, font=("Segoe UI", 9), anchor="w", tags="suggestions_text")
+        text = " \xb7  ".join(parts)
+        self.canvas.create_text(rx + 8, ry + 22, text=self._truncate(text, 38),
+                                fill=self.FG_SOFT, font=("Segoe UI", 7), anchor="w", tags="suggestions_text")
 
     # ================================================================
     # LIVING SOFTWARE — Generated for This Mission
@@ -4328,31 +4345,25 @@ class ArcDesktop:
         if not hasattr(self, "_living_app") or not self._living_app:
             return
         app = self._living_app
-        ax = 290
-        ay = 110
-        aw = w - 320
-        ah = 40
+        rw = 270
+        rx = w - rw - 10
+        ry = 103
+        rh = 38
 
-        if aw < 200:
-            return
-
-        self.canvas.create_rectangle(ax, ay, ax + aw, ay + ah,
-                                     fill="#0a0a14", outline="#1a1a2e", tags="living_bg")
-
-        features_str = ", ".join(f["name"] for f in app.features[:4])
-        if len(app.features) > 4:
-            features_str += f" +{len(app.features)-4} more"
+        self.canvas.create_rectangle(rx, ry, rx + rw, ry + rh,
+                                     fill=self.BG_MID, outline="#1a1a2e", tags="living_bg")
+        self.canvas.create_text(rx + 8, ry + 6, text="LIVING APP",
+                                fill="#445566", font=("Segoe UI", 6, "bold"), anchor="w", tags="living_label")
 
         parts = [
-            f"◎ {app.name}",
+            app.name,
             f"v{app.dna.current_version}",
-            f"Features: {features_str}",
-            f"Status: {app.status}",
-            f"DNA: {len(app.dna.evolution)} evolutions",
+            f"{len(app.features)} features",
+            app.status,
         ]
-        text = "  ·  ".join(parts)
-        self.canvas.create_text(ax + 15, ay + 20, text=self._truncate(text, int(aw / 5.5)),
-                                fill=self.FG_CYAN, font=("Segoe UI", 8), anchor="w", tags="living_text")
+        text = " \xb7  ".join(parts)
+        self.canvas.create_text(rx + 8, ry + 22, text=self._truncate(text, 36),
+                                fill=self.FG_CYAN, font=("Segoe UI", 7), anchor="w", tags="living_text")
 
     # ================================================================
     # REALITY LAYER — Physical World Intelligence
@@ -4362,28 +4373,25 @@ class ArcDesktop:
         w = self.root.winfo_screenwidth()
         if not hasattr(self, "reality"):
             return
-        rx = 290
-        ry = 155
-        rw = w - 320
-        rh = 36
-
-        if rw < 200:
-            return
+        rw = 270
+        rx = w - rw - 10
+        ry = 146
+        rh = 34
 
         self.canvas.create_rectangle(rx, ry, rx + rw, ry + rh,
-                                     fill="#0a0a14", outline="#1a2a1e", tags="reality_bg")
+                                     fill=self.BG_MID, outline="#1a2a1e", tags="reality_bg")
+        self.canvas.create_text(rx + 8, ry + 5, text="REALITY",
+                                fill="#445566", font=("Segoe UI", 6, "bold"), anchor="w", tags="reality_label")
 
         env = self.reality.reality_twin.get_environment_summary()
         parts = [
-            f"◈ Reality Layer",
-            f"Devices: {env['devices']} ({env['online_devices']} online)",
-            f"Sensors: {env['sensors']}",
-            f"Spaces: {env['spaces']}",
-            f"Agents: {len(self.reality.reality_agents)}",
+            f"{env['devices']} dev ({env['online_devices']} on)",
+            f"{env['sensors']} sens",
+            f"{len(self.reality.reality_agents)} agents",
         ]
-        text = "  ·  ".join(parts)
-        self.canvas.create_text(rx + 15, ry + 18, text=self._truncate(text, int(rw / 5.5)),
-                                fill="#44ddbb", font=("Segoe UI", 8), anchor="w", tags="reality_text")
+        text = " \xb7  ".join(parts)
+        self.canvas.create_text(rx + 8, ry + 20, text=self._truncate(text, 36),
+                                fill="#44ddbb", font=("Segoe UI", 7), anchor="w", tags="reality_text")
 
     # ================================================================
     # WORLD ENGINE — Simulation Intelligence
@@ -4393,29 +4401,25 @@ class ArcDesktop:
         w = self.root.winfo_screenwidth()
         if not hasattr(self, "world"):
             return
-        wx = 290
-        wy = 196
-        ww = w - 320
-        wh = 36
+        rw = 270
+        rx = w - rw - 10
+        ry = 185
+        rh = 34
 
-        if ww < 200:
-            return
-
-        self.canvas.create_rectangle(wx, wy, wx + ww, wy + wh,
-                                     fill="#0a0a14", outline="#2e1a3e", tags="world_bg")
+        self.canvas.create_rectangle(rx, ry, rx + rw, ry + rh,
+                                     fill=self.BG_MID, outline="#2e1a3e", tags="world_bg")
+        self.canvas.create_text(rx + 8, ry + 5, text="WORLD",
+                                fill="#445566", font=("Segoe UI", 6, "bold"), anchor="w", tags="world_label")
 
         summary = self.world.get_world_summary()
         parts = [
-            f"◆ World Engine",
-            f"Simulations: {summary['simulations']}",
-            f"Scenarios: {summary['scenarios']}",
-            f"Optimizations: {summary['optimizations']}",
-            f"Domains: {summary['domains']}",
-            f"Decisions: {summary['decisions']}",
+            f"{summary['simulations']} sims",
+            f"{summary['scenarios']} scens",
+            f"{summary['domains']} domains",
         ]
-        text = "  ·  ".join(parts)
-        self.canvas.create_text(wx + 15, wy + 18, text=self._truncate(text, int(ww / 5.5)),
-                                fill="#cc88ff", font=("Segoe UI", 8), anchor="w", tags="world_text")
+        text = " \xb7  ".join(parts)
+        self.canvas.create_text(rx + 8, ry + 20, text=self._truncate(text, 36),
+                                fill="#cc88ff", font=("Segoe UI", 7), anchor="w", tags="world_text")
 
     # ================================================================
     # SELF-EVOLVING INTELLIGENCE — Adaptive Growth
@@ -4425,28 +4429,25 @@ class ArcDesktop:
         w = self.root.winfo_screenwidth()
         if not hasattr(self, "evolution"):
             return
-        ex = 290
-        ey = 237
-        ew = w - 320
-        eh = 36
+        rw = 270
+        rx = w - rw - 10
+        ry = 224
+        rh = 34
 
-        if ew < 200:
-            return
-
-        self.canvas.create_rectangle(ex, ey, ex + ew, ey + eh,
-                                     fill="#0a0a14", outline="#3e1a1e", tags="evolution_bg")
+        self.canvas.create_rectangle(rx, ry, rx + rw, ry + rh,
+                                     fill=self.BG_MID, outline="#3e1a1e", tags="evolution_bg")
+        self.canvas.create_text(rx + 8, ry + 5, text="EVOLUTION",
+                                fill="#445566", font=("Segoe UI", 6, "bold"), anchor="w", tags="evolution_label")
 
         summary = self.evolution.get_evolution_summary()
         parts = [
-            f"■ Evolution Engine",
-            f"Agents: {len(summary['agents'])}",
-            f"Suggestions: {summary['suggestions']}",
-            f"Applied: {summary['applied']}",
-            f"Avg Rating: {summary['feedback']['average_rating']}",
+            f"{len(summary['agents'])} agents",
+            f"{summary['suggestions']} sugg",
+            f"avg {summary['feedback']['average_rating']}",
         ]
-        text = "  ·  ".join(parts)
-        self.canvas.create_text(ex + 15, ey + 18, text=self._truncate(text, int(ew / 5.5)),
-                                fill="#ff8866", font=("Segoe UI", 8), anchor="w", tags="evolution_text")
+        text = " \xb7  ".join(parts)
+        self.canvas.create_text(rx + 8, ry + 20, text=self._truncate(text, 36),
+                                fill="#ff8866", font=("Segoe UI", 7), anchor="w", tags="evolution_text")
 
     # ================================================================
     # KNOWLEDGE GRAPH — Connected, Hierarchical, Living
@@ -4456,8 +4457,8 @@ class ArcDesktop:
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
         gx = 290
-        gy = 65
-        gw = w - gx - 320
+        gy = 60
+        gw = w - 580
         gh = h - 170
 
         if gw < 200 or gh < 100:
@@ -4468,7 +4469,6 @@ class ArcDesktop:
         self.canvas.create_text(gx + gw // 2, gy + 18, text="KNOWLEDGE GRAPH  ·  Connected Intelligence",
                                 fill=self.FG_GLOW, font=("Segoe UI", 9, "bold"), tags="kg_header")
 
-        # Render hierarchical tree
         levels = {}
         for node in self.knowledge_nodes:
             lvl = node["level"]
@@ -4481,19 +4481,16 @@ class ArcDesktop:
             return
 
         node_w = gw // (max_level + 2)
-        start_x = gx + 30
 
         for node in self.knowledge_nodes:
             lvl = node["level"]
             nx = gx + 40 + lvl * node_w
-            # Distribute nodes vertically
             siblings = [n for n in self.knowledge_nodes if n["parent"] == node["parent"]]
             idx = siblings.index(node) if node in siblings else 0
             total = len(siblings)
             region_h = gh - 60
             ny = gy + 50 + (idx + 1) * region_h // (total + 1) if total > 0 else gy + gh // 2
 
-            # Draw connection to parent
             if node["parent"]:
                 parent = next((n for n in self.knowledge_nodes if n["id"] == node["parent"]), None)
                 if parent:
@@ -4505,13 +4502,11 @@ class ArcDesktop:
                     self.canvas.create_line(px + node_w - 40, py, nx, ny,
                                             fill="#1a1a3e", width=1, tags="kg_edge")
 
-            # Node circle
             r = 5 + (3 - lvl) * 2 if lvl < 3 else 5
             node_color = [self.FG_GLOW, self.ACCENT, self.FG_CYAN, self.FG_SOFT][min(lvl, 3)]
             self.canvas.create_oval(nx - r, ny - r, nx + r, ny + r,
                                     fill=node_color, outline="", tags=f"kg_node_{node['id']}")
 
-            # Label
             self.canvas.create_text(nx + r + 6, ny, text=node["label"],
                                     fill=self.FG_BRIGHT if lvl == 0 else self.FG_SOFT,
                                     font=("Segoe UI", 8 if lvl > 0 else 9, "bold" if lvl == 0 else "normal"),
@@ -4524,27 +4519,26 @@ class ArcDesktop:
     def _render_timeline(self):
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
-        ty = h - 95
-        tw = w - 80
+        ty = h - 65
+        tw = w - 60
 
-        self.canvas.create_rectangle(15, ty, tw, h - 10,
+        self.canvas.create_rectangle(10, ty, tw, h - 5,
                                      fill=self.BG_DEEP, outline="#151525", tags="tl_bg")
-        self.canvas.create_text(30, ty + 10, text="MISSION TIMELINE",
-                                fill=self.FG_SOFT, font=("Segoe UI", 8, "bold"), anchor="w", tags="tl_title")
+        self.canvas.create_text(20, ty + 8, text="MISSION TIMELINE",
+                                fill=self.FG_SOFT, font=("Segoe UI", 7, "bold"), anchor="w", tags="tl_title")
 
-        # Timeline line
-        line_y = ty + 35
-        self.canvas.create_line(50, line_y, tw - 30, line_y, fill="#1a1a3e", width=2, tags="tl_line")
+        line_y = ty + 26
+        self.canvas.create_line(30, line_y, tw - 20, line_y, fill="#1a1a3e", width=2, tags="tl_line")
 
         for frac, label, active in self.timeline_entries:
-            px = 50 + int(frac * (tw - 80))
-            r = 6 if active else 4
+            px = 30 + int(frac * (tw - 50))
+            r = 5 if active else 3
             color = self.FG_GLOW if active else "#333366"
             self.canvas.create_oval(px - r, line_y - r, px + r, line_y + r,
                                     fill=color, outline="", tags="tl_pt")
-            self.canvas.create_text(px, line_y + 18, text=label,
+            self.canvas.create_text(px, line_y + 14, text=label,
                                     fill=self.FG_BRIGHT if active else self.FG_SOFT,
-                                    font=("Segoe UI", 7), tags="tl_label")
+                                    font=("Segoe UI", 6), tags="tl_label")
 
     # ================================================================
     # AGENT CHAT — Natural Conversation with Agents
@@ -4553,28 +4547,27 @@ class ArcDesktop:
     def _render_agent_chat(self):
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
-        cx, cy = w - 310, 65
-        cw, ch = 295, h - 175
+        rw = 270
+        rx = w - rw - 10
+        ry = 263
+        ch = h - ry - 80
 
-        if cw < 100 or ch < 100:
+        if ch < 60:
             return
 
-        # Chat panel
-        self.canvas.create_rectangle(cx, cy, cx + cw, cy + ch,
+        self.canvas.create_rectangle(rx, ry, rx + rw, ry + ch,
                                      fill=self.BG_DEEP, outline="#151525", tags="chat_bg")
 
-        # Active agent indicator
         active_name = "All Agents"
         active_color = self.FG_GLOW
         if self.active_agent and self.civilization and self.active_agent in self.civilization.agents:
             active_name = self.civilization.agents[self.active_agent].name
             active_color = self.civilization.agents[self.active_agent].color
 
-        self.canvas.create_text(cx + cw // 2, cy + 15, text=f"CHAT  ·  {active_name}",
-                                fill=active_color, font=("Segoe UI", 8, "bold"), tags="chat_header")
+        self.canvas.create_text(rx + rw // 2, ry + 12, text=f"CHAT  \xb7  {active_name}",
+                                fill=active_color, font=("Segoe UI", 7, "bold"), tags="chat_header")
 
-        # Conversation area
-        max_lines = 8
+        max_lines = max(2, (ch - 55) // 16)
         if not self._conversation:
             welcome = f"Agents ready for: {self._truncate(self.mission, 30)}"
             self._conversation.append(("system", welcome))
@@ -4582,19 +4575,19 @@ class ArcDesktop:
 
         display_lines = self._conversation_lines[-max_lines:]
         for i, line in enumerate(display_lines):
-            ly = cy + 35 + i * 18
-            self.canvas.create_text(cx + 10, ly, text=line,
-                                    fill=self.FG_SOFT, font=("Segoe UI", 8), anchor="w", tags=f"chat_line_{i}")
+            ly = ry + 28 + i * 16
+            self.canvas.create_text(rx + 8, ly, text=line,
+                                    fill=self.FG_SOFT, font=("Segoe UI", 7), anchor="w", tags=f"chat_line_{i}")
 
-        # Input field for chatting with agents
+        input_y = ry + ch - 24
         self.chat_entry = tk.Entry(self.root, bg=self.BG_CARD, fg=self.FG_BRIGHT,
-                                   font=self.FONT_LIGHT, insertbackground=self.FG_GLOW,
+                                   font=("Segoe UI", 8), insertbackground=self.FG_GLOW,
                                    relief=tk.FLAT, bd=0, highlightthickness=0)
-        self.chat_entry.place(x=cx + 5, y=cy + ch - 30, width=cw - 10, height=25)
-        self.chat_entry.insert(0, "Ask an agent...")
-        self.chat_entry.bind("<FocusIn>", lambda e: self.chat_entry.delete(0, tk.END) if self.chat_entry.get() == "Ask an agent..." else None)
+        self.chat_entry.place(x=rx + 4, y=input_y, width=rw - 8, height=20)
+        self.chat_entry.insert(0, "Ask agent...")
+        self.chat_entry.bind("<FocusIn>", lambda e: self.chat_entry.delete(0, tk.END) if self.chat_entry.get() == "Ask agent..." else None)
         self.chat_entry.bind("<Return>", self._on_chat)
-        self.chat_entry.bind("<Button-1>", lambda e: self.chat_entry.delete(0, tk.END) if self.chat_entry.get() == "Ask an agent..." else None)
+        self.chat_entry.bind("<Button-1>", lambda e: self.chat_entry.delete(0, tk.END) if self.chat_entry.get() == "Ask agent..." else None)
 
     def _on_chat(self, event=None):
         msg = self.chat_entry.get().strip()
