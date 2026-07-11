@@ -4113,6 +4113,378 @@ def test_arc_v19():
 
 
 # ============================================================
+# ARC v20.0.0 SELF-EVOLVING INTELLIGENCE TESTS
+# ============================================================
+
+def test_arc_v20():
+    suite = TestSuite("Arc v20.0.0 Self-Evolving Intelligence Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (SelfEvolvingIntelligence, AgentSkill, AgentEvolutionProfile,
+                      IntelligenceBenchmark, FeedbackLearner, ImprovementEngine,
+                      ArchitectureOptimizer, ResearchLab, EvolutionMemory,
+                      GovernanceLayer, ArcDesktop)
+
+    # ======================== AgentSkill ========================
+
+    skill = AgentSkill("analysis", level=3.0, max_level=10.0)
+    suite.assert_equals(skill.name, "analysis", "v20_skill_name")
+    suite.assert_equals(skill.level, 3.0, "v20_skill_level")
+    suite.assert_equals(skill.max_level, 10.0, "v20_skill_max")
+
+    # Test add_experience
+    result = skill.add_experience(50)
+    suite.assert_false(result, "v20_skill_no_level_up")
+    suite.assert_equals(skill.experience, 50, "v20_skill_exp")
+
+    result = skill.add_experience(60)
+    suite.assert_true(result, "v20_skill_level_up")
+    suite.assert_equals(skill.level, 4.0, "v20_skill_level_after")
+    suite.assert_equals(skill.experience, 10, "v20_skill_exp_after")  # 110 - 100 = 10
+
+    # Test summary
+    s = skill.summary()
+    suite.assert_true("analysis" in s, "v20_skill_summary")
+
+    # Test serialization
+    skdata = skill.to_dict()
+    skill2 = AgentSkill("")
+    skill2.from_dict(skdata)
+    suite.assert_equals(skill2.name, "analysis", "v20_skill_from_dict")
+
+    # ======================== AgentEvolutionProfile ========================
+
+    profile = AgentEvolutionProfile("agent_1", "Research Agent", "research")
+    suite.assert_equals(profile.agent_id, "agent_1", "v20_profile_id")
+    suite.assert_equals(profile.version, "1.0.0", "v20_profile_initial_version")
+
+    # Test add_skill
+    profile.add_skill("analysis", 4.0)
+    profile.add_skill("planning", 3.0)
+    suite.assert_equals(len(profile.skills), 2, "v20_profile_skills")
+
+    # Test record_task_result
+    profile.record_task_result(True)
+    profile.record_task_result(True)
+    profile.record_task_result(False)
+    suite.assert_equals(profile.tasks_completed, 3, "v20_profile_tasks")
+    suite.assert_equals(len(profile.failures), 1, "v20_profile_failures")
+    suite.assert_true(profile.success_rate < 1.0, "v20_profile_success_rate")
+
+    # Test record_improvement
+    profile.record_improvement("Added verification step", "workflow")
+    suite.assert_equals(len(profile.improvement_history), 1, "v20_profile_improvements")
+
+    # Test add_strategy
+    profile.add_strategy("Deep analysis", "Analyze all sources thoroughly", 0.8)
+    suite.assert_equals(len(profile.strategies), 1, "v20_profile_strategies")
+
+    # Test get_weaknesses
+    weak = profile.get_weaknesses()
+    suite.assert_true(len(weak) >= 1, "v20_profile_weaknesses")
+
+    # Test serialization
+    pdata = profile.to_dict()
+    profile2 = AgentEvolutionProfile("", "", "")
+    profile2.from_dict(pdata)
+    suite.assert_equals(profile2.agent_id, "agent_1", "v20_profile_from_dict")
+
+    # ======================== IntelligenceBenchmark ========================
+
+    ib = IntelligenceBenchmark()
+    suite.assert_true(hasattr(ib, "run_benchmark"), "v20_ib_run")
+    suite.assert_true(hasattr(ib, "evaluate_agent"), "v20_ib_evaluate")
+
+    # Test run_benchmark
+    result = ib.run_benchmark("agent_1", "reasoning")
+    suite.assert_true(result is not None, "v20_ib_result")
+    suite.assert_equals(result["agent_id"], "agent_1", "v20_ib_agent")
+    suite.assert_equals(result["category"], "reasoning", "v20_ib_category")
+    suite.assert_true(0 <= result["score"] <= 100, "v20_ib_score_range")
+
+    # Test evaluate_agent (full evaluation)
+    eval_result = ib.evaluate_agent("agent_1")
+    suite.assert_true("average" in eval_result, "v20_ib_eval_avg")
+    suite.assert_true("weaknesses" in eval_result, "v20_ib_eval_weak")
+    suite.assert_equals(len(eval_result["results"]), 5, "v20_ib_eval_categories")
+
+    # Test get_history
+    history = ib.get_history("agent_1")
+    suite.assert_true(len(history) >= 1, "v20_ib_history")
+
+    # Test serialization
+    ibdata = ib.to_dict()
+    ib2 = IntelligenceBenchmark()
+    ib2.from_dict(ibdata)
+    suite.assert_true(len(ib2.results) >= 1, "v20_ib_from_dict")
+
+    # ======================== FeedbackLearner ========================
+
+    fl = FeedbackLearner()
+    suite.assert_true(hasattr(fl, "record_feedback"), "v20_fl_record")
+    suite.assert_true(hasattr(fl, "get_preferences"), "v20_fl_prefs")
+    suite.assert_true(hasattr(fl, "get_feedback_summary"), "v20_fl_summary")
+
+    # Test record_feedback
+    fl.record_feedback("Simple design preferred", 5, "Great work")
+    fl.record_feedback("Complex solution", 2, "Too complicated")
+    suite.assert_equals(fl.get_feedback_summary()["count"], 2, "v20_fl_count")
+    suite.assert_equals(fl.get_feedback_summary()["average_rating"], 3.5, "v20_fl_avg")
+
+    # Test preference learning
+    prefs = fl.get_preferences()
+    suite.assert_true("design_style" in prefs, "v20_fl_design_pref")
+    suite.assert_equals(prefs["design_style"], "simple", "v20_fl_style")
+
+    # Test get_adjusted_recommendation
+    rec = fl.get_adjusted_recommendation({"name": "test design"})
+    suite.assert_true("style" in rec, "v20_fl_adjusted")
+
+    # Test serialization
+    fldata = fl.to_dict()
+    fl2 = FeedbackLearner()
+    fl2.from_dict(fldata)
+    suite.assert_equals(fl2.get_feedback_summary()["count"], 2, "v20_fl_from_dict")
+
+    # ======================== ImprovementEngine ========================
+
+    ie = ImprovementEngine()
+    suite.assert_true(hasattr(ie, "analyze_performance"), "v20_ie_analyze")
+    suite.assert_true(hasattr(ie, "apply_improvement"), "v20_ie_apply")
+
+    # Prepare profiles for analysis
+    p1 = AgentEvolutionProfile("agent_a", "Agent A", "research")
+    p1.add_skill("verification", 1.5)  # Low skill
+    p1.record_task_result(True)
+    p1.record_task_result(False)
+    p1.record_task_result(False)  # 33% success rate
+
+    # Test analyze_performance
+    suggestions = ie.analyze_performance([p1])
+    suite.assert_true(len(suggestions) >= 1, "v20_ie_suggestions")
+
+    # Test apply_improvement
+    if suggestions:
+        result = ie.apply_improvement(p1, suggestions[0])
+        suite.assert_true(result, "v20_ie_apply_result")
+        suite.assert_equals(len(ie.get_applied()), 1, "v20_ie_applied_count")
+
+    # Test serialization
+    iedata = ie.to_dict()
+    ie2 = ImprovementEngine()
+    ie2.from_dict(iedata)
+    suite.assert_true(len(ie2.get_suggestions()) >= 1, "v20_ie_from_dict")
+
+    # ======================== ArchitectureOptimizer ========================
+
+    ao = ArchitectureOptimizer()
+    suite.assert_true(hasattr(ao, "analyze_architecture"), "v20_ao_analyze")
+    suite.assert_true(hasattr(ao, "apply_proposal"), "v20_ao_apply")
+    suite.assert_true(hasattr(ao, "get_proposals"), "v20_ao_proposals")
+
+    # Mock agents and tasks
+    mock_agents = [
+        AgentEvolutionProfile("r1", "Research", "research"),
+        AgentEvolutionProfile("c1", "Coding", "coding"),
+    ]
+    mock_tasks = ["security audit needed", "protect data", "code review"]
+
+    # Test analyze_architecture
+    proposals = ao.analyze_architecture(mock_agents, mock_tasks)
+    suite.assert_true(len(proposals) >= 1, "v20_ao_proposals_count")
+    suite.assert_equals(proposals[0]["name"], "Security Intelligence Agent", "v20_ao_sec_agent")
+
+    # Test apply_proposal
+    ao.apply_proposal(proposals[0])
+    suite.assert_equals(len(ao.get_changes()), 1, "v20_ao_changes")
+
+    # Test serialization
+    aodata = ao.to_dict()
+    ao2 = ArchitectureOptimizer()
+    ao2.from_dict(aodata)
+    suite.assert_true(len(ao2.get_proposals()) >= 1, "v20_ao_from_dict")
+
+    # ======================== ResearchLab ========================
+
+    rl = ResearchLab()
+    suite.assert_true(hasattr(rl, "design_experiment"), "v20_rl_design")
+    suite.assert_true(hasattr(rl, "run_experiment"), "v20_rl_run")
+
+    # Test design_experiment
+    exp = rl.design_experiment("exp1", "Planning Comparison",
+                                "New planning workflow improves efficiency")
+    suite.assert_equals(exp["status"], "designed", "v20_rl_designed")
+
+    # Test run_experiment with planning
+    result = rl.run_experiment("exp1")
+    suite.assert_true(result is not None, "v20_rl_result")
+    suite.assert_true("improvement_percent" in result or "finding" in result, "v20_rl_finding")
+
+    # Test run_experiment with algorithm
+    rl.design_experiment("exp2", "Coop Algorithm", "Algorithm improves cooperation")
+    alg_result = rl.run_experiment("exp2")
+    suite.assert_true("speedup" in alg_result or "finding" in alg_result, "v20_rl_alg_result")
+
+    # Test run_experiment with interface
+    rl.design_experiment("exp3", "UI Test", "Interface improvements")
+    ui_result = rl.run_experiment("exp3")
+    suite.assert_true("satisfaction" in ui_result or "finding" in ui_result, "v20_rl_ui_result")
+
+    # Test nonexistent experiment
+    none_result = rl.run_experiment("no_exp")
+    suite.assert_true(none_result is None, "v20_rl_nonexistent")
+
+    # Test serialization
+    rldata = rl.to_dict()
+    rl2 = ResearchLab()
+    rl2.from_dict(rldata)
+    suite.assert_equals(len(rl2._experiments), 3, "v20_rl_from_dict")
+
+    # ======================== EvolutionMemory ========================
+
+    em = EvolutionMemory()
+    suite.assert_true(hasattr(em, "add_era"), "v20_em_add_era")
+    suite.assert_true(hasattr(em, "add_milestone"), "v20_em_milestone")
+    suite.assert_true(hasattr(em, "get_evolution_timeline"), "v20_em_timeline")
+
+    # Test add_era
+    em.add_era("era_1", "Basic AI", "Initial AI assistant capabilities",
+               ["chat", "search", "reminders"])
+    suite.assert_equals(len(em._eras), 1, "v20_em_era_count")
+
+    # Test add_milestone
+    em.add_milestone("Multi-agent system", "Added agent collaboration", "high")
+    suite.assert_equals(len(em._milestones), 1, "v20_em_milestone_count")
+
+    # Test get_evolution_timeline
+    timeline = em.get_evolution_timeline()
+    suite.assert_equals(len(timeline), 2, "v20_em_timeline_length")
+
+    # Test serialization
+    emdata = em.to_dict()
+    em2 = EvolutionMemory()
+    em2.from_dict(emdata)
+    suite.assert_equals(len(em2._eras), 1, "v20_em_from_dict")
+
+    # ======================== GovernanceLayer ========================
+
+    gl = GovernanceLayer()
+    suite.assert_true(hasattr(gl, "request_approval"), "v20_gl_request")
+    suite.assert_true(hasattr(gl, "approve"), "v20_gl_approve")
+    suite.assert_true(hasattr(gl, "reject"), "v20_gl_reject")
+    suite.assert_true(hasattr(gl, "generate_transparency_report"), "v20_gl_report")
+
+    # Test request_approval
+    req = gl.request_approval("improvement", "Add verification step",
+                               "Improves accuracy", "low")
+    suite.assert_equals(req["status"], "pending", "v20_gl_pending")
+    suite.assert_equals(req["change_type"], "improvement", "v20_gl_type")
+
+    # Test approve
+    result = gl.approve(req["id"])
+    suite.assert_true(result, "v20_gl_approved")
+    suite.assert_equals(req["status"], "approved", "v20_gl_status_after")
+
+    # Test reject
+    req2 = gl.request_approval("change", "Test change", "Testing", "high")
+    result = gl.reject(req2["id"], "Not needed")
+    suite.assert_true(result, "v20_gl_rejected")
+    suite.assert_equals(req2["status"], "rejected", "v20_gl_rejected_status")
+
+    # Test create_rollback_point
+    rp = gl.create_rollback_point("snap_1", "Before upgrade")
+    suite.assert_equals(rp["snapshot_id"], "snap_1", "v20_gl_rollback")
+
+    # Test get_pending
+    pending = gl.get_pending()
+    suite.assert_equals(len(pending), 0, "v20_gl_no_pending")
+
+    # Test transparency report
+    report = gl.generate_transparency_report()
+    suite.assert_true("approved" in report, "v20_gl_report_approved")
+    suite.assert_true("rejected" in report, "v20_gl_report_rejected")
+    suite.assert_true("rollback_points" in report, "v20_gl_report_rollback")
+
+    # Test serialization
+    gldata = gl.to_dict()
+    gl2 = GovernanceLayer()
+    gl2.from_dict(gldata)
+    suite.assert_equals(len(gl2._change_log), 1, "v20_gl_from_dict")
+
+    # ======================== SelfEvolvingIntelligence (Top-Level) ========================
+
+    sei = SelfEvolvingIntelligence()
+    suite.assert_true(hasattr(sei, "profiles"), "v20_sei_profiles")
+    suite.assert_true(hasattr(sei, "benchmark"), "v20_sei_benchmark")
+    suite.assert_true(hasattr(sei, "feedback"), "v20_sei_feedback")
+    suite.assert_true(hasattr(sei, "improvement"), "v20_sei_improvement")
+    suite.assert_true(hasattr(sei, "architecture"), "v20_sei_architecture")
+    suite.assert_true(hasattr(sei, "research"), "v20_sei_research")
+    suite.assert_true(hasattr(sei, "evolution"), "v20_sei_evolution")
+    suite.assert_true(hasattr(sei, "governance"), "v20_sei_governance")
+
+    # Verify default profiles loaded
+    suite.assert_equals(len(sei.profiles), 3, "v20_sei_default_profiles")
+    suite.assert_true("agent_research" in sei.profiles, "v20_sei_research_profile")
+    suite.assert_true("agent_code" in sei.profiles, "v20_sei_code_profile")
+    suite.assert_true("agent_design" in sei.profiles, "v20_sei_design_profile")
+
+    # Test register_agent
+    sei.register_agent("agent_new", "New Agent", "testing")
+    suite.assert_equals(len(sei.profiles), 4, "v20_sei_register")
+
+    # Test record_task_result
+    sei.record_task_result("agent_research", True)
+    sei.record_task_result("agent_research", True)
+    sei.record_task_result("agent_research", False)
+    profile = sei.profiles["agent_research"]
+    suite.assert_equals(profile.tasks_completed, 3, "v20_sei_tasks")
+
+    # Test run_full_evaluation
+    eval_results = sei.run_full_evaluation()
+    suite.assert_true("evaluations" in eval_results, "v20_sei_eval")
+    suite.assert_true("suggestions" in eval_results, "v20_sei_suggestions")
+    suite.assert_true("architecture_proposals" in eval_results, "v20_sei_arch")
+
+    # Test apply_improvement
+    suggestions = eval_results["suggestions"]
+    if suggestions:
+        result = sei.apply_improvement("agent_research", suggestions[0])
+        suite.assert_true(result, "v20_sei_apply_result")
+
+    # Test get_evolution_summary
+    summary = sei.get_evolution_summary()
+    suite.assert_true("agents" in summary, "v20_sei_summary_agents")
+    suite.assert_true("evaluations" in summary, "v20_sei_summary_eval")
+    suite.assert_true("suggestions" in summary, "v20_sei_summary_suggestions")
+    suite.assert_true("applied" in summary, "v20_sei_summary_applied")
+    suite.assert_true("feedback" in summary, "v20_sei_summary_feedback")
+    suite.assert_true("governance" in summary, "v20_sei_summary_gov")
+
+    # Test serialization
+    seidata = sei.to_dict()
+    sei2 = SelfEvolvingIntelligence()
+    sei2.from_dict(seidata)
+    suite.assert_equals(len(sei2.profiles), 4, "v20_sei_from_dict")
+
+    # ======================== ArcDesktop Integration ========================
+
+    app = ArcDesktop()
+    suite.assert_true(hasattr(app, "evolution"), "v20_desktop_has_evolution")
+    suite.assert_true(isinstance(app.evolution, SelfEvolvingIntelligence), "v20_desktop_evolution_type")
+
+    # Test evolution interaction
+    app.mission = "improve system"
+    app.twin = __import__('demo').DigitalTwinMind()
+    app.evolution = SelfEvolvingIntelligence()
+    app.evolution.record_task_result("agent_research", True)
+
+    summary = app.evolution.get_evolution_summary()
+    suite.assert_true("agents" in summary, "v20_desktop_evolution_summary")
+
+    return suite
+
+
+# ============================================================
 # B-TREE DB TESTS
 # ============================================================
 
@@ -4542,6 +4914,7 @@ def main():
         ("Arc v17.0.0 Living Software Engine", test_arc_v17),
         ("Arc v18.0.0 Reality Layer", test_arc_v18),
         ("Arc v19.0.0 Autonomous World Engine", test_arc_v19),
+        ("Arc v20.0.0 Self-Evolving Intelligence", test_arc_v20),
     ]
 
     for name, test_func in test_funcs:
@@ -4560,7 +4933,7 @@ def main():
     total_time = sum(sum(r.duration for r in s.results) for s in all_suites)
 
     print(f"\n{'='*60}")
-    print(f"  OVERALL RESULTS — v19.0.0 Autonomous World Engine")
+    print(f"  OVERALL RESULTS — v20.0.0 Self-Evolving Intelligence")
     print(f"{'='*60}")
     print(f"  Total Tests: {total_tests}")
     print(f"  Passed:      \033[32m{total_passed}\033[0m")
