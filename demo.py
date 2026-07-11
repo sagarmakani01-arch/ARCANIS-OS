@@ -566,6 +566,100 @@ class QuantumCircuit:
 # REAL NEURAL NETWORK (pure Python, no numpy)
 # ============================================================
 
+class _ArcWebServer:
+    """Simple HTTP server driven from Arc."""
+    def __init__(self, config):
+        self.config = config
+        self.server = None
+        self._start()
+
+    def _start(self):
+        host = self.config.get("host", "127.0.0.1")
+        port = self.config.get("port", 8080)
+        routes = self.config.get("routes", [])
+        handler = self._make_handler(routes)
+        self.server = __import__('threading').Thread(
+            target=lambda: __import__('http.server').HTTPServer(
+                (host, port), handler
+            ).serve_forever(),
+            daemon=True
+        )
+        self.server.start()
+        print(f"\033[1;36m[Web] Server running at http://{host}:{port}\033[0m")
+
+    def _make_handler(self, routes):
+        import http.server as _hs
+        class _Handler(_hs.BaseHTTPRequestHandler):
+            def do_GET(self):
+                for r in routes:
+                    if r["path"] == self.path and r["method"] == "GET":
+                        resp = r["handler"](self.path)
+                        if isinstance(resp, dict) and resp.get("__type__") == "response":
+                            self.send_response(200)
+                            self.send_header("Content-Type", resp.get("content_type", "text/html"))
+                            self.end_headers()
+                            self.wfile.write(str(resp.get("body", "")).encode())
+                            return
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b"Not Found")
+            def log_message(self, *a): pass
+        return _Handler
+
+
+class _ArcGUIWindow:
+    """tkinter window created from Arc."""
+    def __init__(self, title, w, h):
+        self._tk = __import__('tkinter')
+        self.root = self._tk.Tk()
+        self.root.title(title)
+        self.root.geometry(f"{w}x{h}")
+        self.widgets = []
+
+    def add(self, widget):
+        self.widgets.append(widget)
+        widget.pack()
+
+
+class _ArcGUIButton:
+    def __init__(self, parent, text, cb):
+        self._tk = __import__('tkinter')
+        self.widget = self._tk.Button(parent.root if hasattr(parent, 'root') else parent, text=text, command=cb)
+        self.widget.pack()
+
+
+class _ArcGUILabel:
+    def __init__(self, parent, text):
+        self._tk = __import__('tkinter')
+        self.widget = self._tk.Label(parent.root if hasattr(parent, 'root') else parent, text=text)
+        self.widget.pack()
+
+
+class _ArcGUIEntry:
+    def __init__(self, parent):
+        self._tk = __import__('tkinter')
+        self.widget = self._tk.Entry(parent.root if hasattr(parent, 'root') else parent)
+        self.widget.pack()
+
+    def get(self):
+        return self.widget.get()
+
+
+class _ArcGUIText:
+    def __init__(self, parent, w, h):
+        self._tk = __import__('tkinter')
+        self.widget = self._tk.Text(parent.root if hasattr(parent, 'root') else parent, width=w, height=h)
+        self.widget.pack()
+
+    def get(self):
+        return self.widget.get("1.0", self._tk.END)
+
+
+def _ArcGUIRun():
+    __import__('tkinter')._default_root = None
+    __import__('tkinter').mainloop()
+
+
 class NeuralNetwork:
     """Tiny feedforward neural network with backpropagation."""
 
@@ -1596,7 +1690,7 @@ class ArcLexer:
         "(": "LPAREN", ")": "RPAREN", "{": "LBRACE", "}": "RBRACE",
         "=": "EQ", "==": "EQEQ", "!=": "NEQ", "<": "LT", ">": "GT",
         "<=": "LTE", ">=": "GTE", ",": "COMMA", ";": "SEMI",
-        "[": "LBRACKET", "]": "RBRACKET",
+        "[": "LBRACKET", "]": "RBRACKET", ".": "DOT",
     }
 
     KEYWORDS = {
@@ -1615,6 +1709,9 @@ class ArcLexer:
         "input": "INPUT",
         "import": "IMPORT", "export": "EXPORT", "as": "AS",
         "and": "AND", "or": "OR", "not": "NOT",
+        "try": "TRY", "catch": "CATCH", "throw": "THROW",
+        "class": "CLASS", "extends": "EXTENDS", "new": "NEW",
+        "this": "THIS", "super": "SUPER",
     }
 
     def __init__(self, source):
@@ -1724,17 +1821,25 @@ class ArcParser:
             return self._import_stmt()
         if tok[0] == "EXPORT":
             return self._export_stmt()
+        if tok[0] == "TRY":
+            return self._try_stmt()
+        if tok[0] == "THROW":
+            return self._throw_stmt()
+        if tok[0] == "CLASS":
+            return self._class_stmt()
         if tok[0] == "LBRACE":
             return self._block()
         return self._expr_stmt()
 
     def _let_stmt(self):
         self.consume("LET")
-        name = self.consume("IDENT")[1]
+        target = self._call()
         self.consume("EQ")
         expr = self._expr()
         self.consume("SEMI")
-        return ("LET", name, expr)
+        if isinstance(target, tuple) and target[0] == "VAR":
+            return ("LET", target[1], expr)
+        return ("ASSIGN", target, expr)
 
     def _fn_stmt(self):
         self.consume("FN")
@@ -1748,6 +1853,56 @@ class ArcParser:
         self.consume("RPAREN")
         body = self._block()
         return ("FN", name, params, body)
+
+    def _try_stmt(self):
+        self.consume("TRY")
+        body = self._block()
+        catch_body = None
+        catch_var = None
+        if self.peek()[0] == "CATCH":
+            self.consume("CATCH")
+            if self.peek()[0] == "LPAREN":
+                self.consume("LPAREN")
+                catch_var = self.consume("IDENT")[1]
+                self.consume("RPAREN")
+            elif self.peek()[0] == "IDENT":
+                catch_var = self.consume("IDENT")[1]
+            catch_body = self._block() if self.peek()[0] == "LBRACE" else self._stmt()
+        return ("TRY", body, catch_var, catch_body)
+
+    def _throw_stmt(self):
+        self.consume("THROW")
+        expr = self._expr()
+        self.consume("SEMI")
+        return ("THROW", expr)
+
+    def _class_stmt(self):
+        self.consume("CLASS")
+        name = self.consume("IDENT")[1]
+        parent = None
+        if self.peek()[0] == "EXTENDS":
+            self.consume("EXTENDS")
+            parent = self.consume("IDENT")[1]
+        self.consume("LBRACE")
+        methods = {}
+        while self.peek()[0] != "RBRACE":
+            if self.peek()[0] == "FN":
+                self.consume("FN")
+                mname = self.consume("IDENT")[1]
+                self.consume("LPAREN")
+                params = []
+                while self.peek()[0] != "RPAREN":
+                    params.append(self.consume("IDENT")[1])
+                    if self.peek()[0] == "COMMA":
+                        self.consume("COMMA")
+                self.consume("RPAREN")
+                body = self._block()
+                methods[mname] = ("FN", mname, params, body)
+            else:
+                break
+        self.consume("RBRACE")
+        self.consume("SEMI")
+        return ("CLASS", name, parent, methods)
 
     def _if_stmt(self):
         self.consume("IF")
@@ -1856,6 +2011,17 @@ class ArcParser:
         if self.peek()[0] == "NOT":
             self.consume("NOT")
             return ("UNARY", "not", self._unary())
+        if self.peek()[0] == "NEW":
+            self.consume("NEW")
+            class_name = self.consume("IDENT")[1]
+            self.consume("LPAREN")
+            args = []
+            while self.peek()[0] != "RPAREN":
+                args.append(self._expr())
+                if self.peek()[0] == "COMMA":
+                    self.consume("COMMA")
+            self.consume("RPAREN")
+            return ("NEW", class_name, args)
         return self._call()
 
     def _call(self):
@@ -1876,6 +2042,10 @@ class ArcParser:
                 index = self._expr()
                 self.consume("RBRACKET")
                 left = ("INDEX", left, index)
+            elif self.peek()[0] == "DOT":
+                self.consume("DOT")
+                name = self.consume("IDENT")[1]
+                left = ("INDEX", left, ("STRING", name))
             else:
                 break
         return left
@@ -1914,6 +2084,12 @@ class ArcParser:
                     self.consume("COMMA")
             self.consume("RBRACKET")
             return ("LIST", elements)
+        if tok[0] == "THIS":
+            self.pos += 1
+            return ("THIS",)
+        if tok[0] == "SUPER":
+            self.pos += 1
+            return ("SUPER",)
         if tok[0] == "INPUT":
             self.consume("INPUT")
             self.consume("LPAREN")
@@ -1935,6 +2111,13 @@ class ArcParser:
         raise SyntaxError(f"Unexpected token: {tok}")
 
 
+class ArcError(Exception):
+    """Custom error for Arc throw/try/catch."""
+    def __init__(self, value):
+        self.value = value
+        super().__init__(str(value))
+
+
 class ArcVM:
     """Bytecode-embedded tree-walking interpreter for Arc AST."""
 
@@ -1946,6 +2129,8 @@ class ArcVM:
         self.exports = set()
         self.loaded_modules = {}
         self.arc_lang = None
+        self.classes = {}
+        self.instances = []
         self._builtins()
 
     def _builtins(self):
@@ -2148,6 +2333,27 @@ class ArcVM:
                 except IndexError:
                     return None
             if isinstance(collection, dict):
+                # Super method lookup (look in parent class)
+                if collection.get("__super__"):
+                    instance = collection["instance"]
+                    cls = instance.get("__class__")
+                    if cls and cls.get("__parent__"):
+                        parent_cls = cls["__parent__"]
+                        if index in parent_cls.get("__methods__", {}):
+                            method = parent_cls["__methods__"][index]
+                            return lambda *args: self._call_method(instance, method, args)
+                    return None
+                # Instance method lookup
+                if index in collection:
+                    return collection[index]
+                cls = collection.get("__class__")
+                if cls and index in cls.get("__methods__", {}):
+                    method = cls["__methods__"][index]
+                    return lambda *args: self._call_method(collection, method, args)
+                # Data attribute lookup
+                data = collection.get("__data__", {})
+                if index in data:
+                    return data[index]
                 return collection.get(index, None)
             return None
 
@@ -2160,7 +2366,83 @@ class ArcVM:
                 val = self._eval(node[2])
                 self.env[var_name] = val
                 return val
+            # Handle instance attribute assignment: obj.attr = val
+            if node[1][0] == "INDEX":
+                obj = self._eval(node[1][1])
+                key = self._eval(node[1][2])
+                if isinstance(obj, dict):
+                    obj[key] = self._eval(node[2])
             return None
+
+        if t == "TRY":
+            try:
+                return self._eval(node[1])
+            except ArcError as e:
+                if node[2] is not None and node[3] is not None:
+                    old = self.env.get(node[2])
+                    self.env[node[2]] = e.value
+                    self._eval(node[3])
+                    if old is not None:
+                        self.env[node[2]] = old
+                    elif node[2] in self.env:
+                        del self.env[node[2]]
+                elif node[3] is not None:
+                    self._eval(node[3])
+                return None
+            except Exception as e:
+                if node[2] is not None and node[3] is not None:
+                    old = self.env.get(node[2])
+                    self.env[node[2]] = str(e)
+                    self._eval(node[3])
+                    if old is not None:
+                        self.env[node[2]] = old
+                    elif node[2] in self.env:
+                        del self.env[node[2]]
+                elif node[3] is not None:
+                    self._eval(node[3])
+                return None
+
+        if t == "THROW":
+            val = self._eval(node[1])
+            raise ArcError(val)
+
+        if t == "CLASS":
+            name = node[1]
+            parent_name = node[2]
+            methods = node[3]
+            cls = {"__name__": name, "__methods__": dict(methods), "__parent__": None}
+            if parent_name and parent_name in self.classes:
+                cls["__parent__"] = self.classes[parent_name]
+            self.classes[name] = cls
+            self.env[name] = cls
+            return None
+
+        if t == "NEW":
+            class_name = node[1]
+            args = [self._eval(a) for a in node[2]]
+            if class_name not in self.classes:
+                raise ArcError(f"Unknown class: {class_name}")
+            cls = self.classes[class_name]
+            instance = {"__class__": cls, "__data__": {}}
+            # Call constructor if defined
+            if "init" in cls["__methods__"]:
+                self.instances.append(instance)
+                try:
+                    self._call_fn(cls["__methods__"]["init"], args)
+                finally:
+                    self.instances.pop()
+            return instance
+
+        if t == "THIS":
+            if self.instances:
+                return self.instances[-1]
+            raise ArcError("'this' used outside of a class method")
+
+        if t == "SUPER":
+            if not self.instances:
+                raise ArcError("'super' used outside of a class method")
+            instance = self.instances[-1]
+            return {"__super__": True, "instance": instance}
 
         return None
 
@@ -2238,6 +2520,33 @@ class ArcVM:
                 fn classify(m, inp) { return call_native("ai_classify", m, inp); }
                 print "[stdlib/ai loaded]";
             """,
+            "web": """
+                export server;
+                export route;
+                export html;
+                export json_response;
+                fn server(host, port) { return call_native("web_server", host, port); }
+                fn route(srv, path, method, handler) { return call_native("web_route", srv, path, method, handler); }
+                fn html(content) { return call_native("web_html", content); }
+                fn json_response(data) { return call_native("web_json", data); }
+                fn start(srv) { return call_native("web_start", srv); }
+                print "[stdlib/web loaded]";
+            """,
+            "gui": """
+                export window;
+                export button;
+                export label;
+                export entry;
+                export text;
+                export run;
+                fn window(title, w, h) { return call_native("gui_window", title, w, h); }
+                fn button(parent, text, cb) { return call_native("gui_button", parent, text, cb); }
+                fn label(parent, text) { return call_native("gui_label", parent, text); }
+                fn entry(parent) { return call_native("gui_entry", parent); }
+                fn text(parent, w, h) { return call_native("gui_text", parent, w, h); }
+                fn run() { return call_native("gui_run"); }
+                print "[stdlib/gui loaded]";
+            """,
         }
 
         if module in stdlib_modules:
@@ -2267,6 +2576,17 @@ class ArcVM:
                 "ai_predict": lambda m, inp: m.predict(inp),
                 "ai_train": lambda m, inputs, outputs, epochs: (m.train(inputs, outputs, epochs), m)[1],
                 "ai_classify": lambda m, inp: (lambda out: out.index(max(out)) if len(out) > 1 else round(out[0]))(m.predict(inp)),
+                "web_server": lambda host, port: {"__type__": "server", "host": host, "port": port, "routes": [], "running": False},
+                "web_route": lambda srv, path, method, handler: (srv["routes"].append({"path": path, "method": method.upper(), "handler": handler}), None)[1] if isinstance(srv, dict) else None,
+                "web_html": lambda content: {"__type__": "response", "body": content, "content_type": "text/html"},
+                "web_json": lambda data: {"__type__": "response", "body": __import__('json').dumps(data), "content_type": "application/json"},
+                "web_start": lambda srv: (srv.update({"running": True}), _ArcWebServer(srv))[1] if isinstance(srv, dict) else None,
+                "gui_window": lambda title, w, h: _ArcGUIWindow(title, w, h),
+                "gui_button": lambda parent, text, cb: _ArcGUIButton(parent, text, cb),
+                "gui_label": lambda parent, text: _ArcGUILabel(parent, text),
+                "gui_entry": lambda parent: _ArcGUIEntry(parent),
+                "gui_text": lambda parent, w, h: _ArcGUIText(parent, w, h),
+                "gui_run": lambda: _ArcGUIRun(),
             }
             self.env["call_native"] = lambda fn, *a: native_cbs.get(fn, lambda *_: None)(*a)
 
@@ -2332,6 +2652,25 @@ class ArcVM:
         self.env.clear()
         self.env.update(old_env)
         return rv
+
+    def _call_method(self, instance, fn_node, args):
+        """Call a method on an instance (sets up 'this' scope)."""
+        self.instances.append(instance)
+        try:
+            old_env = dict(self.env)
+            params = fn_node[2]
+            for p, a in zip(params, args):
+                self.env[p] = a
+            self.env["this"] = instance
+            self.return_val = None
+            self._eval(fn_node[3])
+            rv = self.return_val
+            self.return_val = None
+            self.env.clear()
+            self.env.update(old_env)
+            return rv
+        finally:
+            self.instances.pop()
 
     def _spawn(self, fn, *args):
         """Spawn a function in a new thread."""
@@ -3028,6 +3367,11 @@ class ArcIDE:
         "print": "#DCDCAA", "display": "#DCDCAA", "show": "#DCDCAA", "say": "#DCDCAA",
         "input": "#DCDCAA",
         "import": "#C586C0", "export": "#C586C0", "as": "#C586C0",
+        "try": "#C586C0", "catch": "#C586C0",
+        "throw": "#DCDCAA",
+        "class": "#569CD6", "extends": "#569CD6",
+        "new": "#DCDCAA",
+        "this": "#4EC9B0", "super": "#4EC9B0",
     }
 
     def __init__(self, jit=None):
@@ -3608,6 +3952,7 @@ class Shell:
             "arc": self.cmd_arc,
             "db": self.cmd_db,
             "arcide": self.cmd_arcide,
+            "apm": self.cmd_apm,
         }
 
         handler = dispatch.get(command)
@@ -5758,6 +6103,104 @@ class Shell:
             print(f"\033[33mdb: unknown action '{a}'\033[0m")
 
     # ======================== ARC IDE ========================
+
+    def cmd_apm(self, args):
+        """Arc Package Manager - install/remove/list/search packages."""
+        if not args:
+            print("Arc Package Manager (apm)")
+            print("Usage: apm [install|remove|list|search|update|info] [package_name]")
+            pkg_dir = os.path.expanduser("~/.arcanis/packages")
+            files = os.listdir(pkg_dir) if os.path.isdir(pkg_dir) else []
+            print(f"Installed packages: {len(files)}")
+            return
+        cmd = args[0]
+        pkg_dir = os.path.expanduser("~/.arcanis/packages")
+        if not os.path.isdir(pkg_dir):
+            os.makedirs(pkg_dir, exist_ok=True)
+        if cmd == "list":
+            files = os.listdir(pkg_dir) if os.path.isdir(pkg_dir) else []
+            if not files:
+                print("\033[33mNo packages installed\033[0m")
+            else:
+                print("\033[1;36mInstalled packages:\033[0m")
+                for f in sorted(files):
+                    pkg_path = os.path.join(pkg_dir, f)
+                    size = os.path.getsize(pkg_path) if os.path.isfile(pkg_path) else 0
+                    print(f"  \033[32m{f}\033[0m ({size} bytes)")
+        elif cmd == "install":
+            if len(args) < 2:
+                print("Usage: apm install <package_name>")
+                return
+            pkg_name = args[1]
+            pkg_path = os.path.join(pkg_dir, pkg_name + ".arc")
+            # Try to fetch from a simple registry (local or URL)
+            registry_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages")
+            if os.path.isdir(registry_dir) and os.path.isfile(os.path.join(registry_dir, pkg_name + ".arc")):
+                src = open(os.path.join(registry_dir, pkg_name + ".arc"), encoding="utf-8").read()
+                with open(pkg_path, "w", encoding="utf-8") as f:
+                    f.write(src)
+                print(f"\033[32mInstalled package '{pkg_name}'\033[0m")
+            else:
+                pkg_url = f"https://raw.githubusercontent.com/arcanis-lang/packages/main/{pkg_name}.arc"
+                try:
+                    import urllib.request
+                    resp = urllib.request.urlopen(pkg_url, timeout=5)
+                    src = resp.read().decode()
+                    with open(pkg_path, "w", encoding="utf-8") as f:
+                        f.write(src)
+                    print(f"\033[32mInstalled package '{pkg_name}' from registry\033[0m")
+                except Exception:
+                    print(f"\033[31mPackage '{pkg_name}' not found in registry\033[0m")
+        elif cmd == "remove":
+            if len(args) < 2:
+                print("Usage: apm remove <package_name>")
+                return
+            pkg_name = args[1]
+            pkg_path = os.path.join(pkg_dir, pkg_name + ".arc")
+            if os.path.isfile(pkg_path):
+                os.remove(pkg_path)
+                print(f"\033[32mRemoved package '{pkg_name}'\033[0m")
+            else:
+                print(f"\033[31mPackage '{pkg_name}' not found\033[0m")
+        elif cmd == "search":
+            if len(args) < 2:
+                print("Usage: apm search <query>")
+                return
+            query = args[1].lower()
+            registry_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "packages")
+            found = []
+            if os.path.isdir(registry_dir):
+                for f in os.listdir(registry_dir):
+                    if query in f.lower():
+                        found.append(f.replace(".arc", ""))
+            if found:
+                print(f"\033[1;36mPackages matching '{query}':\033[0m")
+                for f in sorted(found):
+                    print(f"  \033[32m{f}\033[0m")
+            else:
+                print(f"\033[33mNo packages found matching '{query}'\033[0m")
+        elif cmd == "info":
+            if len(args) < 2:
+                print("Usage: apm info <package_name>")
+                return
+            pkg_name = args[1]
+            pkg_path = os.path.join(pkg_dir, pkg_name + ".arc")
+            if os.path.isfile(pkg_path):
+                src = open(pkg_path, encoding="utf-8").read()
+                lines = src.split("\n")
+                print(f"\033[1;36mPackage: {pkg_name}\033[0m")
+                print(f"  Lines: {len(lines)}")
+                print(f"  Size: {len(src)} bytes")
+                # Show exports
+                exports = [l for l in lines if l.startswith("export")]
+                if exports:
+                    print(f"  Exports: {', '.join(e.replace('export ', '') for e in exports)}")
+            else:
+                print(f"\033[31mPackage '{pkg_name}' not installed\033[0m")
+        elif cmd == "update":
+            print("\033[33mUpdate checks registry for newer versions (not yet implemented)\033[0m")
+        else:
+            print(f"\033[31mapm: unknown command '{cmd}'\033[0m")
 
     def cmd_arcide(self, args):
         if not args:

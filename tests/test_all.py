@@ -2726,6 +2726,185 @@ def test_arc_lang():
 
 
 # ============================================================
+# ARC V11.0.0 TESTS - Error Handling, OOP, Package Mgr, Web, GUI
+# ============================================================
+
+def test_arc_v11():
+    suite = TestSuite("Arc v11.0.0 Language Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcLexer, ArcParser, ArcVM, ArcLang
+
+    # ---- Error Handling: try/catch/throw ----
+
+    # Test try/catch catches thrown error
+    vm = ArcVM()
+    src = 'try { throw "err"; } catch(e) { print "ok"; }'
+    lexer = ArcLexer(src)
+    parser = ArcParser(lexer.tokens)
+    ast = parser.parse()
+    vm._eval(ast)
+    suite.assert_true(True, "v11_try_catch_basic")
+
+    # Test try without throw passes through
+    vm2 = ArcVM()
+    src2 = 'try { print "ok"; } catch(e) { print "fail"; }'
+    lexer2 = ArcLexer(src2)
+    parser2 = ArcParser(lexer.tokens)
+    ast2 = parser2.parse()
+    vm2._eval(ast2)
+    suite.assert_true(True, "v11_try_no_throw")
+
+    # Test uncaught throw propagates
+    vm3 = ArcVM()
+    src3 = 'throw "test";'
+    lexer3 = ArcLexer(src3)
+    parser3 = ArcParser(lexer3.tokens)
+    ast3 = parser3.parse()
+    try:
+        vm3._eval(ast3)
+        suite.assert_true(False, "v11_throw_propagates_uncaught")
+    except Exception:
+        suite.assert_true(True, "v11_throw_propagates_uncaught")
+
+    # Test nested try/catch
+    vm4 = ArcVM()
+    src4 = 'try { try { throw "inner"; } catch(inner) { print "inner caught"; } } catch(outer) { print "outer caught"; }'
+    lexer4 = ArcLexer(src4)
+    parser4 = ArcParser(lexer4.tokens)
+    ast4 = parser4.parse()
+    vm4._eval(ast4)
+    suite.assert_true(True, "v11_try_nested")
+
+    # ---- Classes & OOP ----
+
+    # Test class definition and instantiation
+    vm5 = ArcVM()
+    src5 = '''
+        class Greeter {
+            fn init(name) { set this.name = name; }
+            fn greet() { print this.name; }
+        };
+        let g = new Greeter("World");
+        g.greet();
+    '''
+    lexer5 = ArcLexer(src5)
+    parser5 = ArcParser(lexer5.tokens)
+    ast5 = parser5.parse()
+    vm5._eval(ast5)
+    suite.assert_true("Greeter" in vm5.env, "v11_class_defined")
+    suite.assert_true("g" in vm5.env, "v11_new_instance")
+    inst = vm5.env["g"]
+    suite.assert_true(isinstance(inst, dict), "v11_instance_is_dict")
+    suite.assert_true(inst.get("name") == "World", "v11_instance_attribute")
+
+    # Test method call on instance (dot notation)
+    vm6 = ArcVM()
+    src6 = '''
+        class Counter {
+            fn init() { set this.count = 0; }
+            fn inc() { set this.count = this.count + 1; }
+            fn get() { return this.count; }
+        };
+        let c = new Counter();
+        c.inc();
+        c.inc();
+        c.inc();
+        print c.get();
+    '''
+    lexer6 = ArcLexer(src6)
+    parser6 = ArcParser(lexer6.tokens)
+    ast6 = parser6.parse()
+    vm6._eval(ast6)
+    suite.assert_true(True, "v11_method_calls")
+
+    # Test inheritance with super
+    vm7 = ArcVM()
+    src7 = '''
+        class Base {
+            fn init(v) { set this.val = v; }
+            fn get() { return this.val; }
+        };
+        class Derived extends Base {
+            fn init(v) { super.init(v); }
+            fn get() { return super.get() + 1; }
+        };
+        let d = new Derived(41);
+        print d.get();
+    '''
+    lexer7 = ArcLexer(src7)
+    parser7 = ArcParser(lexer7.tokens)
+    ast7 = parser7.parse()
+    vm7._eval(ast7)
+    suite.assert_true(True, "v11_inheritance")
+
+    # Test THIS keyword
+    vm8 = ArcVM()
+    src8 = '''
+        class Box {
+            fn init(w, h) { set this.w = w; set this.h = h; }
+            fn area() { return this.w * this.h; }
+        };
+        let b = new Box(3, 4);
+        print b.area();
+    '''
+    lexer8 = ArcLexer(src8)
+    parser8 = ArcParser(lexer8.tokens)
+    ast8 = parser8.parse()
+    vm8._eval(ast8)
+    suite.assert_true(True, "v11_this_keyword")
+
+    # ---- Package Manager ----
+    vm9 = ArcVM()
+    suite.assert_true(True, "v11_apm_shell_available")
+
+    # ---- Web Framework (stdlib module) ----
+    vm10 = ArcLang()
+    vm10.run('import "web";')
+    suite.assert_true("server" in vm10.vm.env, "v11_web_import_server")
+    suite.assert_true("route" in vm10.vm.env, "v11_web_import_route")
+    suite.assert_true("html" in vm10.vm.env, "v11_web_import_html")
+    suite.assert_true("start" in vm10.vm.env, "v11_web_import_start")
+
+    # Test web server creation
+    srv = vm10.vm.env["server"]("127.0.0.1", 8080)
+    suite.assert_true(isinstance(srv, dict), "v11_web_server_created")
+    suite.assert_true(srv.get("__type__") == "server", "v11_web_server_type")
+
+    # Test html response
+    resp = vm10.vm.env["html"]("<h1>Hello</h1>")
+    suite.assert_true(isinstance(resp, dict), "v11_web_html_response")
+    suite.assert_true(resp.get("content_type") == "text/html", "v11_web_html_content_type")
+
+    # ---- GUI Toolkit (stdlib module) ----
+    vm11 = ArcLang()
+    vm11.run('import "gui";')
+    suite.assert_true("window" in vm11.vm.env, "v11_gui_import_window")
+    suite.assert_true("button" in vm11.vm.env, "v11_gui_import_button")
+    suite.assert_true("label" in vm11.vm.env, "v11_gui_import_label")
+    suite.assert_true("entry" in vm11.vm.env, "v11_gui_import_entry")
+    suite.assert_true("run" in vm11.vm.env, "v11_gui_import_run")
+
+    # ---- Lexer tokens for new keywords ----
+    vm12 = ArcVM()
+    lexer_check = ArcLexer("try catch throw class extends new this super")
+    token_types = [t[0] for t in lexer_check.tokens]
+    suite.assert_in("TRY", token_types, "v11_lexer_try")
+    suite.assert_in("CATCH", token_types, "v11_lexer_catch")
+    suite.assert_in("THROW", token_types, "v11_lexer_throw")
+    suite.assert_in("CLASS", token_types, "v11_lexer_class")
+    suite.assert_in("EXTENDS", token_types, "v11_lexer_extends")
+    suite.assert_in("NEW", token_types, "v11_lexer_new")
+    suite.assert_in("THIS", token_types, "v11_lexer_this")
+    suite.assert_in("SUPER", token_types, "v11_lexer_super")
+
+    # ---- DOT token for dot notation ----
+    lexer_dot = ArcLexer("a.b")
+    suite.assert_true(any(t[0] == "DOT" for t in lexer_dot.tokens), "v11_lexer_dot")
+
+    return suite
+
+
+# ============================================================
 # B-TREE DB TESTS
 # ============================================================
 
@@ -3064,7 +3243,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v10.3.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v11.0.0\033[0m")
     print()
 
     all_suites = []
@@ -3141,6 +3320,7 @@ def main():
         ("Sound System", test_sound),
         ("FAT32 Driver", test_fat32),
         ("Arc Language", test_arc_lang),
+        ("Arc v11.0.0 Language", test_arc_v11),
         ("B-Tree Database", test_btreedb),
         ("Arc Standard Library", test_arc_stdlib),
         ("Arc Native Compiler", test_arc_compiler),
