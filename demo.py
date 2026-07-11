@@ -2215,6 +2215,9 @@ class ArcVM:
         # System
         self.env["env"] = lambda k: os.environ.get(k, "")
         self.env["exit"] = lambda: (_ for _ in ()).throw(SystemExit(0))
+        self.env["platform"] = lambda: sys.platform
+        self.env["os_name"] = lambda: os.name
+        self.env["cpu_count"] = lambda: os.cpu_count() or 1
         self.env["type"] = lambda x: type(x).__name__
         # Math
         self.env["abs"] = lambda x: abs(x)
@@ -3946,6 +3949,557 @@ print "sum(0..9) = " + sum;
                 self.output.delete("1.0", tk.END)
                 self.output.insert(tk.END, f"Error: {e}")
                 self.output.config(state=tk.DISABLED)
+
+
+# ============================================================
+# ARCANIS DESKTOP ENVIRONMENT
+# ============================================================
+
+class _DesktopWindow:
+    """A managed window inside the Arcanis Desktop with title bar and resize."""
+
+    TITLE_H = 30
+    BORDER_W = 4
+    MIN_W = 200
+    MIN_H = 150
+
+    def __init__(self, desktop, title, content_fn, x=100, y=100, w=600, h=400):
+        self.desktop = desktop
+        self.title = title
+        self.content_fn = content_fn
+        self.x, self.y, self.w, self.h = x, y, w, h
+        self.state = "normal"  # normal | minimized | maximized
+        self.pre_max = (x, y, w, h)
+        self.drag_data = None
+        self.resize_edge = None
+
+        self.frame = tk.Frame(desktop.canvas_bg, bg="#2D2D2D", highlightthickness=0)
+        self._build()
+        self._place()
+
+    def _build(self):
+        # Title bar
+        self.title_bar = tk.Frame(self.frame, bg="#1E1E1E", height=self.TITLE_H, highlightthickness=0)
+        self.title_bar.pack(fill=tk.X, side=tk.TOP)
+        self.title_bar.pack_propagate(False)
+
+        lbl = tk.Label(self.title_bar, text=self.title, bg="#1E1E1E", fg="#D4D4D4",
+                       font=("Segoe UI", 9), anchor="w", padx=8)
+        lbl.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        # Window buttons
+        btn_frame = tk.Frame(self.title_bar, bg="#1E1E1E")
+        btn_frame.pack(side=tk.RIGHT)
+        min_btn = tk.Button(btn_frame, text="─", bg="#1E1E1E", fg="#D4D4D4",
+                            font=("Segoe UI", 8), relief=tk.FLAT, padx=6, command=self._minimize)
+        min_btn.pack(side=tk.LEFT)
+        max_btn = tk.Button(btn_frame, text="□", bg="#1E1E1E", fg="#D4D4D4",
+                            font=("Segoe UI", 8), relief=tk.FLAT, padx=6, command=self._maximize)
+        max_btn.pack(side=tk.LEFT)
+        close_btn = tk.Button(btn_frame, text="✕", bg="#1E1E1E", fg="#D4D4D4",
+                              font=("Segoe UI", 8), relief=tk.FLAT, padx=6, command=self._close)
+        close_btn.pack(side=tk.LEFT)
+
+        # Client area
+        self.client = tk.Frame(self.frame, bg="#1E1E1E", highlightthickness=0)
+        self.client.pack(fill=tk.BOTH, expand=True)
+        if self.content_fn:
+            self.content_fn(self.client)
+
+        # Bind drag on title bar
+        for w in [self.title_bar, lbl]:
+            w.bind("<Button-1>", self._drag_start)
+            w.bind("<B1-Motion>", self._drag_move)
+            w.bind("<ButtonRelease-1>", self._drag_end)
+
+        # Resize on borders
+        self.frame.bind("<Enter>", self._check_resize)
+        self.frame.bind("<Motion>", self._check_resize)
+        self.frame.bind("<Button-1>", self._resize_start)
+        self.frame.bind("<B1-Motion>", self._resize_move)
+        self.frame.bind("<ButtonRelease-1>", self._resize_end)
+
+    def _place(self):
+        self.frame.place(x=self.x, y=self.y, width=self.w, height=self.h)
+
+    def _minimize(self):
+        self.state = "minimized"
+        self.frame.place_forget()
+
+    def _maximize(self):
+        if self.state == "maximized":
+            self.state = "normal"
+            self.x, self.y, self.w, self.h = self.pre_max
+        else:
+            self.pre_max = (self.x, self.y, self.w, self.h)
+            self.state = "maximized"
+            self.x, self.y, self.w, self.h = 0, 0, self.desktop.winfo_width(), self.desktop.winfo_height()
+        self._place()
+
+    def _close(self):
+        self.destroy()
+
+    def destroy(self):
+        self.frame.destroy()
+        if self in self.desktop.windows:
+            self.desktop.windows.remove(self)
+        self.desktop._update_taskbar()
+
+    def raise_window(self):
+        self.frame.tkraise()
+        self.desktop._update_taskbar()
+
+    def _drag_start(self, e):
+        self.drag_data = (e.x_root - self.x, e.y_root - self.y)
+
+    def _drag_move(self, e):
+        if self.drag_data:
+            self.x = e.x_root - self.drag_data[0]
+            self.y = e.y_root - self.drag_data[1]
+            self._place()
+
+    def _drag_end(self, e):
+        self.drag_data = None
+
+    def _check_resize(self, e):
+        mx, my = e.x, e.y
+        self.resize_edge = None
+        if mx < self.BORDER_W and my < self.BORDER_W:
+            self.resize_edge = "nw"
+            self.frame.config(cursor="size_nw_se")
+        elif mx > self.w - self.BORDER_W and my < self.BORDER_W:
+            self.resize_edge = "ne"
+            self.frame.config(cursor="size_ne_sw")
+        elif mx < self.BORDER_W and my > self.h - self.BORDER_W:
+            self.resize_edge = "sw"
+            self.frame.config(cursor="size_ne_sw")
+        elif mx > self.w - self.BORDER_W and my > self.h - self.BORDER_W:
+            self.resize_edge = "se"
+            self.frame.config(cursor="size_nw_se")
+        elif mx < self.BORDER_W:
+            self.resize_edge = "w"
+            self.frame.config(cursor="size_we")
+        elif mx > self.w - self.BORDER_W:
+            self.resize_edge = "e"
+            self.frame.config(cursor="size_we")
+        elif my < self.BORDER_W:
+            self.resize_edge = "n"
+            self.frame.config(cursor="size_ns")
+        elif my > self.h - self.BORDER_W:
+            self.resize_edge = "s"
+            self.frame.config(cursor="size_ns")
+        else:
+            self.frame.config(cursor="")
+
+    def _resize_start(self, e):
+        if self.resize_edge:
+            self.drag_data = (e.x_root, e.y_root, self.x, self.y, self.w, self.h)
+
+    def _resize_move(self, e):
+        if self.drag_data and self.resize_edge:
+            rx, ry, ox, oy, ow, oh = self.drag_data
+            dx, dy = e.x_root - rx, e.y_root - ry
+            edge = self.resize_edge
+            if "w" in edge:
+                self.x = min(ox + dx, ox + ow - self.MIN_W)
+                self.w = max(ow - dx, self.MIN_W)
+            if "e" in edge:
+                self.w = max(ow + dx, self.MIN_W)
+            if "n" in edge:
+                self.y = min(oy + dy, oy + oh - self.MIN_H)
+                self.h = max(oh - dy, self.MIN_H)
+            if "s" in edge:
+                self.h = max(oh + dy, self.MIN_H)
+            self._place()
+
+    def _resize_end(self, e):
+        self.drag_data = None
+
+
+class ArcDesktop:
+    """Full-screen Arcanis Desktop Environment with taskbar, window manager, icons."""
+
+    WALLPAPER_DIR = os.path.expanduser("~/.arcanis/wallpapers")
+
+    def __init__(self):
+        self.root = None
+        self.canvas_bg = None
+        self.taskbar = None
+        self.windows = []
+        self.start_menu_open = False
+        self.file_manager_windows = []
+        self.app_icons = []
+
+    def available(self):
+        return _HAVE_TK
+
+    def launch(self):
+        if not _HAVE_TK:
+            print("\033[31mTkinter not available\033[0m")
+            return
+        self.root = tk.Tk()
+        self.root.title("Arcanis OS Desktop")
+        self.root.attributes("-fullscreen", True)
+        self.root.configure(bg="#1a1a2e")
+
+        # Wallpaper / background canvas
+        self.canvas_bg = tk.Canvas(self.root, bg="#1a1a2e", highlightthickness=0)
+        self.canvas_bg.pack(fill=tk.BOTH, expand=True)
+
+        # Desktop icons
+        self._create_desktop_icons()
+
+        # Taskbar
+        self._create_taskbar()
+
+        # Right-click menu
+        self.root.bind("<Button-3>", self._context_menu)
+
+        # Keyboard shortcuts
+        self.root.bind("<Escape>", lambda e: self._shutdown())
+        self.root.bind("<F5>", lambda e: self._refresh_desktop())
+
+        self.root.mainloop()
+
+    def _create_desktop_icons(self):
+        icons_data = [
+            ("📁  Files", self._open_file_manager, 30, 30),
+            ("💻  Terminal", self._open_terminal, 30, 120),
+            ("✏️  IDE", self._open_ide, 30, 210),
+            ("⚙️  Settings", self._open_settings, 30, 300),
+            ("🧮  Calculator", self._open_calculator, 30, 390),
+        ]
+        for label, cmd, x, y in icons_data:
+            icon_frame = tk.Frame(self.canvas_bg, bg="#1a1a2e", cursor="hand2")
+            icon_frame.place(x=x, y=y)
+            lbl = tk.Label(icon_frame, text=label, bg="#1a1a2e", fg="#E0E0E0",
+                           font=("Segoe UI", 10), padx=8, pady=4, cursor="hand2")
+            lbl.pack()
+            lbl.bind("<Button-1>", lambda e, c=cmd: c())
+            icon_frame.bind("<Button-1>", lambda e, c=cmd: c())
+            self.app_icons.append(icon_frame)
+
+    def _create_taskbar(self):
+        self.taskbar = tk.Frame(self.root, bg="#1E1E1E", height=40)
+        self.taskbar.pack(fill=tk.X, side=tk.BOTTOM, before=self.canvas_bg)
+        self.taskbar.pack_propagate(False)
+
+        # Start button
+        start_btn = tk.Button(self.taskbar, text="Arcanis", bg="#0E639C", fg="white",
+                              font=("Segoe UI", 9, "bold"), relief=tk.FLAT, padx=12,
+                              command=self._toggle_start_menu)
+        start_btn.pack(side=tk.LEFT, padx=2, pady=3)
+
+        # Running apps area
+        self.task_apps = tk.Frame(self.taskbar, bg="#1E1E1E")
+        self.task_apps.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        # System tray
+        tray = tk.Frame(self.taskbar, bg="#1E1E1E")
+        tray.pack(side=tk.RIGHT, padx=5)
+
+        # Clock
+        self.clock_label = tk.Label(tray, bg="#1E1E1E", fg="#D4D4D4",
+                                    font=("Segoe UI", 9), anchor="e", width=12)
+        self.clock_label.pack(side=tk.RIGHT)
+        self._update_clock()
+
+    def _update_clock(self):
+        import time as _time
+        now = _time.localtime()
+        self.clock_label.config(text=f"{now.tm_hour:02d}:{now.tm_min:02d}")
+        self.root.after(10000, self._update_clock)
+
+    def _toggle_start_menu(self):
+        if hasattr(self, "_start_menu") and self._start_menu and self._start_menu.winfo_exists():
+            self._start_menu.destroy()
+            self._start_menu = None
+            return
+        self._start_menu = tk.Toplevel(self.root, bg="#2D2D2D")
+        self._start_menu.overrideredirect(True)
+        self._start_menu.geometry("300x400")
+        x = self.taskbar.winfo_rootx()
+        y = self.taskbar.winfo_rooty() - 400
+        self._start_menu.geometry(f"300x400+{x}+{y}")
+
+        title = tk.Label(self._start_menu, text="Arcanis OS", bg="#0E639C", fg="white",
+                         font=("Segoe UI", 12, "bold"), padx=15, pady=10)
+        title.pack(fill=tk.X)
+
+        apps = [
+            ("📁  File Manager", self._open_file_manager),
+            ("💻  Terminal", self._open_terminal),
+            ("✏️  Arc IDE", self._open_ide),
+            ("⚙️  Settings", self._open_settings),
+            ("🧮  Calculator", self._open_calculator),
+        ]
+        for label, cmd in apps:
+            btn = tk.Button(self._start_menu, text=label, bg="#2D2D2D", fg="#D4D4D4",
+                           font=("Segoe UI", 10), anchor="w", relief=tk.FLAT, padx=20, pady=6,
+                           command=lambda c=cmd: (self._start_menu.destroy(), c()))
+            btn.pack(fill=tk.X)
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#3C3C3C"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#2D2D2D"))
+
+        # Shutdown button
+        tk.Frame(self._start_menu, bg="#2D2D2D", height=20).pack()
+        shutdown_btn = tk.Button(self._start_menu, text="⏻  Shutdown", bg="#8B0000", fg="white",
+                                font=("Segoe UI", 10), relief=tk.FLAT, pady=8,
+                                command=lambda: (self._start_menu.destroy(), self._shutdown()))
+        shutdown_btn.pack(fill=tk.X, side=tk.BOTTOM)
+
+        self._start_menu.bind("<FocusOut>", lambda e: self._start_menu.destroy() if self._start_menu else None)
+        self._start_menu.focus()
+
+    def _context_menu(self, e):
+        menu = tk.Menu(self.root, tearoff=0, bg="#2D2D2D", fg="#D4D4D4")
+        menu.add_command(label="New Folder", command=lambda: self._new_folder(e.x, e.y))
+        menu.add_command(label="Open Terminal", command=self._open_terminal)
+        menu.add_separator()
+        menu.add_command(label="Refresh", command=self._refresh_desktop)
+        menu.add_command(label="Change Wallpaper", command=self._cycle_wallpaper)
+        menu.add_separator()
+        menu.add_command(label="Settings", command=self._open_settings)
+        menu.tk_popup(e.x_root, e.y_root)
+
+    def _new_folder(self, x, y):
+        import tkinter.simpledialog as _sd
+        name = _sd.askstring("New Folder", "Folder name:", parent=self.root)
+        if name:
+            path = os.path.expanduser(f"~/.arcanis/desktop/{name}")
+            os.makedirs(path, exist_ok=True)
+            lbl = tk.Label(self.canvas_bg, text=f"📁  {name}", bg="#1a1a2e", fg="#E0E0E0",
+                          font=("Segoe UI", 10), cursor="hand2")
+            lbl.place(x=x, y=y)
+            lbl.bind("<Button-1>", lambda e: self._open_file_manager(path))
+
+    def _refresh_desktop(self):
+        pass
+
+    def _cycle_wallpaper(self):
+        colors = ["#1a1a2e", "#1e3a5f", "#2d1b2e", "#1b2d2d", "#2e2e1b", "#2a1a1a"]
+        current = self.canvas_bg.cget("bg")
+        idx = (colors.index(current) + 1) % len(colors) if current in colors else 0
+        self.canvas_bg.config(bg=colors[idx])
+
+    def _shutdown(self):
+        for win in list(self.windows):
+            win.destroy()
+        self.root.destroy()
+
+    def open_window(self, title, content_fn, w=700, h=450):
+        win = _DesktopWindow(self, title, content_fn,
+                            x=50 + len(self.windows) * 30,
+                            y=50 + len(self.windows) * 30,
+                            w=w, h=h)
+        self.windows.append(win)
+        self._update_taskbar()
+        win.raise_window()
+        return win
+
+    def _update_taskbar(self):
+        for w in self.task_apps.winfo_children():
+            w.destroy()
+        for win in self.windows:
+            state = win.state
+            fg = "#FFFFFF" if state == "normal" else "#666666"
+            bg = "#3C3C3C" if state == "normal" else "#252526"
+            btn = tk.Button(self.task_apps, text=win.title[:20], bg=bg, fg=fg,
+                          font=("Segoe UI", 8), relief=tk.FLAT, padx=8,
+                          command=lambda w=win: self._taskbar_click(w))
+            btn.pack(side=tk.LEFT, padx=2)
+
+    def _taskbar_click(self, win):
+        if win.state == "minimized":
+            win.state = "normal"
+            win._place()
+        win.raise_window()
+
+    # ==== Built-in apps ====
+
+    def _open_file_manager(self, path=None):
+        if not path:
+            path = os.path.expanduser("~/.arcanis")
+        win = self.open_window(f"File Manager — {os.path.basename(path)}",
+                              lambda parent, p=path: self._fm_content(parent, p),
+                              w=750, h=480)
+
+    def _fm_content(self, parent, path):
+        # Toolbar
+        toolbar = tk.Frame(parent, bg="#252526")
+        toolbar.pack(fill=tk.X)
+        path_var = tk.StringVar(value=path)
+        entry = tk.Entry(toolbar, textvariable=path_var, bg="#3C3C3C", fg="#D4D4D4",
+                        font=("Consolas", 9), relief=tk.FLAT)
+        entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=3)
+        tk.Button(toolbar, text="Go", bg="#0E639C", fg="white",
+                 font=("Segoe UI", 8), relief=tk.FLAT, padx=8,
+                 command=lambda: (self._fm_refresh(listbox, path_var.get()))).pack(side=tk.RIGHT, padx=5)
+        tk.Button(toolbar, text="↑ Up", bg="#3C3C3C", fg="white",
+                 font=("Segoe UI", 8), relief=tk.FLAT, padx=8,
+                 command=lambda: self._fm_up(parent, listbox, path_var)).pack(side=tk.RIGHT, padx=2)
+
+        # File list
+        frame = tk.Frame(parent, bg="#1E1E1E")
+        frame.pack(fill=tk.BOTH, expand=True)
+        scroll = tk.Scrollbar(frame, orient=tk.VERTICAL)
+        listbox = tk.Listbox(frame, bg="#1E1E1E", fg="#D4D4D4", font=("Consolas", 10),
+                            selectbackground="#264F78", relief=tk.FLAT,
+                            yscrollcommand=scroll.set)
+        scroll.config(command=listbox.yview)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        listbox.pack(fill=tk.BOTH, expand=True)
+        self._fm_refresh(listbox, path)
+
+        def on_double_click(e):
+            sel = listbox.curselection()
+            if sel:
+                item = listbox.get(sel[0])
+                if item.startswith("[DIR]"):
+                    dirname = item[6:]
+                    new_path = os.path.join(path_var.get(), dirname)
+                    if os.path.isdir(new_path):
+                        self._open_file_manager(new_path)
+                elif item.startswith("[FILE]"):
+                    fname = item[6:]
+                    fpath = os.path.join(path_var.get(), fname)
+                    if _HAVE_TK:
+                        try:
+                            with open(fpath) as f:
+                                content = f.read()
+                            view_win = self.open_window(f"View: {fname}", lambda p: (
+                                tk.Text(p, bg="#1E1E1E", fg="#D4D4D4", font=("Consolas", 10),
+                                       relief=tk.FLAT).pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+                            ).insert(tk.END, content), w=600, h=400)
+                        except Exception:
+                            pass
+
+        listbox.bind("<Double-Button-1>", on_double_click)
+
+    def _fm_refresh(self, listbox, path):
+        listbox.delete(0, tk.END)
+        try:
+            if os.path.isdir(path):
+                listbox.insert(tk.END, "[..]")
+                for name in sorted(os.listdir(path)):
+                    full = os.path.join(path, name)
+                    prefix = "[DIR]" if os.path.isdir(full) else "[FILE]"
+                    listbox.insert(tk.END, f"{prefix}  {name}")
+        except Exception:
+            listbox.insert(tk.END, "Error reading directory")
+
+    def _fm_up(self, parent, listbox, path_var):
+        new_path = os.path.dirname(path_var.get())
+        if new_path != path_var.get() and os.path.isdir(new_path):
+            path_var.set(new_path)
+            self._fm_refresh(listbox, new_path)
+
+    def _open_terminal(self):
+        win = self.open_window("Terminal", self._terminal_content, w=750, h=400)
+
+    def _terminal_content(self, parent):
+        text = tk.Text(parent, bg="#0C0C0C", fg="#4EC9B0", font=("Consolas", 11),
+                      insertbackground="#4EC9B0", relief=tk.FLAT, padx=8, pady=5)
+        text.pack(fill=tk.BOTH, expand=True)
+        text.insert(tk.END, "Arcanis OS Terminal [embedded]\n")
+        text.insert(tk.END, f"  User: {os.getenv('USERNAME', 'user')}\n")
+        text.insert(tk.END, f"  Host: {os.getenv('COMPUTERNAME', 'arcanis')}\n")
+        text.insert(tk.END, f"  OS:   {sys.platform}\n")
+        text.insert(tk.END, "─" * 50 + "\n")
+        text.config(state=tk.DISABLED)
+
+    def _open_ide(self):
+        ide = ArcIDE()
+        ide.launch()
+
+    def _open_settings(self):
+        win = self.open_window("Settings", self._settings_content, w=500, h=400)
+
+    def _settings_content(self, parent):
+        tk.Label(parent, text="Settings", bg="#1E1E1E", fg="#D4D4D4",
+                font=("Segoe UI", 14, "bold"), padx=10, pady=10).pack(anchor="w")
+
+        # Wallpaper
+        f1 = tk.Frame(parent, bg="#252526")
+        f1.pack(fill=tk.X, padx=10, pady=5)
+        tk.Label(f1, text="Wallpaper:", bg="#252526", fg="#D4D4D4",
+                font=("Segoe UI", 10)).pack(side=tk.LEFT, padx=5)
+        tk.Button(f1, text="Cycle Color", bg="#0E639C", fg="white",
+                 font=("Segoe UI", 9), relief=tk.FLAT, padx=10,
+                 command=self._cycle_wallpaper).pack(side=tk.RIGHT, padx=5)
+
+        # Display
+        f2 = tk.Frame(parent, bg="#252526")
+        f2.pack(fill=tk.X, padx=10, pady=5)
+        tk.Label(f2, text="Resolution:", bg="#252526", fg="#D4D4D4",
+                font=("Segoe UI", 10)).pack(side=tk.LEFT, padx=5)
+        res_var = tk.StringVar(value=f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}")
+        tk.Label(f2, textvariable=res_var, bg="#252526", fg="#4EC9B0",
+                font=("Consolas", 10)).pack(side=tk.RIGHT, padx=5)
+
+        # Platform info
+        info_frame = tk.Frame(parent, bg="#1E1E1E")
+        info_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        info_lines = [
+            f"Platform: {sys.platform}",
+            f"Python: {sys.version.split()[0]}",
+            f"Screen: {self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}",
+            f"User: {os.getenv('USERNAME', 'unknown')}",
+            f"Arcanis OS Desktop v1.0",
+        ]
+        for line in info_lines:
+            tk.Label(info_frame, text=line, bg="#1E1E1E", fg="#858585",
+                    font=("Consolas", 9), anchor="w").pack(fill=tk.X, pady=2)
+
+    def _open_calculator(self):
+        win = self.open_window("Calculator", self._calc_content, w=280, h=300)
+
+    def _calc_content(self, parent):
+        display = tk.Entry(parent, bg="#1E1E1E", fg="#D4D4D4", font=("Consolas", 16),
+                          justify=tk.RIGHT, relief=tk.FLAT, bd=8)
+        display.pack(fill=tk.X, padx=8, pady=8)
+        display.insert(0, "0")
+
+        def press(n):
+            current = display.get()
+            if current == "0" and n != ".":
+                display.delete(0, tk.END)
+            display.insert(tk.END, n)
+
+        def evaluate():
+            try:
+                result = eval(display.get())
+                display.delete(0, tk.END)
+                display.insert(0, str(result))
+            except Exception:
+                display.delete(0, tk.END)
+                display.insert(0, "Error")
+
+        def clear():
+            display.delete(0, tk.END)
+            display.insert(0, "0")
+
+        btn_frame = tk.Frame(parent, bg="#1E1E1E")
+        btn_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=8)
+        buttons = [
+            ("7", "8", "9", "/"),
+            ("4", "5", "6", "*"),
+            ("1", "2", "3", "-"),
+            ("0", ".", "=", "+"),
+        ]
+        for row in buttons:
+            row_frame = tk.Frame(btn_frame, bg="#1E1E1E")
+            row_frame.pack(fill=tk.X, expand=True)
+            for text in row:
+                cmd = evaluate if text == "=" else (clear if text == "C" else lambda t=text: press(t))
+                bg = "#0E639C" if text in "=+-*/" else "#3C3C3C"
+                btn = tk.Button(row_frame, text=text, bg=bg, fg="white",
+                              font=("Segoe UI", 12), relief=tk.FLAT, command=cmd)
+                btn.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=2, pady=2)
+
+        # Clear button
+        tk.Button(parent, text="C", bg="#8B0000", fg="white",
+                 font=("Segoe UI", 10), relief=tk.FLAT, command=clear).pack(fill=tk.X, padx=8, pady=(0, 8))
 
 
 THEMES = {
@@ -6191,16 +6745,11 @@ class Shell:
     # ======================== GUI DESKTOP ========================
 
     def cmd_desktop(self, args):
-        if not args:
-            print("Usage: desktop [start|apps]")
+        if not _HAVE_TK:
+            print("\033[31mDesktop requires Tkinter\033[0m")
             return
-        a = args[0]
-        if a == "start":
-            self.desktop.start()
-        elif a == "apps":
-            print("Available desktop apps: Terminal, Notepad, System Monitor, File Explorer, Calculator")
-        else:
-            print(f"\033[33mdesktop: unknown action '{a}'\033[0m")
+        desktop = ArcDesktop()
+        desktop.launch()
 
     # ======================== SOUND SYSTEM ========================
 

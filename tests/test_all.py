@@ -2997,6 +2997,59 @@ def test_arc_v12():
 
 
 # ============================================================
+# ARC V13.0.0 TESTS - Desktop Environment
+# ============================================================
+
+def test_arc_v13():
+    suite = TestSuite("Arc v13.0.0 Desktop Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import ArcDesktop, _DesktopWindow, _HAVE_TK
+
+    # Test Desktop class exists and has required methods
+    suite.assert_true(hasattr(ArcDesktop, "launch"), "v13_desktop_has_launch")
+    suite.assert_true(hasattr(ArcDesktop, "open_window"), "v13_desktop_has_open_window")
+    suite.assert_true(hasattr(ArcDesktop, "available"), "v13_desktop_has_available")
+
+    # Test _DesktopWindow class
+    suite.assert_true(hasattr(_DesktopWindow, "_minimize"), "v13_win_has_minimize")
+    suite.assert_true(hasattr(_DesktopWindow, "_maximize"), "v13_win_has_maximize")
+    suite.assert_true(hasattr(_DesktopWindow, "_close"), "v13_win_has_close")
+    suite.assert_true(hasattr(_DesktopWindow, "destroy"), "v13_win_has_destroy")
+
+    # Test DesktopManager availability
+    suite.assert_equals(_HAVE_TK, True, "v13_tk_available")
+
+    # Verify desktop icons exist
+    d = ArcDesktop()
+    suite.assert_equals(len(d.app_icons), 0, "v13_icons_pending_launch")
+
+    # Test built-in app functions exist
+    suite.assert_true(hasattr(d, "_open_file_manager"), "v13_app_file_manager")
+    suite.assert_true(hasattr(d, "_open_terminal"), "v13_app_terminal")
+    suite.assert_true(hasattr(d, "_open_ide"), "v13_app_ide")
+    suite.assert_true(hasattr(d, "_open_settings"), "v13_app_settings")
+    suite.assert_true(hasattr(d, "_open_calculator"), "v13_app_calculator")
+
+    # Test taskbar exists
+    suite.assert_true(hasattr(d, "_create_taskbar"), "v13_desktop_taskbar")
+    suite.assert_true(hasattr(d, "_update_clock"), "v13_desktop_clock")
+
+    # Test context menu
+    suite.assert_true(hasattr(d, "_context_menu"), "v13_desktop_context_menu")
+
+    # Test wallpaper cycling
+    suite.assert_true(hasattr(d, "_cycle_wallpaper"), "v13_desktop_wallpaper")
+
+    # Test start menu
+    suite.assert_true(hasattr(d, "_toggle_start_menu"), "v13_desktop_start_menu")
+
+    # Test shutdown
+    suite.assert_true(hasattr(d, "_shutdown"), "v13_desktop_shutdown")
+
+    return suite
+
+
+# ============================================================
 # B-TREE DB TESTS
 # ============================================================
 
@@ -3335,7 +3388,7 @@ def main():
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 
     """ + "\033[0m")
-    print("\033[90m  Arcanis OS — Test Suite v12.0.0\033[0m")
+    print("\033[90m  Arcanis OS — Test Suite v13.0.0\033[0m")
     print()
 
     all_suites = []
@@ -3423,6 +3476,7 @@ def main():
         ("Arc Multithreading", test_arc_threading),
         ("Arc AI Module", test_arc_ai),
         ("Arc v12.0.0 Dev Tools", test_arc_v12),
+        ("Arc v13.0.0 Desktop", test_arc_v13),
     ]
 
     for name, test_func in test_funcs:
