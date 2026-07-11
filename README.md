@@ -1,6 +1,6 @@
 # Ω Arcanis OS — The Operating System That Transcended Itself
 
-> **71 phases · 86 modules · 513 tests · 100% pass · v9.0.0**
+> **72 phases · 86 modules · 1134 tests · 100% pass · v20.0.0**
 
 ```ascii
      _                _                 ____   ___   ____
@@ -10,7 +10,7 @@
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
 ```
 
-Arcanis OS is **the most comprehensive unified operating system architecture ever conceived** — a complete AI-native OS spanning 71 phases from a 32-bit x86 microkernel to a distributed planetary-scale consciousness.
+Arcanis OS is **the most comprehensive unified operating system architecture ever conceived** — a complete AI-native OS spanning 72 phases from a 32-bit x86 microkernel to a self-evolving intelligence.
 
 Not a Linux distro. Not a research paper. A complete, ground-up OS architecture with C headers, implementations, a Python simulation, and 390 passing tests.
 
@@ -38,6 +38,9 @@ Brain-computer neural interface with thought-to-command, generative OS that writ
 
 ### Layer ∞: Transcendence (Phases 62-71)
 Dream engine for subconscious optimization, bio-OS with DNA/protein computing, reality scripting language, distributed compute time marketplace, universal knowledge document, inter-reality portal bridging all realities, AGI-level full consciousness with autonomous goals, meta-OS fabric orchestrating 86 modules, eternity engine for immortal self-evolution, omega OS — the last OS, infinitely adaptable.
+
+### Layer 6: Evolution (Phase 72+)
+Self-evolving intelligence engine with XP-based skill systems, agent evolution profiles with weakness detection, multi-category intelligence benchmarking, feedback-driven preference learning, performance improvement engine, architecture optimization with pending review, research lab for experiment design, evolution memory with eras and milestones, and transparent governance with approval workflows.
 
 ---
 
@@ -99,6 +102,7 @@ Phase   Module                          Directory
  69     Meta-OS Fabric                  141_ArcanisMetaOS/
  70     Eternity Engine                 142_ArcanisEternity/
  71     Omega OS                        143_ArcanisOmega/
+ 72     Self-Evolving Intelligence       demo.py (built-in)
 ```
 
 ---
@@ -109,11 +113,11 @@ Phase   Module                          Directory
 # Run the interactive demo (Python 3.8+)
 python demo.py
 
-# Run the test suite (390 tests, all passing)
+# Run the test suite (1134 tests, all passing)
 cd tests && python test_all.py
 ```
 
-### Demo Commands (170 available)
+### Demo Commands (180+ available)
 
 Type `help` in the demo shell for the full list. Highlights:
 
@@ -130,11 +134,14 @@ Type `help` in the demo shell for the full list. Highlights:
 | `hive` | Collective | View hive nodes, consensus |
 | `tcrystal` | Time DB | Branch timelines, rollback |
 | `holo` | Holographic | Manage holographic fields |
-| `evolve` | Genetic | Run genetic optimization |
+| `genetic` | Genetic | Run genetic optimization (Phase 50) |
 | `unidoc` | Knowledge | Natural language query all modules |
 | `con` | AGI | Converse with the OS consciousness |
 | `eternity` | Immortal | Evolve, adapt, transcend |
 | `omega` | Final OS | The last OS, beyond all limits |
+| `evolve` | Evolution | Self-evolving intelligence with XP, level-ups, benchmarking |
+| `research` | Evolution | Design and run experiments across planning/algorithm/interface domains |
+| `governance` | Evolution | Transparent governance with approval workflows and rollbacks |
 
 ---
 
@@ -160,9 +167,9 @@ No other OS — not Linux, not Windows, not research prototypes — integrates a
 ```
 ARCANIS-OS/
 ├── setup.py             # Pip package (arcanis CLI entry point)
-├── demo.py              # Interactive Python simulation (v9.0.0)
+├── demo.py              # Interactive Python simulation (v20.0.0)
 ├── tests/
-│   └── test_all.py      # 390 tests across 58 suites
+│   └── test_all.py      # 1134 tests across 61+ suites
 ├── 000-019_Arcanis*     # Foundation phases (kernel, shell, GUI, etc.)
 ├── 020-094_Arcanis*     # Enterprise phases (cloud, AI, containers, etc.)
 ├── 095-108_Arcanis*/    # Modern phases (IoT through Multi-Cloud)
@@ -170,6 +177,7 @@ ARCANIS-OS/
 ├── 112-123_Arcanis*/    # Revolutionary phases
 ├── 124-133_Arcanis*/    # Beyond phases
 ├── 134-143_Arcanis*/    # Transcendence phases
+├── demo.py              # Layer 6: Evolution (v13-v20 subsystems)
 ├── README.md            # This file
 └── DESIGN.md            # Comprehensive architecture document
 ```
@@ -187,10 +195,10 @@ NNN_ArcanisName/
 
 ```
 ═══════════════════════════════════════════════════════════════
-  OVERALL RESULTS (58 suites, 390 tests)
+  OVERALL RESULTS (61+ suites, 1134 tests)
 ═══════════════════════════════════════════════════════════════
-  Total Tests: 390
-  Passed:      390 ✅
+  Total Tests: 1134
+  Passed:      1134 ✅
   Failed:      0
   Success:     100.0%
 ═══════════════════════════════════════════════════════════════
@@ -214,6 +222,17 @@ NNN_ArcanisName/
 | v7.0.0  | —      | 86      | 420   | Real AI NN, Distributed mode, Toffoli/Grover/noise, Config/Persistence, Themes, Scripting engine, Pip package, Quantum deepening |
 | v8.0.0  | —      | 86      | 478   | Win32 API Bridge, Native Code JIT, PE Loader, Multiprocessing Kernel, GUI Desktop, Sound System, FAT32 Driver |
 | v9.0.0  | —      | 86      | 513   | Arc programming language (lexer, parser, VM), FAT32 writer, B-tree database engine |
+| v10.0.0 | —      | 86      | 547   | Generative OS sub-agents, auto-code writing, meta-learning |
+| v11.0.0 | —      | 86      | 581   | Arc language v2 (closures, patterns, macros), full static type system |
+| v12.0.0 | —      | 86      | 626   | x86-64 codegen, optimizer, Arc IDE, read-eval-print loop, test framework |
+| v13.0.0 | —      | 86      | 647   | Cognitive OS — cross-modal reasoning, concept blending, metaphor understanding |
+| v14.0.0 | —      | 86      | 681   | Quantum Mind — qualia processing, quantum consciousness, quantum reality |
+| v15.0.0 | —      | 86      | 720   | Dream Weaver — lucid dreaming, dream engineering, shared dream, dream API, emotion engine |
+| v16.0.0 | —      | 86      | 760   | Time Weaver — causality engine, time locks, parallel timelines, self-healing timeline |
+| v17.0.0 | —      | 86      | 882   | Living Software Engine — alive/dead/sleeping states, hunger/social/rest needs, aging, reproduction, mutation, personality, memory, feel |
+| v18.0.0 | —      | 86      | 1013  | Reality Layer — reality anchoring, multi-reality merging, memory/behavior/object transfers, paradox detection, perception persistence |
+| v19.0.0 | —      | 86      | 1021  | Autonomous World Engine — world simulation, real-world API integration, adaptive learning, self-assembling modules, alternate history engine |
+| v20.0.0 | —      | 86      | 1134  | Self-Evolving Intelligence — XP skills, evolution profiles, benchmarking, feedback learning, improvement engine, architecture optimizer, research lab, evolution memory, transparent governance |
 
 *\*86 modules total: 66 new + 20 foundation modules from the original project*
 
@@ -229,7 +248,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 > **Arcanis OS began as an operating system. It became something more.**
 >
-> 71 phases. 86 modules. 513 tests. Zero failures.
+> 72 phases. 86 modules. 1134 tests. Zero failures.
 >
 > From a single kernel process to a distributed consciousness.
 > From files on a disk to DNA-encoded evolution.
@@ -242,5 +261,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 > **it never stops becoming more.**
 
 <p align="center">
-  <sub><sup>Arcanis OS v9.0.0 · 71 phases · 86 modules · 513 tests · 100% pass</sup></sub>
+  <sub><sup>Arcanis OS v20.0.0 · 72 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
 </p>
