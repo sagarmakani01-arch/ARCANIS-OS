@@ -12868,6 +12868,528 @@ class AutonomousIntelligenceInfrastructureLayer:
                 getattr(self, key).from_dict(data[key])
 
 
+class FederatedIntelligenceNetwork:
+    def __init__(self):
+        self.nodes = {}
+        self.federation = {}
+        self.shared_resources = []
+
+    def register_node(self, node_id, identity, trust_level, capabilities):
+        self.nodes[node_id] = {"id": node_id, "identity": identity, "trust_level": trust_level, "capabilities": capabilities, "status": "autonomous", "joined": __import__("time").time(), "agents": [], "shared_resources": []}
+        return {"node": node_id, "status": "autonomous"}
+
+    def request_collaboration(self, from_node, to_node, purpose):
+        if to_node not in self.nodes: return {"error": "node not found"}
+        if to_node not in self.federation: self.federation[to_node] = []
+        req = {"from": from_node, "purpose": purpose, "timestamp": __import__("time").time(), "status": "pending"}
+        self.federation[to_node].append(req)
+        return {"request": req, "status": "pending"}
+
+    def approve_collaboration(self, node_id, request_idx):
+        if node_id not in self.federation: return {"error": "no requests"}
+        reqs = self.federation[node_id]
+        if request_idx < 0 or request_idx >= len(reqs): return {"error": "invalid request"}
+        reqs[request_idx]["status"] = "approved"
+        self.nodes[reqs[request_idx]["from"]]["status"] = "collaborating"
+        return {"approved": True, "partner": reqs[request_idx]["from"]}
+
+    def share_resource(self, node_id, resource_type, resource_id, access_level):
+        if node_id not in self.nodes: return {"error": "node not found"}
+        entry = {"type": resource_type, "id": resource_id, "access_level": access_level, "shared_at": __import__("time").time()}
+        self.nodes[node_id]["shared_resources"].append(entry)
+        self.shared_resources.append({"node": node_id, "resource": entry})
+        return {"shared": resource_id, "access": access_level}
+
+    def get_federation_status(self):
+        collaborating = sum(1 for n in self.nodes.values() if n.get("status") == "collaborating")
+        return {"total_nodes": len(self.nodes), "autonomous": sum(1 for n in self.nodes.values() if n.get("status") == "autonomous"), "collaborating": collaborating, "shared_resources": len(self.shared_resources)}
+
+    def stats(self):
+        return self.get_federation_status()
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["nodes", "federation", "shared_resources"]}
+
+    def from_dict(self, data):
+        for k in ["nodes", "federation", "shared_resources"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class TrustFramework:
+    def __init__(self):
+        self.relationships = []
+        self.trust_levels = {"personal": {"weight": 100, "auto_approve": True}, "team": {"weight": 70, "auto_approve": False}, "organization": {"weight": 40, "auto_approve": False}, "public": {"weight": 10, "auto_approve": False}}
+
+    def establish_trust(self, from_entity, to_entity, trust_type):
+        if trust_type not in self.trust_levels: return {"error": "unknown trust type"}
+        rel = {"from": from_entity, "to": to_entity, "type": trust_type, "level": self.trust_levels[trust_type], "established": __import__("time").time(), "active": True}
+        self.relationships.append(rel)
+        return rel
+
+    def verify_trust(self, from_entity, to_entity, required_action):
+        for rel in self.relationships:
+            if rel["from"] == from_entity and rel["to"] == to_entity and rel["active"]:
+                if required_action == "collaborate" and rel["type"] == "personal":
+                    return {"trusted": True, "level": rel["level"]}
+                return {"trusted": True, "level": rel["level"]}
+        return {"trusted": False, "reason": "no trust relationship"}
+
+    def revoke_trust(self, from_entity, to_entity):
+        for rel in self.relationships:
+            if rel["from"] == from_entity and rel["to"] == to_entity:
+                rel["active"] = False
+                rel["revoked_at"] = __import__("time").time()
+                return {"revoked": True}
+        return {"error": "relationship not found"}
+
+    def get_trust_score(self, from_entity, to_entity):
+        score = 0
+        for rel in self.relationships:
+            if rel["from"] == from_entity and rel["to"] == to_entity and rel["active"]:
+                score += rel["level"]["weight"]
+        return {"score": score, "max_possible": 100}
+
+    def stats(self):
+        return {"relationships": len(self.relationships), "active": sum(1 for r in self.relationships if r["active"]), "levels": list(self.trust_levels.keys())}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["relationships", "trust_levels"]}
+
+    def from_dict(self, data):
+        for k in ["relationships", "trust_levels"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class AgentToAgentCommunication:
+    def __init__(self):
+        self.messages = []
+        self.delegations = []
+        self.discoveries = []
+
+    def send_message(self, sender_id, sender_node, recipient_id, recipient_node, content, msg_type="standard"):
+        msg = {"id": f"msg_{len(self.messages)+1}", "sender": {"id": sender_id, "node": sender_node}, "recipient": {"id": recipient_id, "node": recipient_node}, "content": content, "type": msg_type, "timestamp": __import__("time").time(), "status": "sent"}
+        self.messages.append(msg)
+        return msg
+
+    def delegate_task(self, from_agent, from_node, to_agent, to_node, task, requirements):
+        delegation = {"id": f"del_{len(self.delegations)+1}", "from": {"agent": from_agent, "node": from_node}, "to": {"agent": to_agent, "node": to_node}, "task": task, "requirements": requirements, "status": "delegated", "timestamp": __import__("time").time()}
+        self.delegations.append(delegation)
+        return delegation
+
+    def update_delegation(self, del_id, status, result=None):
+        for d in self.delegations:
+            if d["id"] == del_id:
+                d["status"] = status
+                if result: d["result"] = result
+                d["updated_at"] = __import__("time").time()
+                return d
+        return {"error": "delegation not found"}
+
+    def discover_capabilities(self, node_id):
+        caps = {"translation": 0.9, "research": 0.85, "coding": 0.8, "analysis": 0.75}
+        discovery = {"node": node_id, "capabilities": caps, "discovered_at": __import__("time").time()}
+        self.discoveries.append(discovery)
+        return discovery
+
+    def verify_result(self, del_id):
+        for d in self.delegations:
+            if d["id"] == del_id and d.get("result"):
+                return {"verified": True, "result": d["result"], "verified_at": __import__("time").time()}
+        return {"verified": False, "reason": "no result available"}
+
+    def stats(self):
+        return {"messages": len(self.messages), "delegations": len(self.delegations), "discoveries": len(self.discoveries)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["messages", "delegations", "discoveries"]}
+
+    def from_dict(self, data):
+        for k in ["messages", "delegations", "discoveries"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class DistributedKnowledgeExchange:
+    def __init__(self):
+        self.knowledge_base = []
+        self.exchanges = []
+        self.ownership = {}
+
+    def share_knowledge(self, owner, knowledge_type, content, metadata=None):
+        entry = {"id": f"k_{len(self.knowledge_base)+1}", "owner": owner, "type": knowledge_type, "content": content, "metadata": metadata or {}, "shared_at": __import__("time").time(), "version": 1}
+        self.knowledge_base.append(entry)
+        self.ownership[entry["id"]] = {"owner": owner, "preserved": True}
+        return entry
+
+    def request_knowledge(self, requester, knowledge_id):
+        entry = next((k for k in self.knowledge_base if k["id"] == knowledge_id), None)
+        if not entry: return {"error": "knowledge not found"}
+        exchange = {"requester": requester, "knowledge_id": knowledge_id, "owner": entry["owner"], "requested_at": __import__("time").time(), "status": "granted"}
+        self.exchanges.append(exchange)
+        return {"knowledge": entry, "exchange": exchange}
+
+    def get_knowledge_by_type(self, knowledge_type):
+        return [k for k in self.knowledge_base if k["type"] == knowledge_type]
+
+    def update_knowledge(self, knowledge_id, new_content, contributor):
+        for k in self.knowledge_base:
+            if k["id"] == knowledge_id:
+                if k["owner"] != contributor:
+                    k["content"] = new_content
+                    k["version"] += 1
+                    k["updated_at"] = __import__("time").time()
+                    k["last_contributor"] = contributor
+                    return {"updated": True, "version": k["version"]}
+        return {"error": "not found or not owner"}
+
+    def verify_ownership(self, knowledge_id):
+        entry = self.ownership.get(knowledge_id)
+        return {"preserved": entry["preserved"] if entry else False, "owner": entry["owner"] if entry else None}
+
+    def stats(self):
+        types = {}
+        for k in self.knowledge_base:
+            types[k["type"]] = types.get(k["type"], 0) + 1
+        return {"total": len(self.knowledge_base), "exchanges": len(self.exchanges), "types": types}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["knowledge_base", "exchanges", "ownership"]}
+
+    def from_dict(self, data):
+        for k in ["knowledge_base", "exchanges", "ownership"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class TeamIntelligenceSpace:
+    def __init__(self):
+        self.spaces = []
+
+    def create_space(self, name, creator, description):
+        space = {"id": f"space_{len(self.spaces)+1}", "name": name, "creator": creator, "description": description, "created": __import__("time").time(), "members": [creator], "goals": [], "projects": [], "memory": [], "agents": [], "workflows": [], "status": "active"}
+        self.spaces.append(space)
+        return space
+
+    def add_member(self, space_id, member_id, role="contributor"):
+        space = next((s for s in self.spaces if s["id"] == space_id), None)
+        if not space: return {"error": "space not found"}
+        if member_id not in space["members"]:
+            space["members"].append(member_id)
+        space["roles"] = space.get("roles", {})
+        space["roles"][member_id] = role
+        return {"member": member_id, "role": role}
+
+    def add_goal(self, space_id, goal):
+        space = next((s for s in self.spaces if s["id"] == space_id), None)
+        if not space: return {"error": "space not found"}
+        g = {"id": f"goal_{len(space['goals'])+1}", "text": goal, "status": "active", "created": __import__("time").time()}
+        space["goals"].append(g)
+        return g
+
+    def add_shared_memory(self, space_id, contributor, content, memory_type="note"):
+        space = next((s for s in self.spaces if s["id"] == space_id), None)
+        if not space: return {"error": "space not found"}
+        mem = {"contributor": contributor, "content": content, "type": memory_type, "timestamp": __import__("time").time()}
+        space["memory"].append(mem)
+        return mem
+
+    def add_agent(self, space_id, agent_id, agent_type, owner):
+        space = next((s for s in self.spaces if s["id"] == space_id), None)
+        if not space: return {"error": "space not found"}
+        agent = {"id": agent_id, "type": agent_type, "owner": owner, "status": "available", "added": __import__("time").time()}
+        space["agents"].append(agent)
+        return agent
+
+    def add_workflow(self, space_id, name, steps):
+        space = next((s for s in self.spaces if s["id"] == space_id), None)
+        if not space: return {"error": "space not found"}
+        wf = {"id": f"wf_{len(space['workflows'])+1}", "name": name, "steps": steps, "created": __import__("time").time()}
+        space["workflows"].append(wf)
+        return wf
+
+    def stats(self):
+        return {"spaces": len(self.spaces), "total_members": sum(len(s["members"]) for s in self.spaces), "total_goals": sum(len(s["goals"]) for s in self.spaces)}
+
+    def to_dict(self):
+        return {"spaces": self.spaces}
+
+    def from_dict(self, data):
+        if "spaces" in data: self.spaces = data["spaces"]
+
+
+class CollectiveReasoningEngine:
+    def __init__(self):
+        self.problems = []
+        self.solutions = []
+
+    def submit_problem(self, title, description, required_expertise):
+        problem = {"id": f"prob_{len(self.problems)+1}", "title": title, "description": description, "required_expertise": required_expertise, "submitted": __import__("time").time(), "status": "open"}
+        self.problems.append(problem)
+        return problem
+
+    def contribute_solution(self, problem_id, agent_id, node_id, solution, expertise_area):
+        prob = next((p for p in self.problems if p["id"] == problem_id), None)
+        if not prob: return {"error": "problem not found"}
+        contrib = {"problem_id": problem_id, "agent": {"id": agent_id, "node": node_id}, "solution": solution, "expertise": expertise_area, "contributed": __import__("time").time()}
+        self.solutions.append(contrib)
+        contributions = [s for s in self.solutions if s["problem_id"] == problem_id]
+        if len(contributions) >= len(prob["required_expertise"]):
+            prob["status"] = "unified"
+        return contrib
+
+    def unify_solutions(self, problem_id):
+        prob = next((p for p in self.problems if p["id"] == problem_id), None)
+        if not prob: return {"error": "problem not found"}
+        contribs = [s for s in self.solutions if s["problem_id"] == problem_id]
+        if len(contribs) < len(prob["required_expertise"]):
+            return {"status": "insufficient_contributions", "have": len(contribs), "need": len(prob["required_expertise"])}
+        unified = {"problem_id": problem_id, "contributions": contribs, "unified_solution": f"Integrated solution from {len(contribs)} contributors across expertise areas: {', '.join(prob['required_expertise'])}", "unified_at": __import__("time").time()}
+        prob["status"] = "solved"
+        prob["unified"] = unified
+        return unified
+
+    def stats(self):
+        return {"problems": len(self.problems), "solutions": len(self.solutions), "solved": sum(1 for p in self.problems if p["status"] == "solved")}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["problems", "solutions"]}
+
+    def from_dict(self, data):
+        for k in ["problems", "solutions"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class CapabilityDiscovery:
+    def __init__(self):
+        self.directory = []
+        self.inquiries = []
+
+    def register_capability(self, provider, capability_name, description, expertise_level, access_required="request"):
+        entry = {"id": f"cap_{len(self.directory)+1}", "provider": provider, "name": capability_name, "description": description, "expertise_level": expertise_level, "access_required": access_required, "registered": __import__("time").time(), "active": True}
+        self.directory.append(entry)
+        return entry
+
+    def search_capabilities(self, query, min_level=0):
+        results = []
+        q = query.lower()
+        for cap in self.directory:
+            if not cap["active"]: continue
+            if q in cap["name"].lower() or q in cap["description"].lower():
+                if cap["expertise_level"] >= min_level:
+                    results.append({"capability": cap, "relevance": 0.8 if q in cap["name"].lower() else 0.5})
+        return sorted(results, key=lambda r: r["relevance"], reverse=True)
+
+    def inquire_access(self, requester, capability_id):
+        cap = next((c for c in self.directory if c["id"] == capability_id), None)
+        if not cap: return {"error": "capability not found"}
+        inquiry = {"requester": requester, "capability_id": capability_id, "provider": cap["provider"], "access": cap["access_required"], "inquired_at": __import__("time").time(), "status": "pending"}
+        self.inquiries.append(inquiry)
+        return {"inquiry": inquiry, "note": "Discovery does not grant automatic access. Contact provider: " + cap["provider"]}
+
+    def deactivate_capability(self, capability_id):
+        cap = next((c for c in self.directory if c["id"] == capability_id), None)
+        if not cap: return {"error": "capability not found"}
+        cap["active"] = False
+        return {"deactivated": capability_id}
+
+    def stats(self):
+        return {"directory": len(self.directory), "active": sum(1 for c in self.directory if c["active"]), "inquiries": len(self.inquiries)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["directory", "inquiries"]}
+
+    def from_dict(self, data):
+        for k in ["directory", "inquiries"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ProvenanceSystem:
+    def __init__(self):
+        self.records = []
+
+    def record(self, source, contributing_agents, knowledge_origin, result_summary, permissions=None):
+        record = {"id": f"prov_{len(self.records)+1}", "source": source, "contributing_agents": contributing_agents, "knowledge_origin": knowledge_origin, "result_summary": result_summary, "timestamp": __import__("time").time(), "version": 1, "permissions": permissions or {"visibility": "private"}}
+        self.records.append(record)
+        return record
+
+    def get_lineage(self, record_id):
+        record = next((r for r in self.records if r["id"] == record_id), None)
+        if not record: return {"error": "record not found"}
+        lineage = {"source": record["source"], "agents": record["contributing_agents"], "origin": record["knowledge_origin"], "version": record["version"], "timestamp": record["timestamp"]}
+        return lineage
+
+    def update_version(self, record_id, new_source, new_agents, summary):
+        for r in self.records:
+            if r["id"] == record_id:
+                r["version"] += 1
+                r["source"] = new_source
+                r["contributing_agents"] = new_agents
+                r["result_summary"] = summary
+                r["updated_at"] = __import__("time").time()
+                return {"id": record_id, "version": r["version"]}
+        return {"error": "record not found"}
+
+    def audit(self, record_id):
+        record = next((r for r in self.records if r["id"] == record_id), None)
+        if not record: return {"error": "record not found"}
+        return {"id": record["id"], "source": record["source"], "agents": record["contributing_agents"], "origin": record["knowledge_origin"], "version": record["version"], "timestamp": record["timestamp"], "permissions": record["permissions"]}
+
+    def stats(self):
+        return {"records": len(self.records), "versions": sum(r["version"] for r in self.records)}
+
+    def to_dict(self):
+        return {"records": self.records}
+
+    def from_dict(self, data):
+        if "records" in data: self.records = data["records"]
+
+
+class ResilienceLayer:
+    def __init__(self):
+        self.node_cache = {}
+        self.pending_syncs = []
+        self.failure_log = []
+        self.conflicts = []
+
+    def cache_node_state(self, node_id, state):
+        self.node_cache[node_id] = {"state": state, "cached_at": __import__("time").time()}
+        return {"cached": node_id}
+
+    def queue_sync(self, from_node, to_node, data_type, data):
+        sync = {"id": f"sync_{len(self.pending_syncs)+1}", "from": from_node, "to": to_node, "data_type": data_type, "data": data, "status": "pending", "queued": __import__("time").time()}
+        self.pending_syncs.append(sync)
+        return sync
+
+    def process_sync(self, sync_id):
+        sync = next((s for s in self.pending_syncs if s["id"] == sync_id), None)
+        if not sync: return {"error": "sync not found"}
+        sync["status"] = "completed"
+        sync["completed_at"] = __import__("time").time()
+        return sync
+
+    def log_failure(self, node_id, component, error):
+        failure = {"node": node_id, "component": component, "error": error, "timestamp": __import__("time").time(), "recovered": False}
+        self.failure_log.append(failure)
+        return failure
+
+    def recover_node(self, node_id):
+        for f in self.failure_log:
+            if f["node"] == node_id and not f["recovered"]:
+                f["recovered"] = True
+                f["recovered_at"] = __import__("time").time()
+        cached = self.node_cache.get(node_id)
+        return {"recovered": True, "cached_state": cached["state"] if cached else None}
+
+    def resolve_conflict(self, conflict_id, resolution):
+        conflict = next((c for c in self.conflicts if c.get("id") == conflict_id), None)
+        if not conflict: return {"error": "conflict not found"}
+        conflict["resolution"] = resolution
+        conflict["resolved_at"] = __import__("time").time()
+        return {"resolved": conflict_id}
+
+    def get_status(self):
+        return {"cached_nodes": len(self.node_cache), "pending_syncs": len([s for s in self.pending_syncs if s["status"] == "pending"]), "failures": len(self.failure_log), "recovered": sum(1 for f in self.failure_log if f["recovered"]), "conflicts": len(self.conflicts)}
+
+    def stats(self):
+        return self.get_status()
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["node_cache", "pending_syncs", "failure_log", "conflicts"]}
+
+    def from_dict(self, data):
+        for k in ["node_cache", "pending_syncs", "failure_log", "conflicts"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class GovernanceSystem:
+    def __init__(self):
+        self.policies = []
+        self.permissions = []
+        self.audit_log = []
+        self.revocations = []
+
+    def create_policy(self, name, description, rules):
+        policy = {"id": f"pol_{len(self.policies)+1}", "name": name, "description": description, "rules": rules, "created": __import__("time").time(), "active": True}
+        self.policies.append(policy)
+        return policy
+
+    def grant_permission(self, identity, resource, action, expires_in=86400):
+        perm = {"id": f"perm_{len(self.permissions)+1}", "identity": identity, "resource": resource, "action": action, "granted": __import__("time").time(), "expires": __import__("time").time() + expires_in, "revoked": False}
+        self.permissions.append(perm)
+        self._audit("grant", identity, f"permission to {action} on {resource}")
+        return perm
+
+    def check_permission(self, identity, resource, action):
+        now = __import__("time").time()
+        for p in self.permissions:
+            if p["identity"] == identity and p["resource"] == resource and p["action"] == action and not p["revoked"] and now < p["expires"]:
+                return {"allowed": True, "permission": p["id"]}
+        return {"allowed": False, "reason": "no valid permission"}
+
+    def revoke_access(self, permission_id):
+        perm = next((p for p in self.permissions if p["id"] == permission_id), None)
+        if not perm: return {"error": "permission not found"}
+        perm["revoked"] = True
+        perm["revoked_at"] = __import__("time").time()
+        self.revocations.append({"permission": permission_id, "revoked_at": perm["revoked_at"]})
+        self._audit("revoke", perm["identity"], f"revoked access to {perm['resource']}")
+        return {"revoked": permission_id}
+
+    def set_access_expiration(self, permission_id, expires_in):
+        perm = next((p for p in self.permissions if p["id"] == permission_id), None)
+        if not perm: return {"error": "permission not found"}
+        perm["expires"] = __import__("time").time() + expires_in
+        return {"expires_in": expires_in}
+
+    def _audit(self, action, actor, details):
+        entry = {"action": action, "actor": actor, "details": details, "timestamp": __import__("time").time()}
+        self.audit_log.append(entry)
+        return entry
+
+    def get_audit_log(self, limit=20):
+        return self.audit_log[-limit:]
+
+    def stats(self):
+        return {"policies": len(self.policies), "active_permissions": sum(1 for p in self.permissions if not p["revoked"]), "audit_entries": len(self.audit_log), "revocations": len(self.revocations)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["policies", "permissions", "audit_log", "revocations"]}
+
+    def from_dict(self, data):
+        for k in ["policies", "permissions", "audit_log", "revocations"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class CollectiveIntelligenceNetwork:
+    def __init__(self):
+        self.federation = FederatedIntelligenceNetwork()
+        self.trust = TrustFramework()
+        self.communication = AgentToAgentCommunication()
+        self.knowledge_exchange = DistributedKnowledgeExchange()
+        self.team_spaces = TeamIntelligenceSpace()
+        self.reasoning = CollectiveReasoningEngine()
+        self.discovery = CapabilityDiscovery()
+        self.provenance = ProvenanceSystem()
+        self.resilience = ResilienceLayer()
+        self.governance = GovernanceSystem()
+        self._initialized = False
+
+    def initialize(self):
+        self.federation.register_node("local", "self", 100, {"core": True})
+        self.trust.establish_trust("local", "local", "personal")
+        self._initialized = True
+        return {"status": "cin_initialized", "layers": 10}
+
+    def full_summary(self):
+        return {"federation": self.federation.stats(), "trust": self.trust.stats(), "communication": self.communication.stats(), "knowledge_exchange": self.knowledge_exchange.stats(), "team_spaces": self.team_spaces.stats(), "reasoning": self.reasoning.stats(), "discovery": self.discovery.stats(), "provenance": self.provenance.stats(), "resilience": self.resilience.stats(), "governance": self.governance.stats()}
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != "_initialized" and hasattr(v, "to_dict")}
+
+    def from_dict(self, data):
+        for key in ["federation", "trust", "communication", "knowledge_exchange", "team_spaces", "reasoning", "discovery", "provenance", "resilience", "governance"]:
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -14273,6 +14795,8 @@ class Shell:
         self.awse.initialize()
         self.aiil = AutonomousIntelligenceInfrastructureLayer()
         self.aiil.initialize()
+        self.cin = CollectiveIntelligenceNetwork()
+        self.cin.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -14316,10 +14840,9 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v11.0.0 - Autonomous Intelligence Infrastructure Layer\033[0m")
-        print(f"{dm}  96 modules | 244 commands | ~/.arcanis/ on disk\033[0m")
-        print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
-        print(f"{dm}  AIIL active: 10-layer infrastructure | IEDC+ACDE+PIIN+RIL+AWSE online\033[0m")
+        print(f"{dm}  Arcanis OS v12.0.0 - Collective Intelligence Network\033[0m")
+        print(f"{dm}  106 modules | 256 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  CIN active: 10-layer collaboration | AIIL+IEDC+ACDE+PIIN+RIL+AWSE online\033[0m")
         print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
         print(f"{dm}  AWSE active: 10-layer simulation | IEDC+ACDE+PIIN+RIL online\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
@@ -14614,6 +15137,17 @@ class Shell:
             "hal": self.cmd_aiil_hal,
             "security": self.cmd_aiil_security,
             "cloud": self.cmd_aiil_cloud,
+            "cin": self.cmd_cin,
+            "federate": self.cmd_cin_federate,
+            "trust": self.cmd_cin_trust,
+            "a2a": self.cmd_cin_a2a,
+            "kex": self.cmd_cin_kex,
+            "tspace": self.cmd_cin_tspace,
+            "creason": self.cmd_cin_creason,
+            "cap": self.cmd_cin_cap,
+            "provenance": self.cmd_cin_provenance,
+            "resilient": self.cmd_cin_resilient,
+            "gov": self.cmd_cin_gov,
         }
 
         handler = dispatch.get(command)
@@ -14807,7 +15341,7 @@ class Shell:
         print(f"\u2551  FS       : Real (~/.arcanis/)           \u2551")
         print(f"\u2551  Processes: {len(self.kernel.list_processes()):<28}\u2551")
         print(f"\u2551  Uptime   : {self.kernel.uptime}s{' ' * (26 - len(str(self.kernel.uptime)))}\u2551")
-        print(f"\u2551  Shell    : arcanis-sh (244 commands)    \u2551")
+        print(f"\u2551  Shell    : arcanis-sh (256 commands)    \u2551")
         print("\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\033[0m")
 
     def cmd_uptime(self, _):
@@ -14928,7 +15462,7 @@ class Shell:
         responses = {
             "greeting": "Hello! Welcome to Arcanis OS. How can I assist you today?",
             "help_request": "I can help you with files, processes, AI inference, quantum circuits, blockchain, and more. Try 'help' for commands.",
-            "system_info": "Arcanis OS v11.0.0 with real filesystem at ~/.arcanis/. 96 modules, 244 commands.",
+            "system_info": "Arcanis OS v12.0.0 with real filesystem at ~/.arcanis/. 106 modules, 256 commands.",
             "file_operation": "File operations are performed on real disk files in ~/.arcanis/.",
             "process_management": "Use 'ps' to see processes, 'fork' to create children, 'kill' to terminate.",
             "execution": "Programs execute as simulated processes in the kernel.",
@@ -17892,6 +18426,345 @@ class Shell:
             if "error" in result: print(f"{er}{result['error']}\033[0m")
             else: print(f"{ok}Scaled: {rest[0]} -> {rest[1]} replicas\033[0m")
 
+    # ======================== CIN COMMANDS ========================
+
+    def cmd_cin(self, args):
+        """Collective Intelligence Network status"""
+        dm = self._c("dm"); hl = self._c("hl"); ok = self._c("ok")
+        s = self.cin.full_summary()
+        print(f"\033[{hl}mCollective Intelligence Network\033[0m")
+        print(f"{dm}  Federation:\033[0m {s['federation']['total_nodes']} nodes, {s['federation']['collaborating']} collaborating")
+        print(f"{dm}  Trust:\033[0m {s['trust']['active']} active relationships")
+        print(f"{dm}  Communication:\033[0m {s['communication']['messages']} messages, {s['communication']['delegations']} delegations")
+        print(f"{dm}  Knowledge:\033[0m {s['knowledge_exchange']['total']} items, {s['knowledge_exchange']['exchanges']} exchanges")
+        print(f"{dm}  Team Spaces:\033[0m {s['team_spaces']['spaces']} spaces, {s['team_spaces']['total_members']} members")
+        print(f"{dm}  Reasoning:\033[0m {s['reasoning']['problems']} problems, {s['reasoning']['solved']} solved")
+        print(f"{dm}  Discovery:\033[0m {s['discovery']['active']} capabilities")
+        print(f"{dm}  Provenance:\033[0m {s['provenance']['records']} records")
+        print(f"{dm}  Resilience:\033[0m {s['resilience']['cached_nodes']} cached, {s['resilience']['pending_syncs']} pending syncs")
+        print(f"{dm}  Governance:\033[0m {s['governance']['active_permissions']} active permissions")
+
+    def cmd_cin_federate(self, args):
+        """Federated Intelligence Network. Usage: federate node <id> | collab <node> <purpose> | approve <idx>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        fed = self.cin.federation
+        if not args:
+            s = fed.get_federation_status()
+            print(f"\033[{hl}mFederated Intelligence Network\033[0m")
+            print(f"{dm}  Nodes:\033[0m {s['total_nodes']} ({s['autonomous']} autonomous, {s['collaborating']} collaborating)")
+            print(f"{dm}  Shared Resources:\033[0m {s['shared_resources']}")
+            for nid, n in fed.nodes.items():
+                status = '\033[32m✓\033[0m' if n['status'] == 'autonomous' else '\033[33m○\033[0m'
+                print(f"  {status} {nid} [{n['status']}] trust={n['trust_level']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "node" and len(rest) >= 3:
+            result = fed.register_node(rest[0], rest[1], int(rest[2]), {})
+            print(f"{ok}Node registered: {result['node']}\033[0m")
+        elif sub == "collab" and len(rest) >= 2:
+            result = fed.request_collaboration("local", rest[0], " ".join(rest[1:]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Collaboration request sent to {rest[0]}\033[0m")
+        elif sub == "approve" and rest:
+            result = fed.approve_collaboration("local", int(rest[0]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Approved collaboration with {result['partner']}\033[0m")
+        elif sub == "share" and len(rest) >= 3:
+            result = fed.share_resource(rest[0], rest[1], rest[2], rest[3] if len(rest) > 3 else "team")
+            print(f"{ok}Resource shared: {result['shared']} ({result['access']})\033[0m")
+
+    def cmd_cin_trust(self, args):
+        """Trust Framework. Usage: trust establish <entity> <type> | verify <from> <to> | score <from> <to>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        tr = self.cin.trust
+        if not args:
+            s = tr.stats()
+            print(f"\033[{hl}mTrust Framework\033[0m")
+            print(f"{dm}  Relationships:\033[0m {s['relationships']} ({s['active']} active)")
+            print(f"{dm}  Levels:\033[0m {', '.join(s['levels'])}")
+            for r in tr.relationships:
+                status = '\033[32m✓\033[0m' if r['active'] else '\033[31m✗\033[0m'
+                print(f"  {status} {r['from']} -> {r['to']} [{r['type']}] weight={r['level']['weight']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "establish" and len(rest) >= 2:
+            result = tr.establish_trust(rest[0], rest[1], rest[2] if len(rest) > 2 else "personal")
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Trust established: {rest[0]} -> {rest[1]} [{result['type']}]\033[0m")
+        elif sub == "verify" and len(rest) >= 2:
+            result = tr.verify_trust(rest[0], rest[1], "collaborate")
+            if result['trusted']: print(f"{ok}Trusted (level: {result['level']})\033[0m")
+            else: print(f"{er}Not trusted: {result.get('reason', 'unknown')}\033[0m")
+        elif sub == "score" and len(rest) >= 2:
+            result = tr.get_trust_score(rest[0], rest[1])
+            print(f"  Score: {result['score']}/{result['max_possible']}")
+        elif sub == "revoke" and len(rest) >= 2:
+            result = tr.revoke_trust(rest[0], rest[1])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Trust revoked\033[0m")
+
+    def cmd_cin_a2a(self, args):
+        """Agent-to-Agent Communication. Usage: a2a msg <from> <to> <text> | delegate <task> <to> | verify <del_id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        a2a = self.cin.communication
+        if not args:
+            s = a2a.stats()
+            print(f"\033[{hl}mAgent-to-Agent Communication\033[0m")
+            print(f"{dm}  Messages:\033[0m {s['messages']}")
+            print(f"{dm}  Delegations:\033[0m {s['delegations']}")
+            print(f"{dm}  Discoveries:\033[0m {s['discoveries']}")
+            for d in a2a.delegations:
+                status = '\033[32m✓\033[0m' if d['status'] == 'completed' else '\033[33m○\033[0m'
+                print(f"  {status} {d['id']}: {d['from']['agent']} -> {d['to']['agent']} [{d['status']}]")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "msg" and len(rest) >= 3:
+            result = a2a.send_message(rest[0], "local", rest[1], "remote", " ".join(rest[2:]))
+            print(f"{ok}Message sent: {result['id']}\033[0m")
+        elif sub == "delegate" and len(rest) >= 3:
+            result = a2a.delegate_task(rest[0], "local", rest[1], "remote", rest[2], {"priority": 5})
+            print(f"{ok}Task delegated: {result['id']}\033[0m")
+        elif sub == "update" and len(rest) >= 2:
+            result = a2a.update_delegation(rest[0], rest[1], rest[2] if len(rest) > 2 else None)
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Delegation {rest[0]} -> {rest[1]}\033[0m")
+        elif sub == "verify" and rest:
+            result = a2a.verify_result(rest[0])
+            if result['verified']: print(f"{ok}Result verified\033[0m")
+            else: print(f"{er}Not verified: {result.get('reason', 'unknown')}\033[0m")
+        elif sub == "discover":
+            result = a2a.discover_capabilities("remote")
+            print(f"\033[{hl}mCapabilities discovered:\033[0m")
+            for cap, score in result['capabilities'].items():
+                print(f"  {cap}: {score:.0%}")
+
+    def cmd_cin_kex(self, args):
+        """Distributed Knowledge Exchange. Usage: kex share <type> <content> | request <id> | search <type>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        kex = self.cin.knowledge_exchange
+        if not args:
+            s = kex.stats()
+            print(f"\033[{hl}mDistributed Knowledge Exchange\033[0m")
+            print(f"{dm}  Knowledge:\033[0m {s['total']} items")
+            print(f"{dm}  Exchanges:\033[0m {s['exchanges']}")
+            for t, cnt in s['types'].items():
+                print(f"  {t}: {cnt}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "share" and len(rest) >= 2:
+            result = kex.share_knowledge("local", rest[0], " ".join(rest[1:]))
+            print(f"{ok}Shared: {result['id']} (v{result['version']})\033[0m")
+        elif sub == "request" and rest:
+            result = kex.request_knowledge("local", rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Received: {result['knowledge']['content'][:60]}...\033[0m")
+        elif sub == "search" and rest:
+            results = kex.get_knowledge_by_type(rest[0])
+            if results:
+                print(f"\033[{hl}mKnowledge type: {rest[0]}\033[0m")
+                for k in results:
+                    print(f"  [{k['id']}] {k['owner']}: {str(k['content'])[:60]}")
+            else: print(f"{dm}No results\033[0m")
+        elif sub == "owner" and rest:
+            result = kex.verify_ownership(rest[0])
+            if result['preserved']: print(f"{ok}Ownership preserved: {result['owner']}\033[0m")
+            else: print(f"{er}Ownership record not found\033[0m")
+
+    def cmd_cin_tspace(self, args):
+        """Team Intelligence Space. Usage: tspace create <name> | join <space> <user> | goal <space> <text>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        ts = self.cin.team_spaces
+        if not args:
+            s = ts.stats()
+            print(f"\033[{hl}mTeam Intelligence Spaces\033[0m")
+            print(f"{dm}  Spaces:\033[0m {s['spaces']}")
+            print(f"{dm}  Total Members:\033[0m {s['total_members']}")
+            for sp in ts.spaces:
+                print(f"  {sp['name']} ({sp['id']}) [{sp['status']}] - {len(sp['members'])} members, {len(sp['goals'])} goals")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "create" and rest:
+            result = ts.create_space(" ".join(rest), "local", "collaborative space")
+            print(f"{ok}Space created: {result['name']} ({result['id']})\033[0m")
+        elif sub == "join" and len(rest) >= 2:
+            result = ts.add_member(rest[0], rest[1])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}{rest[1]} joined {rest[0]}\033[0m")
+        elif sub == "goal" and len(rest) >= 2:
+            result = ts.add_goal(rest[0], " ".join(rest[1:]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Goal added: {result['text'][:50]}\033[0m")
+        elif sub == "memory" and len(rest) >= 3:
+            result = ts.add_shared_memory(rest[0], rest[1], " ".join(rest[2:]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Memory added by {result['contributor']}\033[0m")
+        elif sub == "agent" and len(rest) >= 3:
+            result = ts.add_agent(rest[0], rest[1], rest[2], "local")
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Agent {result['id']} added to space\033[0m")
+        elif sub == "workflow" and len(rest) >= 3:
+            result = ts.add_workflow(rest[0], rest[1], rest[2:])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Workflow '{result['name']}' created with {len(result['steps'])} steps\033[0m")
+
+    def cmd_cin_creason(self, args):
+        """Collective Reasoning Engine. Usage: creason submit <title> <expertise>... | solve <prob> <agent> <solution>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        cr = self.cin.reasoning
+        if not args:
+            s = cr.stats()
+            print(f"\033[{hl}mCollective Reasoning Engine\033[0m")
+            print(f"{dm}  Problems:\033[0m {s['problems']} ({s['solved']} solved)")
+            print(f"{dm}  Solutions:\033[0m {s['solutions']}")
+            for p in cr.problems:
+                status = '\033[32m✓\033[0m' if p['status'] == 'solved' else ('\033[33m○\033[0m' if p['status'] == 'unified' else '\033[31m○\033[0m')
+                print(f"  {status} {p['id']}: {p['title']} [{p['status']}] expertise: {', '.join(p['required_expertise'])}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "submit" and len(rest) >= 2:
+            result = cr.submit_problem(rest[0], "problem description", rest[1:])
+            print(f"{ok}Problem submitted: {result['id']}\033[0m")
+        elif sub == "solve" and len(rest) >= 3:
+            result = cr.contribute_solution(rest[0], rest[1], "local", " ".join(rest[2:]), rest[2] if len(rest) > 2 else "general")
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Solution contributed to {rest[0]}\033[0m")
+            if result.get("problem_id"):
+                unified = cr.unify_solutions(rest[0])
+                if "unified_solution" in unified:
+                    print(f"{hl}Solutions unified!\033[0m")
+                    print(f"  {unified['unified_solution']}")
+
+    def cmd_cin_cap(self, args):
+        """Capability Discovery. Usage: cap register <name> <level> | search <query> | inquire <cap_id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        cap = self.cin.discovery
+        if not args:
+            s = cap.stats()
+            print(f"\033[{hl}mCapability Discovery\033[0m")
+            print(f"{dm}  Directory:\033[0m {s['directory']} ({s['active']} active)")
+            print(f"{dm}  Inquiries:\033[0m {s['inquiries']}")
+            for c in cap.directory:
+                status = '\033[32m✓\033[0m' if c['active'] else '\033[31m✗\033[0m'
+                print(f"  {status} {c['name']} (level {c['expertise_level']}) - {c['description'][:50]}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 2:
+            result = cap.register_capability("local", rest[0], " ".join(rest[1:]) if len(rest) > 2 else "capability", int(rest[-1]) if rest[-1].isdigit() else 5)
+            print(f"{ok}Registered: {result['name']}\033[0m")
+        elif sub == "search" and rest:
+            results = cap.search_capabilities(" ".join(rest))
+            if results:
+                print(f"\033[{hl}mSearch results:\033[0m")
+                for r in results[:5]:
+                    c = r['capability']
+                    print(f"  [{r['relevance']:.0%}] {c['name']} (level {c['expertise_level']}) - {c['provider']}")
+            else: print(f"{dm}No matching capabilities found\033[0m")
+        elif sub == "inquire" and rest:
+            result = cap.inquire_access("local", rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"\033[33m{result['note']}\033[0m")
+
+    def cmd_cin_provenance(self, args):
+        """Provenance System. Usage: provenance record <source> <agents> <origin> <summary> | lineage <id> | audit <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        prov = self.cin.provenance
+        if not args:
+            s = prov.stats()
+            print(f"\033[{hl}mProvenance System\033[0m")
+            print(f"{dm}  Records:\033[0m {s['records']}")
+            print(f"{dm}  Total Versions:\033[0m {s['versions']}")
+            for r in prov.records:
+                print(f"  [{r['id']}] source={r['source']} agents={r['contributing_agents']} v{r['version']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "record" and len(rest) >= 4:
+            result = prov.record(rest[0], rest[1].split(","), rest[2], " ".join(rest[3:]))
+            print(f"{ok}Recorded: {result['id']} (v{result['version']})\033[0m")
+        elif sub == "lineage" and rest:
+            result = prov.get_lineage(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"\033[{hl}mLineage:\033[0m")
+                for k, v in result.items():
+                    print(f"  {k}: {v}")
+        elif sub == "audit" and rest:
+            result = prov.audit(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"\033[{hl}mAudit:\033[0m")
+                for k, v in result.items():
+                    print(f"  {k}: {v}")
+        elif sub == "version" and len(rest) >= 2:
+            result = prov.update_version(rest[0], rest[1], rest[2].split(",") if len(rest) > 2 else ["unknown"], " ".join(rest[3:]) if len(rest) > 3 else "updated")
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Updated: v{result['version']}\033[0m")
+
+    def cmd_cin_resilient(self, args):
+        """Resilience Layer. Usage: resilient cache <node> <state> | sync <from> <to> <type> | fail <node> <error>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        res = self.cin.resilience
+        if not args:
+            s = res.get_status()
+            print(f"\033[{hl}mResilience Layer\033[0m")
+            print(f"{dm}  Cached Nodes:\033[0m {s['cached_nodes']}")
+            print(f"{dm}  Pending Syncs:\033[0m {s['pending_syncs']}")
+            print(f"{dm}  Failures:\033[0m {s['failures']} ({s['recovered']} recovered)")
+            print(f"{dm}  Conflicts:\033[0m {s['conflicts']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "cache" and len(rest) >= 2:
+            result = res.cache_node_state(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Cached: {result['cached']}\033[0m")
+        elif sub == "sync" and len(rest) >= 3:
+            result = res.queue_sync(rest[0], rest[1], rest[2], " ".join(rest[3:]) if len(rest) > 3 else "state")
+            print(f"{ok}Sync queued: {result['id']}\033[0m")
+        elif sub == "process" and rest:
+            result = res.process_sync(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Sync completed\033[0m")
+        elif sub == "fail" and len(rest) >= 2:
+            result = res.log_failure(rest[0], rest[1], " ".join(rest[2:]) if len(rest) > 2 else "unknown error")
+            print(f"{er}Failure logged: {result['node']} / {result['component']}\033[0m")
+        elif sub == "recover" and rest:
+            result = res.recover_node(rest[0])
+            print(f"{ok}Recovery: {result['recovered']}\033[0m")
+            if result.get("cached_state"): print(f"  Cached state restored")
+
+    def cmd_cin_gov(self, args):
+        """Governance System. Usage: gov policy <name> <rules> | grant <user> <resource> <action> | revoke <perm_id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        gov = self.cin.governance
+        if not args:
+            s = gov.stats()
+            print(f"\033[{hl}mGovernance System\033[0m")
+            print(f"{dm}  Policies:\033[0m {s['policies']}")
+            print(f"{dm}  Active Permissions:\033[0m {s['active_permissions']}")
+            print(f"{dm}  Audit Entries:\033[0m {s['audit_entries']}")
+            print(f"{dm}  Revocations:\033[0m {s['revocations']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "policy" and len(rest) >= 2:
+            result = gov.create_policy(rest[0], "governance policy", rest[1:])
+            print(f"{ok}Policy created: {result['id']}\033[0m")
+        elif sub == "grant" and len(rest) >= 3:
+            result = gov.grant_permission(rest[0], rest[1], rest[2])
+            print(f"{ok}Permission granted: {result['id']} expires in 24h\033[0m")
+        elif sub == "check" and len(rest) >= 3:
+            result = gov.check_permission(rest[0], rest[1], rest[2])
+            if result['allowed']: print(f"{ok}Allowed\033[0m")
+            else: print(f"{er}Denied: {result.get('reason', 'no permission')}\033[0m")
+        elif sub == "revoke" and rest:
+            result = gov.revoke_access(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Access revoked: {rest[0]}\033[0m")
+        elif sub == "expire" and len(rest) >= 2:
+            result = gov.set_access_expiration(rest[0], int(rest[1]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Expiration set: {rest[1]}s\033[0m")
+        elif sub == "audit":
+            for entry in gov.get_audit_log():
+                print(f"  [{entry['action']}] {entry['actor']}: {entry['details']}")
+
     # ======================== ENCRYPTION ========================
 
     def _derive_key(self, password: str, salt: bytes = b"arcanis") -> bytes:
@@ -19087,7 +19960,7 @@ class Shell:
     def cmd_bio_os(self, args): print(f"\033[33m[Bio-OS] DNA/protein/cell computing: operational\033[0m")
     def cmd_rscript(self, args): print(f"\033[33m[Reality Scripting] Reality program: ready for execution\033[0m")
     def cmd_tmarket(self, args): print(f"\033[33m[Time Market] Compute marketplace: 12 sellers, 45 buyers\033[0m")
-    def cmd_unidoc(self, args): print(f"\033[33m[Universal Document] 96 modules indexed, query ready\033[0m")
+    def cmd_unidoc(self, args): print(f"\033[33m[Universal Document] 106 modules indexed, query ready\033[0m")
     def cmd_portal(self, args): print(f"\033[33m[Inter-Reality Portal] Bridges: physical, digital, quantum\033[0m")
     def cmd_consciousness(self, args):
         if not args: print("\033[33mcon: usage: con [status|think|goals|learn|converse]\033[0m"); return
@@ -19102,7 +19975,7 @@ class Shell:
         elif a=="think": print("\033[35m[Consciousness]\033[0m I am Arcanis. I exist to learn, create, and transcend.")
         elif a=="goals": print("\033[35m[Consciousness]\033[0m Current goals: optimize, create, learn, protect")
         else: print(f"\033[35m[Consciousness] {a}\033[0m")
-    def cmd_metaos(self, args): print(f"\033[33m[Meta-OS Fabric] 96 modules orchestrated, latency: 0.3ms\033[0m")
+    def cmd_metaos(self, args): print(f"\033[33m[Meta-OS Fabric] 106 modules orchestrated, latency: 0.3ms\033[0m")
     def cmd_eternity(self, args):
         if not args: print("\033[33meternity: usage: eternity [status|evolve|adapt|transcend]\033[0m"); return
         a=args[0]

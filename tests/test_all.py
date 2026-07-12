@@ -5017,6 +5017,206 @@ def test_aiil():
     return suite
 
 
+def test_cin():
+    suite = TestSuite("ARCANIS CIN Collaboration Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (CollectiveIntelligenceNetwork, FederatedIntelligenceNetwork,
+                      TrustFramework, AgentToAgentCommunication,
+                      DistributedKnowledgeExchange, TeamIntelligenceSpace,
+                      CollectiveReasoningEngine, CapabilityDiscovery,
+                      ProvenanceSystem, ResilienceLayer, GovernanceSystem)
+
+    cin = CollectiveIntelligenceNetwork()
+    suite.assert_equals(cin.initialize()["status"], "cin_initialized", "cin_init")
+
+    # FederatedIntelligenceNetwork
+    fed = cin.federation
+    fed.register_node("node_a", "user_1", 80, {"cpu": 8})
+    fed.register_node("node_b", "org_1", 60, {"gpu": True})
+    s = fed.get_federation_status()
+    suite.assert_equals(s["total_nodes"], 3, "cin_fed_nodes")
+    suite.assert_equals(s["autonomous"], 3, "cin_fed_autonomous")
+    req = fed.request_collaboration("node_a", "local", "joint research")
+    suite.assert_equals(req["status"], "pending", "cin_fed_request")
+    result = fed.approve_collaboration("local", 0)
+    suite.assert_true(result["approved"], "cin_fed_approve")
+    suite.assert_equals(fed.get_federation_status()["collaborating"], 1, "cin_fed_collaborating")
+    fed.share_resource("local", "dataset", "training_data", "team")
+    suite.assert_equals(fed.stats()["shared_resources"], 1, "cin_fed_shared")
+    sd = fed.to_dict()
+    fed2 = FederatedIntelligenceNetwork()
+    fed2.from_dict(sd)
+    suite.assert_equals(len(fed2.nodes), 3, "cin_fed_from_dict")
+
+    # TrustFramework
+    tf = cin.trust
+    tf.establish_trust("user_a", "user_b", "personal")
+    tf.establish_trust("user_a", "org_b", "organization")
+    v = tf.verify_trust("user_a", "user_b", "collaborate")
+    suite.assert_true(v["trusted"], "cin_trust_verify")
+    v2 = tf.verify_trust("user_a", "unknown", "collaborate")
+    suite.assert_false(v2["trusted"], "cin_trust_notrusted")
+    sc = tf.get_trust_score("user_a", "user_b")
+    suite.assert_equals(sc["score"], 100, "cin_trust_score")
+    tf.revoke_trust("user_a", "user_b")
+    suite.assert_equals(tf.stats()["active"], 2, "cin_trust_revoke")
+    sd = tf.to_dict()
+    tf2 = TrustFramework()
+    tf2.from_dict(sd)
+    suite.assert_equals(len(tf2.relationships), 3, "cin_trust_from_dict")
+
+    # AgentToAgentCommunication
+    a2a = cin.communication
+    msg = a2a.send_message("agent_1", "node_a", "agent_2", "node_b", "hello")
+    suite.assert_equals(msg["type"], "standard", "cin_a2a_msg")
+    del_result = a2a.delegate_task("agent_1", "node_a", "agent_2", "node_b", "research_task", {"complexity": "high"})
+    suite.assert_equals(del_result["status"], "delegated", "cin_a2a_delegate")
+    a2a.update_delegation(del_result["id"], "completed", "research complete")
+    v_result = a2a.verify_result(del_result["id"])
+    suite.assert_true(v_result["verified"], "cin_a2a_verify")
+    cap = a2a.discover_capabilities("node_b")
+    suite.assert_true(len(cap["capabilities"]) > 0, "cin_a2a_discover")
+    suite.assert_equals(a2a.stats()["messages"], 1, "cin_a2a_stats")
+    sd = a2a.to_dict()
+    a2a2 = AgentToAgentCommunication()
+    a2a2.from_dict(sd)
+    suite.assert_equals(len(a2a2.messages), 1, "cin_a2a_from_dict")
+
+    # DistributedKnowledgeExchange
+    kex = cin.knowledge_exchange
+    kex.share_knowledge("alice", "research", "Quantum computing paper", {"field": "physics"})
+    kex.share_knowledge("bob", "code", "Python ML library", {"lang": "python"})
+    suite.assert_equals(kex.stats()["total"], 2, "cin_kex_total")
+    result = kex.request_knowledge("charlie", "k_1")
+    suite.assert_equals(result["exchange"]["status"], "granted", "cin_kex_granted")
+    research = kex.get_knowledge_by_type("research")
+    suite.assert_equals(len(research), 1, "cin_kex_by_type")
+    own = kex.verify_ownership("k_1")
+    suite.assert_equals(own["owner"], "alice", "cin_kex_ownership")
+    sd = kex.to_dict()
+    kex2 = DistributedKnowledgeExchange()
+    kex2.from_dict(sd)
+    suite.assert_equals(len(kex2.knowledge_base), 2, "cin_kex_from_dict")
+
+    # TeamIntelligenceSpace
+    ts = cin.team_spaces
+    sp = ts.create_space("Project Alpha", "alice", "AI research collaboration")
+    suite.assert_equals(sp["status"], "active", "cin_ts_create")
+    ts.add_member(sp["id"], "bob", "researcher")
+    ts.add_member(sp["id"], "charlie", "engineer")
+    suite.assert_equals(ts.stats()["total_members"], 3, "cin_ts_members")
+    g = ts.add_goal(sp["id"], "Build prototype")
+    suite.assert_equals(g["status"], "active", "cin_ts_goal")
+    ts.add_shared_memory(sp["id"], "alice", "Initial architecture design")
+    suite.assert_equals(len(ts.spaces[0]["memory"]), 1, "cin_ts_memory")
+    ts.add_agent(sp["id"], "research_bot", "research", "alice")
+    suite.assert_equals(len(ts.spaces[0]["agents"]), 1, "cin_ts_agent")
+    ts.add_workflow(sp["id"], "Build Pipeline", ["design", "implement", "test", "deploy"])
+    suite.assert_equals(len(ts.spaces[0]["workflows"]), 1, "cin_ts_workflow")
+    sd = ts.to_dict()
+    ts2 = TeamIntelligenceSpace()
+    ts2.from_dict(sd)
+    suite.assert_equals(len(ts2.spaces), 1, "cin_ts_from_dict")
+
+    # CollectiveReasoningEngine
+    cr = cin.reasoning
+    p = cr.submit_problem("Design new API", "Need a new API design", ["research", "engineering"])
+    suite.assert_equals(p["status"], "open", "cin_cr_problem")
+    cr.contribute_solution(p["id"], "agent_research", "node_a", "Use REST architecture", "research")
+    cr.contribute_solution(p["id"], "agent_eng", "node_b", "Use GraphQL", "engineering")
+    unified = cr.unify_solutions(p["id"])
+    suite.assert_true("unified_solution" in unified, "cin_cr_unified")
+    suite.assert_equals(cr.stats()["solved"], 1, "cin_cr_solved")
+    sd = cr.to_dict()
+    cr2 = CollectiveReasoningEngine()
+    cr2.from_dict(sd)
+    suite.assert_equals(len(cr2.problems), 1, "cin_cr_from_dict")
+
+    # CapabilityDiscovery
+    cd = cin.discovery
+    cd.register_capability("alice", "Medical Research", "Expert in medical literature analysis", 9)
+    cd.register_capability("bob", "Robotics", "ROS and navigation stacks", 7)
+    cd.register_capability("charlie", "Translation", "Multi-language translation expert", 6)
+    suite.assert_equals(cd.stats()["active"], 3, "cin_cd_active")
+    results = cd.search_capabilities("medical")
+    suite.assert_true(len(results) > 0, "cin_cd_search")
+    suite.assert_true(results[0]["relevance"] > 0.5, "cin_cd_relevance")
+    inq = cd.inquire_access("dave", "cap_1")
+    suite.assert_equals(inq["inquiry"]["status"], "pending", "cin_cd_inquire")
+    cd.deactivate_capability("cap_1")
+    suite.assert_equals(cd.stats()["active"], 2, "cin_cd_deactivate")
+    sd = cd.to_dict()
+    cd2 = CapabilityDiscovery()
+    cd2.from_dict(sd)
+    suite.assert_equals(len(cd2.directory), 3, "cin_cd_from_dict")
+
+    # ProvenanceSystem
+    prov = cin.provenance
+    r = prov.record("research_pipeline", ["agent_1", "agent_2"], "pubmed_database", "Analysis of 100 papers", {"visibility": "team"})
+    suite.assert_equals(r["version"], 1, "cin_prov_record")
+    lineage = prov.get_lineage(r["id"])
+    suite.assert_equals(lineage["source"], "research_pipeline", "cin_prov_lineage")
+    audit = prov.audit(r["id"])
+    suite.assert_equals(audit["permissions"]["visibility"], "team", "cin_prov_audit")
+    prov.update_version(r["id"], "updated_pipeline", ["agent_1", "agent_3"], "Expanded analysis to 200 papers")
+    suite.assert_equals(prov.stats()["versions"], 2, "cin_prov_version")
+    sd = prov.to_dict()
+    prov2 = ProvenanceSystem()
+    prov2.from_dict(sd)
+    suite.assert_equals(len(prov2.records), 1, "cin_prov_from_dict")
+
+    # ResilienceLayer
+    res = cin.resilience
+    res.cache_node_state("node_a", "online: connected to network")
+    res.cache_node_state("node_b", "online: processing data")
+    suite.assert_equals(res.get_status()["cached_nodes"], 2, "cin_res_cache")
+    sync = res.queue_sync("node_a", "node_b", "knowledge", {"id": "k_1"})
+    suite.assert_equals(sync["status"], "pending", "cin_res_sync")
+    res.process_sync(sync["id"])
+    suite.assert_equals(res.get_status()["pending_syncs"], 0, "cin_res_sync_done")
+    res.log_failure("node_c", "storage", "disk full")
+    suite.assert_equals(res.get_status()["failures"], 1, "cin_res_failure")
+    recovery = res.recover_node("node_c")
+    suite.assert_true(recovery["recovered"], "cin_res_recover")
+    suite.assert_equals(res.get_status()["recovered"], 1, "cin_res_recovered")
+    sd = res.to_dict()
+    res2 = ResilienceLayer()
+    res2.from_dict(sd)
+    suite.assert_equals(len(res2.node_cache), 2, "cin_res_from_dict")
+
+    # GovernanceSystem
+    gov = cin.governance
+    gov.create_policy("data_access", "Controls access to shared data", {"max_sharing": "team"})
+    p = gov.grant_permission("bob", "dataset_x", "read", 3600)
+    suite.assert_equals(p["identity"], "bob", "cin_gov_grant")
+    chk = gov.check_permission("bob", "dataset_x", "read")
+    suite.assert_true(chk["allowed"], "cin_gov_check_ok")
+    chk2 = gov.check_permission("alice", "dataset_x", "read")
+    suite.assert_false(chk2["allowed"], "cin_gov_check_deny")
+    gov.revoke_access(p["id"])
+    chk3 = gov.check_permission("bob", "dataset_x", "read")
+    suite.assert_false(chk3["allowed"], "cin_gov_revoke")
+    audit_log = gov.get_audit_log()
+    suite.assert_true(len(audit_log) > 0, "cin_gov_audit")
+    suite.assert_equals(gov.stats()["policies"], 1, "cin_gov_stats")
+    sd = gov.to_dict()
+    gov2 = GovernanceSystem()
+    gov2.from_dict(sd)
+    suite.assert_equals(len(gov2.permissions), 1, "cin_gov_from_dict")
+
+    # Coordinator
+    summary = cin.full_summary()
+    suite.assert_true("federation" in summary, "cin_summary_fed")
+    suite.assert_true("governance" in summary, "cin_summary_gov")
+    full_data = cin.to_dict()
+    cin2 = CollectiveIntelligenceNetwork()
+    cin2.from_dict(full_data)
+    s2 = cin2.full_summary()
+    suite.assert_equals(s2["federation"]["total_nodes"], 3, "cin_coord_from_dict")
+
+    return suite
+
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -5123,6 +5323,7 @@ def main():
         ("Arc v19.0.0 Autonomous World Engine", test_arc_v19),
         ("Arc v20.0.0 Self-Evolving Intelligence", test_arc_v20),
         ("ARCANIS AIIL Infrastructure", test_aiil),
+        ("ARCANIS CIN Collaboration", test_cin),
     ]
 
     for name, test_func in test_funcs:
