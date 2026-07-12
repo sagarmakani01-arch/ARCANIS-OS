@@ -4810,6 +4810,213 @@ def test_arc_imports():
     return suite
 
 
+def test_aiil():
+    suite = TestSuite("ARCANIS AIIL Infrastructure Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (AutonomousIntelligenceInfrastructureLayer, IntelligentResourceManager,
+                      DistributedIntelligenceFramework, AgentRuntimeManager,
+                      SemanticStorageSystem, ComputationalMemoryLayer,
+                      InfrastructureMonitoringSystem, SelfOptimizationFramework,
+                      HardwareAbstractionLayer, SecurityInfrastructure,
+                      CloudNativeIntelligenceFoundation)
+
+    aiil = AutonomousIntelligenceInfrastructureLayer()
+    suite.assert_equals(aiil.initialize()["status"], "aiil_initialized", "aiil_init")
+
+    # IntelligentResourceManager
+    rm = aiil.resource_manager
+    result = rm.analyze_workload("test_ai", {"cpu": 0.5, "memory": 512, "priority": 8})
+    suite.assert_equals(result["recommendation"], "local", "aiil_rm_local")
+    suite.assert_true(result["local_suitability"] > 0.7, "aiil_rm_suitability")
+    result2 = rm.analyze_workload("heavy_ml", {"cpu": 2.0, "memory": 64000})
+    suite.assert_equals(result2["recommendation"], "remote", "aiil_rm_remote")
+    pred = rm.predict_performance("ML training")
+    suite.assert_true(pred["expected_duration"] > 0, "aiil_rm_predict")
+    rm.register_external("cloud_gpu", "gpu.example.com", {"gpu": "A100"})
+    suite.assert_equals(rm.stats()["external_nodes"], 1, "aiil_rm_external")
+    sd = rm.to_dict()
+    rm2 = IntelligentResourceManager()
+    rm2.from_dict(sd)
+    suite.assert_equals(len(rm2.workloads), 2, "aiil_rm_from_dict")
+
+    # DistributedIntelligenceFramework
+    dn = aiil.distributed_network
+    dn.register_node("node_a", "server", {"cpu": 16})
+    dn.register_node("node_b", "edge", {"cpu": 4})
+    dn.connect_nodes("node_a", "node_b")
+    status = dn.get_network_status()
+    suite.assert_equals(status["total_nodes"], 3, "aiil_dn_nodes")
+    suite.assert_equals(status["online"], 3, "aiil_dn_online")
+    suite.assert_equals(status["connections"], 1, "aiil_dn_connections")
+    msg = dn.send_message("node_a", "node_b", "status check")
+    suite.assert_equals(msg["type"], "intelligence", "aiil_dn_msg_type")
+    dn.update_node_status("node_b", "offline")
+    suite.assert_equals(dn.get_network_status()["online"], 2, "aiil_dn_offline")
+    sd = dn.to_dict()
+    dn2 = DistributedIntelligenceFramework()
+    dn2.from_dict(sd)
+    suite.assert_equals(len(dn2.nodes), 3, "aiil_dn_from_dict")
+
+    # AgentRuntimeManager
+    art = aiil.agent_runtime
+    art.deploy_agent("research_agent", "research", {"cpu": 0.8, "priority": 7})
+    art.deploy_agent("coding_agent", "coding", {"cpu": 0.3, "priority": 5})
+    suite.assert_equals(art.stats()["agents"], 2, "aiil_art_agents")
+    task = art.schedule_task("research_agent", "literature review", "high")
+    suite.assert_equals(task["agent"], "research_agent", "aiil_art_task_agent")
+    st = art.get_agent_status("research_agent")
+    suite.assert_equals(st["active_tasks"], 0, "aiil_art_status")
+    result = art.lifecycle_action("research_agent", "pause")
+    suite.assert_equals(result["status"], "paused", "aiil_art_pause")
+    result = art.lifecycle_action("research_agent", "resume")
+    suite.assert_equals(result["status"], "running", "aiil_art_resume")
+    sd = art.to_dict()
+    art2 = AgentRuntimeManager()
+    art2.from_dict(sd)
+    suite.assert_equals(len(art2.agents), 2, "aiil_art_from_dict")
+
+    # SemanticStorageSystem
+    ss = aiil.semantic_storage
+    ss.store("knowledge", "Deep learning fundamentals", {"domain": "AI"})
+    ss.store("memory", "User likes Python", {"source": "interaction"})
+    ss.store("context", "Working on infrastructure", {"session": "current"})
+    suite.assert_equals(ss.stats()["knowledge"], 1, "aiil_ss_knowledge")
+    suite.assert_equals(ss.stats()["memory"], 1, "aiil_ss_memory")
+    suite.assert_equals(ss.stats()["context"], 1, "aiil_ss_context")
+    results = ss.search_by_meaning("Python")
+    suite.assert_true(len(results) > 0, "aiil_ss_search")
+    suite.assert_true(results[0]["relevance"] > 0.5, "aiil_ss_relevance")
+    ss.relate("memory_1", "knowledge_1", "about")
+    results = ss.search_by_meaning("Python")
+    has_related = any(r.get("related") for r in results)
+    suite.assert_true(has_related, "aiil_ss_related_chain")
+    sd = ss.to_dict()
+    ss2 = SemanticStorageSystem()
+    ss2.from_dict(sd)
+    suite.assert_equals(len(ss2.knowledge_store), 1, "aiil_ss_from_dict")
+
+    # ComputationalMemoryLayer
+    cml = aiil.computational_memory
+    cml.set_active_context("current_task", "infrastructure setup", 120)
+    suite.assert_equals(cml.get_active_context("current_task"), "infrastructure setup", "aiil_cml_context")
+    cml.store_long_term("user_prefs", "minimalist ui", "preferences")
+    results = cml.retrieve_long_term("prefs")
+    suite.assert_true(len(results) > 0, "aiil_cml_retrieve")
+    cml.set_temp_state("cache_data", "temp_value")
+    suite.assert_equals(cml.stats()["temp_state"], 1, "aiil_cml_temp")
+    result = cml.optimize()
+    suite.assert_true("evicted_context" in result, "aiil_cml_optimize")
+    sd = cml.to_dict()
+    cml2 = ComputationalMemoryLayer()
+    cml2.from_dict(sd)
+    suite.assert_equals(len(cml2.long_term), 1, "aiil_cml_from_dict")
+
+    # InfrastructureMonitoringSystem
+    im = aiil.monitoring
+    im.record_metric("cpu_utilization", 45.0)
+    im.record_metric("memory_utilization", 72.0)
+    im.log_error("resource_manager", "warning", "High memory usage detected")
+    im.update_agent_health("agent_1", "healthy", {"cpu": 30})
+    analysis = im.analyze_performance()
+    suite.assert_true("avg_cpu" in analysis, "aiil_im_analysis")
+    suite.assert_true(analysis["total_errors"] > 0, "aiil_im_errors")
+    recs = im.get_recommendations()
+    suite.assert_true(isinstance(recs, list), "aiil_im_recommendations")
+    sd = im.to_dict()
+    im2 = InfrastructureMonitoringSystem()
+    im2.from_dict(sd)
+    suite.assert_equals(len(im2.metrics_history), 4, "aiil_im_from_dict")
+
+    # SelfOptimizationFramework
+    so = aiil.optimization
+    obs = so.observe("api_gateway", "response_time", 250, 200)
+    suite.assert_true(obs["inefficiency"] is not None, "aiil_so_inefficiency")
+    obs2 = so.observe("cache_layer", "memory_usage", 50, 200)
+    suite.assert_true(obs2["inefficiency"] is None, "aiil_so_no_inefficiency")
+    opt = so.generate_optimization("api_gateway", "Optimize api_gateway response pipeline")
+    suite.assert_equals(opt["status"], "pending", "aiil_so_opt_status")
+    test_result = so.test_optimization(opt["id"])
+    suite.assert_equals(test_result["result"], "safe", "aiil_so_test")
+    result = so.apply_optimization(opt["id"], approved=True)
+    suite.assert_equals(result["status"], "applied", "aiil_so_applied")
+    suite.assert_equals(so.stats()["observations"], 2, "aiil_so_stats")
+    sd = so.to_dict()
+    so2 = SelfOptimizationFramework()
+    so2.from_dict(sd)
+    suite.assert_equals(len(so2.observations), 2, "aiil_so_from_dict")
+
+    # HardwareAbstractionLayer
+    hal = aiil.hardware_abstraction
+    result = hal.detect_platform("server")
+    suite.assert_equals(result["platform"], "server", "aiil_hal_server")
+    result = hal.detect_platform("embedded")
+    suite.assert_equals(result["capabilities"]["cpu"], "low", "aiil_hal_embedded")
+    adapt = hal.adapt_intelligence("vision_model", {"resolution": "high"})
+    suite.assert_equals(adapt["adjustment"], "reduced_model_size", "aiil_hal_adapt")
+    hal.detect_platform("server")
+    adapt2 = hal.adapt_intelligence("nlp_model", {"model_size": "large"})
+    suite.assert_equals(adapt2["adjustment"], "full_model", "aiil_hal_adapt_server")
+    api = hal.uniform_api("inference")
+    suite.assert_true(api["accelerated"], "aiil_hal_inference_accel")
+    suite.assert_equals(hal.stats()["platform"], "server", "aiil_hal_replatform")
+    sd = hal.to_dict()
+    hal2 = HardwareAbstractionLayer()
+    hal2.from_dict(sd)
+    suite.assert_equals(len(hal2.adaptations), 2, "aiil_hal_from_dict")
+
+    # SecurityInfrastructure
+    sec = aiil.security
+    sec.register_identity("user_1", "user", "password123")
+    sec.register_identity("agent_coder", "agent", "agent_pass")
+    suite.assert_equals(sec.stats()["identities"], 2, "aiil_sec_identities")
+    auth = sec.authenticate("user_1", "password123")
+    suite.assert_true(auth["authenticated"], "aiil_sec_auth_ok")
+    auth2 = sec.authenticate("user_1", "wrong")
+    suite.assert_false(auth2["authenticated"], "aiil_sec_auth_fail")
+    verify = sec.verify_session(auth["session"])
+    suite.assert_true(verify["valid"], "aiil_sec_session_valid")
+    encrypt = sec.encrypt_data("sensitive_data", "key_1")
+    suite.assert_true("encrypted" in encrypt, "aiil_sec_encrypt")
+    suite.assert_true(len(sec.audit_log) > 0, "aiil_sec_audit")
+    sd = sec.to_dict()
+    sec2 = SecurityInfrastructure()
+    sec2.from_dict(sd)
+    suite.assert_equals(len(sec2.identities), 2, "aiil_sec_from_dict")
+
+    # CloudNativeIntelligenceFoundation
+    cloud = aiil.cloud_native
+    cloud.register_service("model-api", "inference", "https://model.example.com")
+    cloud.register_service("data-api", "storage", "https://data.example.com")
+    suite.assert_equals(cloud.stats()["services"], 2, "aiil_cloud_services")
+    exec_result = cloud.remote_execute("model-api", "infer", {"input": "test"})
+    suite.assert_equals(exec_result["status"], "completed", "aiil_cloud_exec")
+    collab = cloud.create_collaboration("project_alpha", ["node_a", "node_b"], "research")
+    suite.assert_equals(collab["status"], "active", "aiil_cloud_collab")
+    deploy = cloud.deploy_intelligence("vision_module", "edge_device")
+    suite.assert_equals(deploy["status"], "active", "aiil_cloud_deploy")
+    scale = cloud.scale_service("model-api", 3)
+    suite.assert_equals(scale["replicas"], 3, "aiil_cloud_scale")
+    sd = cloud.to_dict()
+    cloud2 = CloudNativeIntelligenceFoundation()
+    cloud2.from_dict(sd)
+    suite.assert_equals(len(cloud2.services), 2, "aiil_cloud_from_dict")
+
+    # Coordinator full_summary
+    summary = aiil.full_summary()
+    suite.assert_true("resource_manager" in summary, "aiil_summary_rm")
+    suite.assert_true("security" in summary, "aiil_summary_sec")
+    suite.assert_true("cloud_native" in summary, "aiil_summary_cloud")
+
+    # Coordinator to_dict/from_dict
+    full_data = aiil.to_dict()
+    aiil2 = AutonomousIntelligenceInfrastructureLayer()
+    aiil2.from_dict(full_data)
+    s2 = aiil2.full_summary()
+    suite.assert_equals(s2["resource_manager"]["workloads"], 2, "aiil_coord_from_dict")
+
+    return suite
+
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -4915,6 +5122,7 @@ def main():
         ("Arc v18.0.0 Reality Layer", test_arc_v18),
         ("Arc v19.0.0 Autonomous World Engine", test_arc_v19),
         ("Arc v20.0.0 Self-Evolving Intelligence", test_arc_v20),
+        ("ARCANIS AIIL Infrastructure", test_aiil),
     ]
 
     for name, test_func in test_funcs:

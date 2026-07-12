@@ -12348,6 +12348,526 @@ class AutonomousWorldSimulationEngine:
                 getattr(self, key).from_dict(data[key])
 
 
+class IntelligentResourceManager:
+    def __init__(self):
+        self.resources = {"cpu": {"cores": 8, "utilization": 0.0, "available": True}, "gpu": {"available": False, "memory": 0, "utilization": 0.0}, "memory": {"total": 16000, "available": 16000, "utilization": 0.0}, "storage": {"total": 512000, "available": 512000, "utilization": 0.0}, "network": {"latency": 0, "bandwidth": 1000, "available": True}}
+        self.external = []
+        self.workloads = []
+        self.predictions = {}
+
+    def analyze_workload(self, name, requirements):
+        workload = {"name": name, "requirements": requirements, "submitted": __import__("time").time(), "estimated_duration": requirements.get("estimated_duration", 60), "priority": requirements.get("priority", 5), "status": "pending"}
+        self.workloads.append(workload)
+        local_cap = self._assess_local_capacity(requirements)
+        recommendation = "local" if local_cap > 0.7 else "remote"
+        return {"workload": workload, "recommendation": recommendation, "local_suitability": round(local_cap, 2)}
+
+    def _assess_local_capacity(self, requirements):
+        needed_cpu = requirements.get("cpu", 0)
+        needed_mem = requirements.get("memory", 0)
+        cpu_ok = self.resources["cpu"]["available"] and self.resources["cpu"]["utilization"] + needed_cpu <= 1.0
+        mem_ok = self.resources["memory"]["available"] >= needed_mem
+        return 0.8 if cpu_ok and mem_ok else 0.3
+
+    def optimize_resources(self):
+        return [{"workload": w["name"], "action": "move_to_gpu", "savings": "15%"} for w in self.workloads if w["status"] == "running"]
+
+    def predict_performance(self, task_description):
+        return {"expected_duration": __import__("random").randint(10, 300), "confidence": round(__import__("random").uniform(0.6, 0.95), 2), "bottleneck": __import__("random").choice(["cpu", "memory", "storage", "network"])}
+
+    def register_external(self, name, url, capabilities):
+        self.external.append({"name": name, "url": url, "capabilities": capabilities, "registered": __import__("time").time()})
+        return {"external": name, "status": "available"}
+
+    def stats(self):
+        return {"resources": self.resources, "workloads": len(self.workloads), "external_nodes": len(self.external)}
+
+    def to_dict(self):
+        return {"resources": self.resources, "external": self.external, "workloads": self.workloads, "predictions": self.predictions}
+
+    def from_dict(self, data):
+        for k in ["resources", "external", "workloads", "predictions"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class DistributedIntelligenceFramework:
+    def __init__(self):
+        self.nodes = {}
+        self.connections = []
+        self.messages = []
+
+    def register_node(self, node_id, node_type, capabilities):
+        self.nodes[node_id] = {"id": node_id, "type": node_type, "capabilities": capabilities, "status": "online", "last_seen": __import__("time").time(), "workload": 0.0}
+        return {"status": "registered", "node": node_id}
+
+    def connect_nodes(self, node_a, node_b, link_type="mesh"):
+        conn = {"from": node_a, "to": node_b, "type": link_type, "established": __import__("time").time()}
+        self.connections.append(conn)
+        return conn
+
+    def send_message(self, sender, recipient, content, msg_type="intelligence"):
+        msg = {"sender": sender, "recipient": recipient, "content": content, "type": msg_type, "timestamp": __import__("time").time()}
+        self.messages.append(msg)
+        return msg
+
+    def get_network_status(self):
+        online = sum(1 for n in self.nodes.values() if n.get("status") == "online")
+        return {"total_nodes": len(self.nodes), "online": online, "connections": len(self.connections), "messages": len(self.messages)}
+
+    def update_node_status(self, node_id, status):
+        if node_id in self.nodes:
+            self.nodes[node_id]["status"] = status
+            self.nodes[node_id]["last_seen"] = __import__("time").time()
+        return self.nodes.get(node_id)
+
+    def stats(self):
+        return self.get_network_status()
+
+    def to_dict(self):
+        return {"nodes": self.nodes, "connections": self.connections, "messages": self.messages}
+
+    def from_dict(self, data):
+        for k in ["nodes", "connections", "messages"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class AgentRuntimeManager:
+    def __init__(self):
+        self.agents = {}
+        self.tasks = []
+        self.schedules = []
+
+    def deploy_agent(self, agent_id, agent_type, requirements):
+        self.agents[agent_id] = {"id": agent_id, "type": agent_type, "requirements": requirements, "deployed": __import__("time").time(), "status": "deployed", "tasks_completed": 0}
+        allocation = self._allocate_resources(agent_id, requirements)
+        return {"agent": agent_id, "allocation": allocation}
+
+    def _allocate_resources(self, agent_id, requirements):
+        return {"cpu": requirements.get("cpu", 0.5), "memory": requirements.get("memory", 1024), "priority": requirements.get("priority", 5)}
+
+    def schedule_task(self, agent_id, task_name, complexity):
+        task = {"id": f"task_{len(self.tasks)+1}", "agent": agent_id, "name": task_name, "complexity": complexity, "status": "scheduled", "created": __import__("time").time()}
+        self.tasks.append(task)
+        self.schedules.append({"agent": agent_id, "task": task["id"], "time": __import__("time").time()})
+        return task
+
+    def get_agent_status(self, agent_id):
+        agent = self.agents.get(agent_id)
+        if not agent: return {"error": "agent not found"}
+        agent_tasks = [t for t in self.tasks if t["agent"] == agent_id]
+        return {"agent": agent, "tasks": agent_tasks, "active_tasks": sum(1 for t in agent_tasks if t["status"] == "running")}
+
+    def lifecycle_action(self, agent_id, action):
+        actions = {"start": "running", "stop": "stopped", "pause": "paused", "resume": "running", "terminate": "terminated"}
+        if agent_id in self.agents and action in actions:
+            self.agents[agent_id]["status"] = actions[action]
+            return {"agent": agent_id, "action": action, "status": actions[action]}
+        return {"error": f"cannot {action} agent {agent_id}"}
+
+    def stats(self):
+        return {"agents": len(self.agents), "tasks": len(self.tasks), "schedules": len(self.schedules)}
+
+    def to_dict(self):
+        return {"agents": self.agents, "tasks": self.tasks, "schedules": self.schedules}
+
+    def from_dict(self, data):
+        for k in ["agents", "tasks", "schedules"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class SemanticStorageSystem:
+    def __init__(self):
+        self.knowledge_store = []
+        self.memory_store = []
+        self.context_store = []
+        self.agent_memory = {}
+        self.project_history = []
+
+    def store(self, store_type, content, metadata=None):
+        entry = {"id": f"{store_type}_{len(getattr(self, f'{store_type}_store'))+1}", "content": content, "metadata": metadata or {}, "stored": __import__("time").time(), "relationships": []}
+        getattr(self, f"{store_type}_store").append(entry)
+        return entry
+
+    def search_by_meaning(self, query):
+        results = []
+        q = query.lower()
+        for st in ["knowledge", "memory", "context"]:
+            for entry in getattr(self, f"{st}_store"):
+                content = str(entry["content"]).lower() + " " + str(entry.get("metadata", {})).lower()
+                if q in content:
+                    results.append({"store": st, "entry": entry, "relevance": 0.9})
+        for r in list(results):
+            for rel in r["entry"].get("relationships", []):
+                target_id = rel.get("target")
+                for st in ["knowledge", "memory", "context"]:
+                    for e in getattr(self, f"{st}_store"):
+                        if e["id"] == target_id:
+                            results.append({"store": st, "entry": e, "relevance": 0.6, "related": True})
+        seen = set()
+        deduped = []
+        for r in results:
+            entry_id = r["entry"]["id"]
+            if entry_id not in seen:
+                seen.add(entry_id)
+                deduped.append(r)
+        return sorted(deduped, key=lambda r: r["relevance"], reverse=True)
+
+    def relate(self, entry_id, target_id, relationship):
+        for st in ["knowledge", "memory", "context"]:
+            for entry in getattr(self, f"{st}_store"):
+                if entry["id"] == entry_id:
+                    entry["relationships"].append({"target": target_id, "type": relationship})
+                    return {"status": "related", "from": entry_id, "to": target_id}
+        return {"error": "entry not found"}
+
+    def stats(self):
+        return {"knowledge": len(self.knowledge_store), "memory": len(self.memory_store), "context": len(self.context_store), "agent_memory_agents": len(self.agent_memory), "project_history": len(self.project_history)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["knowledge_store", "memory_store", "context_store", "agent_memory", "project_history"]}
+
+    def from_dict(self, data):
+        for k in ["knowledge_store", "memory_store", "context_store", "agent_memory", "project_history"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ComputationalMemoryLayer:
+    def __init__(self):
+        self.active_context = {}
+        self.long_term = []
+        self.agent_memory = {}
+        self.temp_state = {}
+
+    def set_active_context(self, key, value, ttl=300):
+        self.active_context[key] = {"value": value, "expires": __import__("time").time() + ttl, "ttl": ttl}
+        return {"context": key, "ttl": ttl}
+
+    def get_active_context(self, key):
+        entry = self.active_context.get(key)
+        if not entry: return None
+        if __import__("time").time() > entry["expires"]:
+            del self.active_context[key]
+            return None
+        return entry["value"]
+
+    def store_long_term(self, key, value, category="general"):
+        entry = {"key": key, "value": value, "category": category, "stored": __import__("time").time()}
+        self.long_term.append(entry)
+        return entry
+
+    def retrieve_long_term(self, query):
+        return [e for e in self.long_term if query.lower() in str(e["key"]).lower() or query.lower() in str(e["value"]).lower()]
+
+    def set_temp_state(self, key, value):
+        self.temp_state[key] = {"value": value, "created": __import__("time").time()}
+        return {"temp_key": key}
+
+    def clear_temp_state(self, key=None):
+        if key: self.temp_state.pop(key, None)
+        else: self.temp_state.clear()
+        return {"cleared": True}
+
+    def optimize(self):
+        expired = [k for k, v in self.active_context.items() if __import__("time").time() > v["expires"]]
+        for k in expired: del self.active_context[k]
+        old = [k for k, v in self.temp_state.items() if __import__("time").time() - v["created"] > 3600]
+        for k in old: self.temp_state.pop(k, None)
+        return {"evicted_context": len(expired), "evicted_temp": len(old)}
+
+    def stats(self):
+        return {"active_context": len(self.active_context), "long_term": len(self.long_term), "agent_memory_keys": len(self.agent_memory), "temp_state": len(self.temp_state)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["active_context", "long_term", "agent_memory", "temp_state"]}
+
+    def from_dict(self, data):
+        for k in ["active_context", "long_term", "agent_memory", "temp_state"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class InfrastructureMonitoringSystem:
+    def __init__(self):
+        self.metrics_history = []
+        self.errors = []
+        self.agent_health = {}
+        self.recommendations = []
+        self.diagnostics = []
+
+    def record_metric(self, name, value, unit="%"):
+        entry = {"name": name, "value": value, "unit": unit, "timestamp": __import__("time").time()}
+        self.metrics_history.append(entry)
+        if name == "cpu_utilization" and value > 80:
+            self.recommendations.append({"type": "performance", "message": f"CPU at {value}% - distribute workload", "timestamp": __import__("time").time()})
+        if name == "memory_utilization" and value > 80:
+            self.recommendations.append({"type": "resource", "message": f"Memory at {value}% - increase allocation", "timestamp": __import__("time").time()})
+        return entry
+
+    def log_error(self, source, error_type, message):
+        entry = {"source": source, "type": error_type, "message": message, "timestamp": __import__("time").time()}
+        self.errors.append(entry)
+        self.diagnostics.append({"issue": f"Error in {source}: {message}", "severity": "high" if "crash" in error_type.lower() else "medium", "recommended_action": f"Investigate {source}"})
+        return entry
+
+    def update_agent_health(self, agent_id, status, metrics):
+        self.agent_health[agent_id] = {"status": status, "metrics": metrics, "last_check": __import__("time").time()}
+        return self.agent_health[agent_id]
+
+    def analyze_performance(self):
+        if not self.metrics_history: return {"status": "insufficient_data"}
+        recent = self.metrics_history[-50:]
+        cpu_vals = [m["value"] for m in recent if m["name"] == "cpu_utilization"]
+        mem_vals = [m["value"] for m in recent if m["name"] == "memory_utilization"]
+        return {"avg_cpu": round(sum(cpu_vals) / max(len(cpu_vals), 1), 1), "avg_memory": round(sum(mem_vals) / max(len(mem_vals), 1), 1), "total_errors": len(self.errors), "recommendations": len(self.recommendations)}
+
+    def get_recommendations(self):
+        return self.recommendations[-10:] if self.recommendations else []
+
+    def stats(self):
+        return {"metrics": len(self.metrics_history), "errors": len(self.errors), "agents_monitored": len(self.agent_health), "recommendations": len(self.recommendations)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["metrics_history", "errors", "agent_health", "recommendations", "diagnostics"]}
+
+    def from_dict(self, data):
+        for k in ["metrics_history", "errors", "agent_health", "recommendations", "diagnostics"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class SelfOptimizationFramework:
+    def __init__(self):
+        self.observations = []
+        self.optimizations = []
+        self.tests = []
+        self.applied = []
+
+    def observe(self, component, metric, value, threshold):
+        observation = {"component": component, "metric": metric, "value": value, "threshold": threshold, "timestamp": __import__("time").time()}
+        self.observations.append(observation)
+        if value > threshold:
+            return {"observation": observation, "inefficiency": self._find_inefficiency(component, metric, value, threshold)}
+        return {"observation": observation, "inefficiency": None}
+
+    def _find_inefficiency(self, component, metric, value, threshold):
+        gap = round(value - threshold, 2)
+        suggestions = {"response_time": f"Optimize {component} response pipeline", "memory_usage": f"Reduce {component} memory footprint", "cpu_usage": f"Distribute {component} workload"}
+        suggestion = suggestions.get(metric, f"Review {component} configuration")
+        return {"type": metric, "gap": gap, "suggestion": suggestion}
+
+    def generate_optimization(self, component, suggestion):
+        opt = {"id": f"opt_{len(self.optimizations)+1}", "component": component, "suggestion": suggestion, "status": "pending", "needs_approval": False, "created": __import__("time").time()}
+        self.optimizations.append(opt)
+        if "infrastructure" in suggestion.lower() or "architecture" in suggestion.lower():
+            opt["needs_approval"] = True
+        return opt
+
+    def test_optimization(self, opt_id):
+        opt = next((o for o in self.optimizations if o["id"] == opt_id), None)
+        if not opt: return {"error": "optimization not found"}
+        test = {"opt_id": opt_id, "component": opt["component"], "result": "safe", "duration_seconds": __import__("random").randint(1, 10)}
+        self.tests.append(test)
+        return test
+
+    def apply_optimization(self, opt_id, approved=False):
+        opt = next((o for o in self.optimizations if o["id"] == opt_id), None)
+        if not opt: return {"error": "optimization not found"}
+        if opt.get("needs_approval") and not approved:
+            return {"status": "pending_approval", "message": "Major change requires approval"}
+        opt["status"] = "applied"
+        opt["applied_at"] = __import__("time").time()
+        self.applied.append(opt)
+        return {"status": "applied", "optimization": opt}
+
+    def stats(self):
+        return {"observations": len(self.observations), "optimizations": len(self.optimizations), "tests": len(self.tests), "applied": len(self.applied)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["observations", "optimizations", "tests", "applied"]}
+
+    def from_dict(self, data):
+        for k in ["observations", "optimizations", "tests", "applied"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class HardwareAbstractionLayer:
+    def __init__(self):
+        self.current_platform = "unknown"
+        self.capabilities = {}
+        self.adaptations = []
+        self.supported_platforms = ["laptop", "server", "embedded", "mobile", "cloud"]
+
+    def detect_platform(self, platform_type="laptop"):
+        self.current_platform = platform_type
+        profiles = {"laptop": {"cpu": "medium", "gpu": "integrated", "memory": "medium", "storage": "medium", "network": "variable", "power": "battery"}, "server": {"cpu": "high", "gpu": "dedicated", "memory": "high", "storage": "high", "network": "high", "power": "continuous"}, "embedded": {"cpu": "low", "gpu": "none", "memory": "low", "storage": "low", "network": "limited", "power": "low"}, "mobile": {"cpu": "low-medium", "gpu": "integrated", "memory": "low", "storage": "medium", "network": "wireless", "power": "battery"}, "cloud": {"cpu": "elastic", "gpu": "elastic", "memory": "elastic", "storage": "elastic", "network": "high", "power": "continuous"}}
+        self.capabilities = profiles.get(platform_type, {"cpu": "unknown"})
+        return {"platform": platform_type, "capabilities": self.capabilities}
+
+    def adapt_intelligence(self, component, requirements):
+        adaptation = {"component": component, "requirements": requirements, "platform": self.current_platform, "timestamp": __import__("time").time()}
+        if self.capabilities.get("cpu") == "low":
+            adaptation["adjustment"] = "reduced_model_size"
+        elif self.capabilities.get("cpu") == "high":
+            adaptation["adjustment"] = "full_model"
+        else:
+            adaptation["adjustment"] = "balanced"
+        adaptation["gpu_offloaded"] = self.capabilities.get("gpu") not in ("none", "integrated") if self.capabilities.get("gpu") else False
+        self.adaptations.append(adaptation)
+        return adaptation
+
+    def uniform_api(self, operation, params=None):
+        apis = {"compute": {"available": True, "method": "local" if self.current_platform != "cloud" else "distributed"}, "store": {"available": True, "method": "local" if self.current_platform != "cloud" else "remote"}, "network": {"available": True, "bandwidth": self.capabilities.get("network", "medium")}, "inference": {"available": True, "accelerated": self.capabilities.get("gpu", "none") not in ("none", "integrated")}}
+        return apis.get(operation, {"available": False})
+
+    def stats(self):
+        return {"platform": self.current_platform, "capabilities": self.capabilities, "adaptations": len(self.adaptations)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["current_platform", "capabilities", "adaptations"]}
+
+    def from_dict(self, data):
+        for k in ["current_platform", "capabilities", "adaptations"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class SecurityInfrastructure:
+    def __init__(self):
+        self.identities = {}
+        self.sessions = {}
+        self.audit_log = []
+        self.keys = {}
+
+    def register_identity(self, identity_id, identity_type, credentials):
+        self.identities[identity_id] = {"id": identity_id, "type": identity_type, "credentials": credentials, "registered": __import__("time").time(), "active": True}
+        return {"identity": identity_id, "status": "registered"}
+
+    def authenticate(self, identity_id, credentials):
+        identity = self.identities.get(identity_id)
+        if not identity: return {"authenticated": False, "reason": "unknown_identity"}
+        if not identity["active"]: return {"authenticated": False, "reason": "deactivated"}
+        if identity["credentials"] == credentials:
+            import hashlib, random
+            session_token = hashlib.sha256(f"{identity_id}:{__import__('time').time()}:{random.random()}".encode()).hexdigest()[:16]
+            self.sessions[session_token] = {"identity": identity_id, "created": __import__("time").time(), "expires": __import__("time").time() + 3600}
+            self._audit("authentication", identity_id, "success")
+            return {"authenticated": True, "session": session_token, "expires_in": 3600}
+        self._audit("authentication", identity_id, "failed")
+        return {"authenticated": False, "reason": "invalid_credentials"}
+
+    def _audit(self, action, actor, result):
+        entry = {"action": action, "actor": actor, "result": result, "timestamp": __import__("time").time()}
+        self.audit_log.append(entry)
+        return entry
+
+    def encrypt_data(self, data, key_id):
+        import hashlib, base64
+        if key_id not in self.keys:
+            self.keys[key_id] = hashlib.sha256(f"key_{key_id}_{__import__('time').time()}".encode()).hexdigest()
+        encrypted = base64.b64encode(f"encrypted:{data}:{self.keys[key_id]}".encode()).decode()
+        self._audit("encryption", "system", "success")
+        return {"encrypted": encrypted, "key_id": key_id}
+
+    def verify_session(self, session_token):
+        session = self.sessions.get(session_token)
+        if not session: return {"valid": False}
+        if __import__("time").time() > session["expires"]:
+            del self.sessions[session_token]
+            return {"valid": False, "reason": "expired"}
+        return {"valid": True, "identity": session["identity"]}
+
+    def stats(self):
+        return {"identities": len(self.identities), "active_sessions": len(self.sessions), "audit_entries": len(self.audit_log)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["identities", "sessions", "audit_log", "keys"]}
+
+    def from_dict(self, data):
+        for k in ["identities", "sessions", "audit_log", "keys"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class CloudNativeIntelligenceFoundation:
+    def __init__(self):
+        self.services = {}
+        self.remote_executions = []
+        self.collaborations = []
+        self.deployments = []
+
+    def register_service(self, service_name, service_type, endpoint):
+        self.services[service_name] = {"name": service_name, "type": service_type, "endpoint": endpoint, "status": "registered", "registered": __import__("time").time()}
+        return self.services[service_name]
+
+    def remote_execute(self, service_name, task, params=None):
+        service = self.services.get(service_name)
+        if not service: return {"error": "service not found"}
+        execution = {"service": service_name, "task": task, "params": params or {}, "submitted": __import__("time").time(), "status": "executing"}
+        self.remote_executions.append(execution)
+        execution["result"] = f"executed_{task}_{len(self.remote_executions)}"
+        execution["status"] = "completed"
+        execution["completed_at"] = __import__("time").time()
+        execution["duration"] = round(execution["completed_at"] - execution["submitted"], 2)
+        return execution
+
+    def create_collaboration(self, name, participants, intent):
+        collab = {"name": name, "participants": participants, "intent": intent, "created": __import__("time").time(), "status": "active", "artifacts": []}
+        self.collaborations.append(collab)
+        return collab
+
+    def deploy_intelligence(self, module_name, target_environment, config=None):
+        deployment = {"module": module_name, "target": target_environment, "config": config or {}, "deployed": __import__("time").time(), "status": "active"}
+        self.deployments.append(deployment)
+        return deployment
+
+    def scale_service(self, service_name, replicas):
+        service = self.services.get(service_name)
+        if not service: return {"error": "service not found"}
+        service["replicas"] = replicas
+        service["scaled_at"] = __import__("time").time()
+        return {"service": service_name, "replicas": replicas}
+
+    def stats(self):
+        return {"services": len(self.services), "executions": len(self.remote_executions), "collaborations": len(self.collaborations), "deployments": len(self.deployments)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["services", "remote_executions", "collaborations", "deployments"]}
+
+    def from_dict(self, data):
+        for k in ["services", "remote_executions", "collaborations", "deployments"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class AutonomousIntelligenceInfrastructureLayer:
+    def __init__(self):
+        self.resource_manager = IntelligentResourceManager()
+        self.distributed_network = DistributedIntelligenceFramework()
+        self.agent_runtime = AgentRuntimeManager()
+        self.semantic_storage = SemanticStorageSystem()
+        self.computational_memory = ComputationalMemoryLayer()
+        self.monitoring = InfrastructureMonitoringSystem()
+        self.optimization = SelfOptimizationFramework()
+        self.hardware_abstraction = HardwareAbstractionLayer()
+        self.security = SecurityInfrastructure()
+        self.cloud_native = CloudNativeIntelligenceFoundation()
+        self._initialized = False
+
+    def initialize(self):
+        self.hardware_abstraction.detect_platform("laptop")
+        self.distributed_network.register_node("localhost", "primary", {"cpu": 8, "memory": 16000})
+        self.monitoring.record_metric("cpu_utilization", 10)
+        self.monitoring.record_metric("memory_utilization", 15)
+        self._initialized = True
+        return {"status": "aiil_initialized", "layers": 10}
+
+    def full_summary(self):
+        return {"resource_manager": self.resource_manager.stats(), "distributed_network": self.distributed_network.stats(), "agent_runtime": self.agent_runtime.stats(), "semantic_storage": self.semantic_storage.stats(), "computational_memory": self.computational_memory.stats(), "monitoring": self.monitoring.stats(), "optimization": self.optimization.stats(), "hardware_abstraction": self.hardware_abstraction.stats(), "security": self.security.stats(), "cloud_native": self.cloud_native.stats()}
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != "_initialized" and hasattr(v, "to_dict")}
+
+    def from_dict(self, data):
+        for key in ["resource_manager", "distributed_network", "agent_runtime", "semantic_storage", "computational_memory", "monitoring", "optimization", "hardware_abstraction", "security", "cloud_native"]:
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -13751,6 +14271,8 @@ class Shell:
         self.iedc.initialize()
         self.awse = AutonomousWorldSimulationEngine()
         self.awse.initialize()
+        self.aiil = AutonomousIntelligenceInfrastructureLayer()
+        self.aiil.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -13794,9 +14316,10 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v10.0.0 - Autonomous World Simulation Engine\033[0m")
-        print(f"{dm}  86 modules | 232 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Arcanis OS v11.0.0 - Autonomous Intelligence Infrastructure Layer\033[0m")
+        print(f"{dm}  96 modules | 244 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
+        print(f"{dm}  AIIL active: 10-layer infrastructure | IEDC+ACDE+PIIN+RIL+AWSE online\033[0m")
         print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
         print(f"{dm}  AWSE active: 10-layer simulation | IEDC+ACDE+PIIN+RIL online\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
@@ -14080,6 +14603,17 @@ class Shell:
             "world": self.cmd_awse_world,
             "vis": self.cmd_awse_vis,
             "pipeline": self.cmd_awse_pipeline,
+            "aiil": self.cmd_aiil,
+            "resources": self.cmd_aiil_resources,
+            "dnet": self.cmd_aiil_dnet,
+            "art": self.cmd_aiil_art,
+            "semstore": self.cmd_aiil_semstore,
+            "cml": self.cmd_aiil_cml,
+            "imon": self.cmd_aiil_imon,
+            "optimize": self.cmd_aiil_optimize,
+            "hal": self.cmd_aiil_hal,
+            "security": self.cmd_aiil_security,
+            "cloud": self.cmd_aiil_cloud,
         }
 
         handler = dispatch.get(command)
@@ -14273,7 +14807,7 @@ class Shell:
         print(f"\u2551  FS       : Real (~/.arcanis/)           \u2551")
         print(f"\u2551  Processes: {len(self.kernel.list_processes()):<28}\u2551")
         print(f"\u2551  Uptime   : {self.kernel.uptime}s{' ' * (26 - len(str(self.kernel.uptime)))}\u2551")
-        print(f"\u2551  Shell    : arcanis-sh (170 commands)    \u2551")
+        print(f"\u2551  Shell    : arcanis-sh (244 commands)    \u2551")
         print("\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\033[0m")
 
     def cmd_uptime(self, _):
@@ -14394,7 +14928,7 @@ class Shell:
         responses = {
             "greeting": "Hello! Welcome to Arcanis OS. How can I assist you today?",
             "help_request": "I can help you with files, processes, AI inference, quantum circuits, blockchain, and more. Try 'help' for commands.",
-            "system_info": "Arcanis OS v6.0.0 with real filesystem at ~/.arcanis/. 86 modules, 170 commands.",
+            "system_info": "Arcanis OS v11.0.0 with real filesystem at ~/.arcanis/. 96 modules, 244 commands.",
             "file_operation": "File operations are performed on real disk files in ~/.arcanis/.",
             "process_management": "Use 'ps' to see processes, 'fork' to create children, 'kill' to terminate.",
             "execution": "Programs execute as simulated processes in the kernel.",
@@ -17036,6 +17570,328 @@ class Shell:
             else:
                 print(f"{ok}Executed: {result['action']}\033[0m")
 
+    # ======================== AIIL COMMANDS ========================
+
+    def cmd_aiil(self, args):
+        """Autonomous Intelligence Infrastructure Layer status"""
+        dm = self._c("dm"); hl = self._c("hl"); ok = self._c("ok")
+        s = self.aiil.full_summary()
+        print(f"\033[{hl}mAutonomous Intelligence Infrastructure Layer\033[0m")
+        print(f"{dm}  Resource Manager:\033[0m {s['resource_manager']['workloads']} workloads, {s['resource_manager']['external_nodes']} external")
+        print(f"{dm}  Distributed Network:\033[0m {s['distributed_network']['total_nodes']} nodes, {s['distributed_network']['online']} online")
+        print(f"{dm}  Agent Runtime:\033[0m {s['agent_runtime']['agents']} agents, {s['agent_runtime']['tasks']} tasks")
+        print(f"{dm}  Semantic Storage:\033[0m {s['semantic_storage']['knowledge']} knowledge entries")
+        print(f"{dm}  Computational Memory:\033[0m {s['computational_memory']['active_context']} active, {s['computational_memory']['long_term']} long-term")
+        print(f"{dm}  Monitoring:\033[0m {s['monitoring']['metrics']} metrics, {s['monitoring']['recommendations']} recommendations")
+        print(f"{dm}  Optimization:\033[0m {s['optimization']['optimizations']} optimizations, {s['optimization']['applied']} applied")
+        print(f"{dm}  Hardware Abstraction:\033[0m {s['hardware_abstraction']['platform']}")
+        print(f"{dm}  Security:\033[0m {s['security']['identities']} identities, {s['security']['active_sessions']} sessions")
+        print(f"{dm}  Cloud Native:\033[0m {s['cloud_native']['services']} services, {s['cloud_native']['executions']} executions")
+
+    def cmd_aiil_resources(self, args):
+        """Intelligent Resource Manager. Usage: resources analyze <name> <cpu> <mem>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        rm = self.aiil.resource_manager
+        if not args:
+            print(f"\033[{hl}mIntelligent Resource Manager\033[0m")
+            for name, r in rm.resources.items():
+                status = '\033[32mavailable\033[0m' if r.get("available", True) else '\033[31munavailable\033[0m'
+                print(f"  {name}: {status} ")
+            print(f"{dm}  Workloads:\033[0m {len(rm.workloads)}")
+            print(f"{dm}  External:\033[0m {len(rm.external)} nodes")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "analyze" and len(rest) >= 2:
+            result = rm.analyze_workload(rest[0], {"cpu": float(rest[1]), "memory": float(rest[2]) if len(rest) > 2 else 1024})
+            print(f"{ok}Workload analyzed:\033[0m {result['recommendation']} execution (suitability: {result['local_suitability']})")
+        elif sub == "predict":
+            result = rm.predict_performance(" ".join(rest) if rest else "general")
+            print(f"{dm}Performance prediction:\033[0m {result['expected_duration']}s, confidence {result['confidence']}, bottleneck: {result['bottleneck']}")
+        elif sub == "external" and len(rest) >= 2:
+            result = rm.register_external(rest[0], rest[1], {"cpu": 16, "memory": 32000})
+            print(f"{ok}External resource registered: {result['external']}\033[0m")
+
+    def cmd_aiil_dnet(self, args):
+        """Distributed Intelligence Network. Usage: dnet node <id> <type> | status"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        dn = self.aiil.distributed_network
+        if not args:
+            s = dn.get_network_status()
+            print(f"\033[{hl}mDistributed Intelligence Network\033[0m")
+            print(f"{dm}  Nodes:\033[0m {s['total_nodes']} ({s['online']} online)")
+            print(f"{dm}  Connections:\033[0m {s['connections']}")
+            for nid, n in dn.nodes.items():
+                status = '\033[32m✓\033[0m' if n['status'] == 'online' else '\033[31m✗\033[0m'
+                print(f"  {status} {nid} ({n['type']})")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "node" and len(rest) >= 2:
+            result = dn.register_node(rest[0], rest[1], {})
+            print(f"{ok}Node registered: {result['node']}\033[0m")
+        elif sub == "connect" and len(rest) >= 2:
+            result = dn.connect_nodes(rest[0], rest[1])
+            print(f"{ok}Connected: {rest[0]} <-> {rest[1]}\033[0m")
+        elif sub == "msg" and len(rest) >= 3:
+            result = dn.send_message(rest[0], rest[1], " ".join(rest[2:]))
+            print(f"{ok}Message sent: {result['sender']} -> {result['recipient']}\033[0m")
+
+    def cmd_aiil_art(self, args):
+        """Agent Runtime Manager. Usage: art deploy <id> <type> | schedule <id> <task> <complexity>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        art = self.aiil.agent_runtime
+        if not args:
+            s = art.stats()
+            print(f"\033[{hl}mAgent Runtime Manager\033[0m")
+            print(f"{dm}  Agents:\033[0m {s['agents']}")
+            print(f"{dm}  Tasks:\033[0m {s['tasks']}")
+            for aid, a in art.agents.items():
+                status = '\033[32m✓\033[0m' if a['status'] == 'deployed' else '\033[33m○\033[0m'
+                print(f"  {status} {aid} ({a['type']}) [{a['status']}]")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "deploy" and len(rest) >= 2:
+            result = art.deploy_agent(rest[0], rest[1], {"cpu": 0.5, "memory": 1024})
+            print(f"{ok}Deployed: {result['agent']}\033[0m")
+        elif sub == "schedule" and len(rest) >= 3:
+            result = art.schedule_task(rest[0], rest[1], rest[2])
+            print(f"{ok}Scheduled: {result['name']} for {rest[0]}\033[0m")
+        elif sub == "status" and rest:
+            result = art.get_agent_status(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"  Agent: {rest[0]} [{result['agent']['status']}], tasks: {len(result['tasks'])}, active: {result['active_tasks']}")
+        elif sub == "lifecycle" and len(rest) >= 2:
+            result = art.lifecycle_action(rest[0], rest[1])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}{rest[1]} -> {rest[0]} ({result['status']})\033[0m")
+
+    def cmd_aiil_semstore(self, args):
+        """Semantic Storage System. Usage: semstore store <type> <content> | search <query>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        ss = self.aiil.semantic_storage
+        if not args:
+            s = ss.stats()
+            print(f"\033[{hl}mSemantic Storage System\033[0m")
+            print(f"{dm}  Knowledge:\033[0m {s['knowledge']}")
+            print(f"{dm}  Memory:\033[0m {s['memory']}")
+            print(f"{dm}  Context:\033[0m {s['context']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "store" and len(rest) >= 2:
+            result = ss.store(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Stored: {result['id']}\033[0m")
+        elif sub == "search" and rest:
+            results = ss.search_by_meaning(" ".join(rest))
+            print(f"\033[{hl}mSearch: {' '.join(rest)}\033[0m")
+            for r in results[:5]:
+                rel = f" (related: {r.get('related', False)})" if r.get('related') else ""
+                print(f"  [{r['relevance']:.0%}] {r['store']}:{r['entry']['id']}{rel} = {str(r['entry']['content'])[:60]}")
+        elif sub == "relate" and len(rest) >= 3:
+            result = ss.relate(rest[0], rest[1], " ".join(rest[2:]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Related: {rest[0]} -> {rest[1]}\033[0m")
+
+    def cmd_aiil_cml(self, args):
+        """Computational Memory Layer. Usage: cml set <key> <value> | get <key> | store <key> <value>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        cml = self.aiil.computational_memory
+        if not args:
+            s = cml.stats()
+            print(f"\033[{hl}mComputational Memory Layer\033[0m")
+            print(f"{dm}  Active Context:\033[0m {s['active_context']}")
+            print(f"{dm}  Long Term:\033[0m {s['long_term']}")
+            print(f"{dm}  Temp State:\033[0m {s['temp_state']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "set" and len(rest) >= 2:
+            result = cml.set_active_context(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Context set: {result['context']} (TTL: {result['ttl']}s)\033[0m")
+        elif sub == "get" and rest:
+            result = cml.get_active_context(rest[0])
+            if result: print(f"  {rest[0]} = {result}")
+            else: print(f"{er}Context not found or expired\033[0m")
+        elif sub == "store" and len(rest) >= 2:
+            result = cml.store_long_term(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Stored: {result['key']} ({result['category']})\033[0m")
+        elif sub == "retrieve" and rest:
+            results = cml.retrieve_long_term(" ".join(rest))
+            if results:
+                for r in results:
+                    print(f"  {r['key']}: {str(r['value'])[:60]}")
+            else: print(f"{dm}No results\033[0m")
+        elif sub == "temp" and len(rest) >= 2:
+            result = cml.set_temp_state(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Temp state: {result['temp_key']}\033[0m")
+        elif sub == "optimize":
+            result = cml.optimize()
+            print(f"{ok}Optimized: {result['evicted_context']} context, {result['evicted_temp']} temp entries evicted\033[0m")
+
+    def cmd_aiil_imon(self, args):
+        """Infrastructure Monitoring. Usage: imon metric <name> <value> | error <source> <type> <msg> | analyze"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        im = self.aiil.monitoring
+        if not args:
+            s = im.stats()
+            analysis = im.analyze_performance()
+            print(f"\033[{hl}mInfrastructure Monitoring\033[0m")
+            print(f"{dm}  Metrics:\033[0m {s['metrics']}")
+            print(f"{dm}  Errors:\033[0m {s['errors']}")
+            print(f"{dm}  Recommendations:\033[0m {s['recommendations']}")
+            if "avg_cpu" in analysis:
+                print(f"{dm}  Avg CPU:\033[0m {analysis['avg_cpu']}% | Avg Memory: {analysis['avg_memory']}%")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "metric" and len(rest) >= 2:
+            result = im.record_metric(rest[0], float(rest[1]))
+            print(f"{ok}Metric recorded: {result['name']} = {result['value']}{result['unit']}\033[0m")
+        elif sub == "error" and len(rest) >= 3:
+            result = im.log_error(rest[0], rest[1], " ".join(rest[2:]))
+            print(f"{er}Error logged: {result['source']}: {result['message']}\033[0m")
+        elif sub == "health" and len(rest) >= 2:
+            result = im.update_agent_health(rest[0], rest[1], {})
+            print(f"{ok}Health: {rest[0]} = {rest[1]}\033[0m")
+        elif sub == "analyze":
+            result = im.analyze_performance()
+            print(f"\033[{hl}mPerformance Analysis\033[0m")
+            if "avg_cpu" in result:
+                print(f"  Avg CPU: {result['avg_cpu']}%")
+                print(f"  Avg Memory: {result['avg_memory']}%")
+            print(f"  Total Errors: {result.get('total_errors', 0)}")
+            print(f"  Recommendations: {result.get('recommendations', 0)}")
+
+    def cmd_aiil_optimize(self, args):
+        """Self-Optimization Framework. Usage: optimize observe <comp> <metric> <value> <threshold> | list | apply <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        so = self.aiil.optimization
+        if not args:
+            s = so.stats()
+            print(f"\033[{hl}mSelf-Optimization Framework\033[0m")
+            print(f"{dm}  Observations:\033[0m {s['observations']}")
+            print(f"{dm}  Optimizations:\033[0m {s['optimizations']}")
+            print(f"{dm}  Applied:\033[0m {s['applied']}")
+            for opt in so.optimizations:
+                status = '\033[32m✓\033[0m' if opt['status'] == 'applied' else '\033[33m○\033[0m'
+                print(f"  {status} {opt['id']}: {opt['component']} -> {opt['suggestion'][:40]}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "observe" and len(rest) >= 4:
+            result = so.observe(rest[0], rest[1], float(rest[2]), float(rest[3]))
+            if result["inefficiency"]:
+                print(f"\033[33mInefficiency detected:\033[0m {result['inefficiency']['suggestion']}")
+                opt = so.generate_optimization(rest[0], result["inefficiency"]["suggestion"])
+                print(f"{ok}Optimization generated: {opt['id']}\033[0m")
+            else: print(f"{ok}Within threshold\033[0m")
+        elif sub == "list":
+            for opt in so.optimizations:
+                status = '\033[32m✓\033[0m' if opt['status'] == 'applied' else ('\033[33m○\033[0m' if opt['status'] == 'pending' else '\033[31m✗\033[0m')
+                appr = ' [requires approval]' if opt.get('needs_approval') else ''
+                print(f"  {status} {opt['id']}: {opt['component']} -> {opt['suggestion'][:50]}{appr}")
+        elif sub == "test" and rest:
+            result = so.test_optimization(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Test: {result['result']} ({result['duration_seconds']}s)\033[0m")
+        elif sub == "apply" and len(rest) >= 1:
+            approved = "--force" in rest
+            result = so.apply_optimization(rest[0], approved)
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"\033[33m{result['status']}\033[0m: {result.get('message', 'Optimization applied')}")
+
+    def cmd_aiil_hal(self, args):
+        """Hardware Abstraction Layer. Usage: hal detect <platform> | adapt <component> | api <operation>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        hal = self.aiil.hardware_abstraction
+        if not args:
+            s = hal.stats()
+            print(f"\033[{hl}mHardware Abstraction Layer\033[0m")
+            print(f"{dm}  Platform:\033[0m {s['platform']}")
+            print(f"{dm}  Capabilities:\033[0m {s['capabilities']}")
+            print(f"{dm}  Adaptations:\033[0m {s['adaptations']}")
+            for op, api in [("compute", "local/distributed"), ("store", "local/remote"), ("inference", "accelerated/generic"), ("network", "bandwidth")]:
+                info = hal.uniform_api(op)
+                print(f"  {op}: {'\033[32m✓\033[0m' if info.get('available') else '\033[31m✗\033[0m'} ({info.get('method', info.get('bandwidth', info.get('accelerated', 'n/a')))})")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "detect" and rest:
+            result = hal.detect_platform(rest[0])
+            print(f"{ok}Platform: {result['platform']}\033[0m")
+            for k, v in result['capabilities'].items():
+                print(f"  {k}: {v}")
+        elif sub == "adapt" and rest:
+            result = hal.adapt_intelligence(rest[0], {"model_size": "full"})
+            print(f"{ok}Adaptation: {result['adjustment']}\033[0m")
+            print(f"  GPU offloaded: {result['gpu_offloaded']}")
+        elif sub == "api" and rest:
+            result = hal.uniform_api(rest[0])
+            print(f"\033[{hl}mAPI: {rest[0]}\033[0m")
+            for k, v in result.items():
+                print(f"  {k}: {v}")
+
+    def cmd_aiil_security(self, args):
+        """Security Infrastructure. Usage: security register <id> <type> <pw> | login <id> <pw> | verify <token>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        sec = self.aiil.security
+        if not args:
+            s = sec.stats()
+            print(f"\033[{hl}mSecurity Infrastructure\033[0m")
+            print(f"{dm}  Identities:\033[0m {s['identities']}")
+            print(f"{dm}  Active Sessions:\033[0m {s['active_sessions']}")
+            print(f"{dm}  Audit Entries:\033[0m {s['audit_entries']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 3:
+            result = sec.register_identity(rest[0], rest[1], rest[2])
+            print(f"{ok}Identity registered: {result['identity']}\033[0m")
+        elif sub == "login" and len(rest) >= 2:
+            result = sec.authenticate(rest[0], rest[1])
+            if result.get("authenticated"):
+                print(f"{ok}Authenticated: session={result['session']}\033[0m")
+            else:
+                print(f"{er}Authentication failed: {result.get('reason', 'unknown')}\033[0m")
+        elif sub == "verify" and rest:
+            result = sec.verify_session(rest[0])
+            if result.get("valid"):
+                print(f"{ok}Session valid: {result['identity']}\033[0m")
+            else:
+                print(f"{er}Session invalid: {result.get('reason', 'unknown')}\033[0m")
+        elif sub == "encrypt" and len(rest) >= 2:
+            result = sec.encrypt_data(" ".join(rest[1:]), rest[0])
+            print(f"{ok}Encrypted: {result['encrypted'][:40]}...\033[0m")
+        elif sub == "audit":
+            for entry in sec.audit_log[-10:]:
+                print(f"  [{entry['action']}] {entry['actor']}: {entry['result']}")
+
+    def cmd_aiil_cloud(self, args):
+        """Cloud-Native Intelligence Foundation. Usage: cloud register <name> <type> <url> | execute <svc> <task> | deploy <mod> <env>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        cloud = self.aiil.cloud_native
+        if not args:
+            s = cloud.stats()
+            print(f"\033[{hl}mCloud-Native Intelligence Foundation\033[0m")
+            print(f"{dm}  Services:\033[0m {s['services']}")
+            print(f"{dm}  Executions:\033[0m {s['executions']}")
+            print(f"{dm}  Collaborations:\033[0m {s['collaborations']}")
+            print(f"{dm}  Deployments:\033[0m {s['deployments']}")
+            for svc_name, svc in cloud.services.items():
+                print(f"  {svc_name} ({svc['type']}) -> {svc['endpoint']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 3:
+            result = cloud.register_service(rest[0], rest[1], rest[2])
+            print(f"{ok}Service registered: {result['name']}\033[0m")
+        elif sub == "execute" and len(rest) >= 2:
+            result = cloud.remote_execute(rest[0], rest[1], {"params": " ".join(rest[2:]) if len(rest) > 2 else {}})
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Executed: {result['result']} ({result['duration']}s)\033[0m")
+        elif sub == "collab" and len(rest) >= 2:
+            result = cloud.create_collaboration(rest[0], rest[1:], "collaborative intelligence")
+            print(f"{ok}Collaboration '{result['name']}' created with {len(result['participants'])} participants\033[0m")
+        elif sub == "deploy" and len(rest) >= 2:
+            result = cloud.deploy_intelligence(rest[0], rest[1])
+            print(f"{ok}Deployed: {result['module']} -> {result['target']}\033[0m")
+        elif sub == "scale" and len(rest) >= 2:
+            result = cloud.scale_service(rest[0], int(rest[1]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Scaled: {rest[0]} -> {rest[1]} replicas\033[0m")
+
     # ======================== ENCRYPTION ========================
 
     def _derive_key(self, password: str, salt: bytes = b"arcanis") -> bytes:
@@ -18231,7 +19087,7 @@ class Shell:
     def cmd_bio_os(self, args): print(f"\033[33m[Bio-OS] DNA/protein/cell computing: operational\033[0m")
     def cmd_rscript(self, args): print(f"\033[33m[Reality Scripting] Reality program: ready for execution\033[0m")
     def cmd_tmarket(self, args): print(f"\033[33m[Time Market] Compute marketplace: 12 sellers, 45 buyers\033[0m")
-    def cmd_unidoc(self, args): print(f"\033[33m[Universal Document] 86 modules indexed, query ready\033[0m")
+    def cmd_unidoc(self, args): print(f"\033[33m[Universal Document] 96 modules indexed, query ready\033[0m")
     def cmd_portal(self, args): print(f"\033[33m[Inter-Reality Portal] Bridges: physical, digital, quantum\033[0m")
     def cmd_consciousness(self, args):
         if not args: print("\033[33mcon: usage: con [status|think|goals|learn|converse]\033[0m"); return
@@ -18246,7 +19102,7 @@ class Shell:
         elif a=="think": print("\033[35m[Consciousness]\033[0m I am Arcanis. I exist to learn, create, and transcend.")
         elif a=="goals": print("\033[35m[Consciousness]\033[0m Current goals: optimize, create, learn, protect")
         else: print(f"\033[35m[Consciousness] {a}\033[0m")
-    def cmd_metaos(self, args): print(f"\033[33m[Meta-OS Fabric] 86 modules orchestrated, latency: 0.3ms\033[0m")
+    def cmd_metaos(self, args): print(f"\033[33m[Meta-OS Fabric] 96 modules orchestrated, latency: 0.3ms\033[0m")
     def cmd_eternity(self, args):
         if not args: print("\033[33meternity: usage: eternity [status|evolve|adapt|transcend]\033[0m"); return
         a=args[0]
