@@ -11273,6 +11273,561 @@ class AutonomousCreationDiscoveryEngine:
                 getattr(self, key).from_dict(data[key])
 
 
+# ═══════════════════════════════════════════════════════════════
+# PHASE 16 — INTELLIGENCE ECOSYSTEM & DEVELOPER CIVILIZATION (IEDC)
+# ═══════════════════════════════════════════════════════════════
+
+class DeveloperPlatform:
+    """Foundation for third-party development: register modules, manage lifecycle, track developers."""
+
+    def __init__(self):
+        self._developers = {}
+        self._modules = {}
+        self._module_types = {"agent", "skill", "knowledge", "workflow", "device", "intelligence_service"}
+
+    def register_developer(self, dev_id, name, contact=""):
+        self._developers[dev_id] = {"id": dev_id, "name": name, "contact": contact, "modules": [], "joined": time.time()}
+        return self._developers[dev_id]
+
+    def publish_module(self, dev_id, name, module_type, version="1.0.0", description="", permissions=None):
+        if module_type not in self._module_types:
+            return {"error": f"Unknown module type: {module_type}"}
+        if dev_id not in self._developers:
+            return {"error": "Developer not registered"}
+        mod_id = f"mod_{int(time.time())}"
+        module = {"id": mod_id, "name": name, "type": module_type, "version": version, "description": description, "developer": dev_id, "permissions": permissions or [], "status": "published", "installs": 0, "published": time.time()}
+        self._modules[mod_id] = module
+        self._developers[dev_id]["modules"].append(mod_id)
+        return module
+
+    def install_module(self, mod_id):
+        if mod_id in self._modules:
+            self._modules[mod_id]["installs"] += 1
+            self._modules[mod_id]["status"] = "installed"
+            return self._modules[mod_id]
+        return {"error": "Module not found"}
+
+    def list_modules(self, module_type=None):
+        if module_type:
+            return {k: v for k, v in self._modules.items() if v["type"] == module_type}
+        return self._modules
+
+    def list_developers(self):
+        return list(self._developers.values())
+
+    def stats(self):
+        return {"developers": len(self._developers), "modules": len(self._modules), "by_type": {t: sum(1 for m in self._modules.values() if m["type"] == t) for t in self._module_types}}
+
+    def to_dict(self):
+        return {"developers": self._developers, "modules": self._modules}
+
+    def from_dict(self, data):
+        if "developers" in data:
+            self._developers = data["developers"]
+        if "modules" in data:
+            self._modules = data["modules"]
+
+
+class IntelligenceSDK:
+    """Developer framework: Agent SDK, Skill SDK, Memory SDK, Device SDK, UI SDK."""
+
+    def __init__(self):
+        self.sdks = {"agent": {"name": "Agent SDK", "version": "1.0.0", "methods": ["create_agent", "train_agent", "deploy_agent", "connect_agents"]},
+                     "skill": {"name": "Skill SDK", "version": "1.0.0", "methods": ["define_skill", "register_tool", "set_permissions", "publish_skill"]},
+                     "memory": {"name": "Memory SDK", "version": "1.0.0", "methods": ["store_knowledge", "retrieve_knowledge", "query_memory", "share_memory"]},
+                     "device": {"name": "Device SDK", "version": "1.0.0", "methods": ["discover_devices", "connect_device", "send_command", "read_sensor"]},
+                     "ui": {"name": "UI SDK", "version": "1.0.0", "methods": ["create_interface", "render_component", "handle_input", "spatial_layout"]}}
+        self._sdk_usage = []
+
+    def get_sdk(self, name):
+        return self.sdks.get(name, {"error": f"SDK not found: {name}"})
+
+    def use_sdk(self, sdk_name, method, params=None):
+        if sdk_name not in self.sdks:
+            return {"error": f"Unknown SDK: {sdk_name}"}
+        if method not in self.sdks[sdk_name]["methods"]:
+            return {"error": f"Unknown method {method} in {sdk_name}"}
+        entry = {"sdk": sdk_name, "method": method, "params": params or {}, "time": time.time()}
+        self._sdk_usage.append(entry)
+        return {"status": "executed", "sdk": sdk_name, "method": method, "result": f"Simulated: {method} executed successfully"}
+
+    def generate_code(self, sdk_name, task_description):
+        if sdk_name not in self.sdks:
+            return {"error": f"Unknown SDK: {sdk_name}"}
+        template = f"""# ARCANIS {self.sdks[sdk_name]['name']} - Generated Code
+# Task: {task_description}
+
+from arcanis.{sdk_name} import {', '.join(self.sdks[sdk_name]['methods'][:3])}
+
+# Initialize
+client = {sdk_name.capitalize()}Client()
+
+# Execute
+result = client.{self.sdks[sdk_name]['methods'][0]}()
+print(f"Result: {{result}}")
+"""
+        return {"sdk": sdk_name, "code": template, "language": "python"}
+
+    def stats(self):
+        return {"sdks": len(self.sdks), "usage": len(self._sdk_usage), "recent_calls": self._sdk_usage[-5:] if self._sdk_usage else []}
+
+    def to_dict(self):
+        return {"sdks": self.sdks, "sdk_usage": self._sdk_usage[-50:]}
+
+    def from_dict(self, data):
+        if "sdks" in data:
+            self.sdks = data["sdks"]
+        if "sdk_usage" in data:
+            self._sdk_usage = data["sdk_usage"]
+
+
+class ModuleArchitecture:
+    """Intelligence module definition: capabilities, permissions, memory, tools, compatibility."""
+
+    def __init__(self):
+        self._modules = {}
+        self._categories = {"coding", "research", "design", "analysis", "automation", "communication", "knowledge", "security"}
+
+    def define_module(self, name, category, capabilities=None, permissions=None, memory_req=None, tools=None):
+        if category not in self._categories:
+            return {"error": f"Unknown category: {category}"}
+        mid = f"arch_{int(time.time())}"
+        self._modules[mid] = {"id": mid, "name": name, "category": category, "capabilities": capabilities or [], "permissions": permissions or [], "memory_requirements": memory_req or {}, "tools": tools or [], "compatibility": ["arcanis_os"], "created": time.time()}
+        return self._modules[mid]
+
+    def check_compatibility(self, mod_id, target_system="arcanis_os"):
+        if mod_id not in self._modules:
+            return {"error": "Module not found"}
+        mod = self._modules[mod_id]
+        compatible = target_system in mod["compatibility"]
+        return {"module": mod["name"], "target": target_system, "compatible": compatible, "required_permissions": mod["permissions"], "memory_needed": mod["memory_requirements"]}
+
+    def list_categories(self):
+        return sorted(self._categories)
+
+    def stats(self):
+        return {"modules_defined": len(self._modules), "categories": len(self._categories)}
+
+    def to_dict(self):
+        return {"modules": self._modules}
+
+    def from_dict(self, data):
+        if "modules" in data:
+            self._modules = data["modules"]
+
+
+class MarketplaceFoundation:
+    """Intelligence marketplace where modules are discovered, reviewed, and installed."""
+
+    def __init__(self):
+        self._listings = {}
+        self._reviews = []
+        self._categories = {"intelligence", "tools", "knowledge", "agents", "workflows", "integrations"}
+
+    def list_module(self, name, description, category, developer, price="free", version="1.0.0"):
+        if category not in self._categories:
+            return {"error": f"Unknown category: {category}"}
+        lid = f"listing_{int(time.time())}"
+        listing = {"id": lid, "name": name, "description": description, "category": category, "developer": developer, "price": price, "version": version, "rating": 0.0, "reviews": 0, "installs": 0, "listed": time.time()}
+        self._listings[lid] = listing
+        return listing
+
+    def review_module(self, listing_id, rating, comment=""):
+        if listing_id not in self._listings:
+            return {"error": "Listing not found"}
+        review = {"listing": listing_id, "rating": max(1, min(5, rating)), "comment": comment, "time": time.time()}
+        self._reviews.append(review)
+        listing = self._listings[listing_id]
+        all_ratings = [r["rating"] for r in self._reviews if r["listing"] == listing_id]
+        listing["rating"] = sum(all_ratings) / len(all_ratings)
+        listing["reviews"] = len(all_ratings)
+        return review
+
+    def install(self, listing_id):
+        if listing_id in self._listings:
+            self._listings[listing_id]["installs"] += 1
+            return self._listings[listing_id]
+        return {"error": "Listing not found"}
+
+    def search(self, query):
+        results = []
+        for lid, listing in self._listings.items():
+            if query.lower() in listing["name"].lower() or query.lower() in listing["description"].lower():
+                results.append(listing)
+        return results
+
+    def browse(self, category=None):
+        if category:
+            return {k: v for k, v in self._listings.items() if v["category"] == category}
+        return self._listings
+
+    def stats(self):
+        return {"listings": len(self._listings), "reviews": len(self._reviews), "categories": list(self._categories)}
+
+    def to_dict(self):
+        return {"listings": self._listings, "reviews": self._reviews}
+
+    def from_dict(self, data):
+        if "listings" in data:
+            self._listings = data["listings"]
+        if "reviews" in data:
+            self._reviews = data["reviews"]
+
+
+class AgentCollaborationNetwork:
+    """Network for agents to discover each other, communicate, delegate tasks, and share results."""
+
+    def __init__(self):
+        self._agents = {}
+        self._messages = []
+        self._delegations = []
+
+    def register_agent(self, agent_id, name, capabilities=None):
+        self._agents[agent_id] = {"id": agent_id, "name": name, "capabilities": capabilities or [], "status": "available", "peers": [], "tasks_completed": 0, "registered": time.time()}
+        return self._agents[agent_id]
+
+    def discover_agents(self, capability=None):
+        if capability:
+            return {k: v for k, v in self._agents.items() if capability in v["capabilities"]}
+        return self._agents
+
+    def send_message(self, sender, recipient, content, msg_type="task"):
+        if sender not in self._agents or recipient not in self._agents:
+            return {"error": "Agent not found"}
+        msg = {"id": f"msg_{int(time.time())}", "sender": sender, "recipient": recipient, "content": content, "type": msg_type, "time": time.time()}
+        self._messages.append(msg)
+        if recipient not in self._agents[sender].get("peers", []):
+            self._agents[sender].setdefault("peers", []).append(recipient)
+        if sender not in self._agents[recipient].get("peers", []):
+            self._agents[recipient].setdefault("peers", []).append(sender)
+        return msg
+
+    def delegate_task(self, delegator, agent_id, task, requirements=None):
+        if delegator not in self._agents or agent_id not in self._agents:
+            return {"error": "Agent not found"}
+        delegation = {"id": f"del_{int(time.time())}", "delegator": delegator, "agent": agent_id, "task": task, "requirements": requirements or {}, "status": "delegated", "time": time.time()}
+        self._delegations.append(delegation)
+        self._agents[agent_id]["tasks_completed"] += 1
+        self._agents[agent_id]["status"] = "busy"
+        result = self._simulate_result(agent_id, task)
+        delegation["result"] = result
+        delegation["status"] = "completed"
+        self._agents[agent_id]["status"] = "available"
+        return delegation
+
+    def _simulate_result(self, agent_id, task):
+        agent = self._agents.get(agent_id, {})
+        name = agent.get("name", "agent")
+        return {"agent": name, "task": task, "output": f"{name} completed: {task}", "confidence": 0.85, "time": time.time()}
+
+    def collaboration_opportunities(self):
+        opportunities = []
+        agents_list = list(self._agents.values())
+        for i, a1 in enumerate(agents_list):
+            for a2 in agents_list[i+1:]:
+                shared = set(a1.get("capabilities", [])) & set(a2.get("capabilities", []))
+                if not shared and a1.get("capabilities") and a2.get("capabilities"):
+                    opportunities.append({"agents": [a1["id"], a2["id"]], "suggestion": f"{a1['name']} and {a2['name']} have complementary capabilities"})
+        return opportunities
+
+    def stats(self):
+        return {"agents": len(self._agents), "messages": len(self._messages), "delegations": len(self._delegations)}
+
+    def to_dict(self):
+        return {"agents": self._agents, "messages": self._messages[-50:], "delegations": self._delegations}
+
+    def from_dict(self, data):
+        if "agents" in data:
+            self._agents = data["agents"]
+        if "messages" in data:
+            self._messages = data["messages"]
+        if "delegations" in data:
+            self._delegations = data["delegations"]
+
+
+class OpenIntelligenceProtocol:
+    """Standard communication format for identity, tasks, knowledge exchange, permissions, and results."""
+
+    def __init__(self):
+        self._protocol_version = "1.0.0"
+        self._message_types = {"request", "response", "task", "knowledge", "permission", "result", "discovery"}
+        self._handlers = {}
+        self._log = []
+
+    def format_message(self, msg_type, sender, recipient, payload):
+        if msg_type not in self._message_types:
+            return {"error": f"Unknown message type: {msg_type}"}
+        message = {"protocol": "ARCANIS-OIP", "version": self._protocol_version, "type": msg_type, "sender": sender, "recipient": recipient, "payload": payload, "timestamp": time.time(), "id": f"oip_{int(time.time())}"}
+        self._log.append(message)
+        return message
+
+    def register_handler(self, msg_type, handler_name):
+        self._handlers[msg_type] = handler_name
+
+    def process_message(self, message):
+        if message.get("protocol") != "ARCANIS-OIP":
+            return {"error": "Unknown protocol"}
+        msg_type = message.get("type")
+        handler = self._handlers.get(msg_type, "default_handler")
+        return {"status": "processed", "type": msg_type, "handler": handler, "result": f"Message from {message.get('sender')} to {message.get('recipient')} processed"}
+
+    def translate(self, external_data, target_format="ARCANIS-OIP"):
+        return self.format_message("request", "external", "arcanis_core", {"raw": external_data, "format": target_format})
+
+    def stats(self):
+        return {"version": self._protocol_version, "handlers": len(self._handlers), "messages_logged": len(self._log)}
+
+    def to_dict(self):
+        return {"protocol_version": self._protocol_version, "handlers": self._handlers, "log": self._log[-20:]}
+
+    def from_dict(self, data):
+        if "handlers" in data:
+            self._handlers = data["handlers"]
+        if "log" in data:
+            self._log = data["log"]
+
+
+class GovernanceSystem:
+    """Ecosystem safety: module verification, permission analysis, security testing, user approval."""
+
+    def __init__(self):
+        self._verification_queue = []
+        self._approved = []
+        self._rejected = []
+        self._policies = {"require_verification": True, "max_permission_level": "high", "audit_enabled": True}
+
+    def submit_for_verification(self, module_id, module_data):
+        entry = {"id": module_id, "data": module_data, "status": "pending", "submitted": time.time()}
+        self._verification_queue.append(entry)
+        result = self._verify(entry)
+        return result
+
+    def _verify(self, entry):
+        data = entry["data"]
+        issues = []
+        permissions = data.get("permissions", [])
+        for p in permissions:
+            if p in ("full_system", "remote_access", "kernel_modification"):
+                issues.append(f"High-risk permission: {p}")
+        if not data.get("description"):
+            issues.append("Missing description")
+        if issues:
+            entry["status"] = "rejected"
+            entry["issues"] = issues
+            self._rejected.append(entry)
+            return {"status": "rejected", "issues": issues}
+        entry["status"] = "approved"
+        self._approved.append(entry)
+        return {"status": "approved", "module": data.get("name", "unknown"), "level": "safe"}
+
+    def check_permissions(self, module_id, requested_permissions):
+        max_level = self._policies["max_permission_level"]
+        risk_map = {"low": 1, "medium": 2, "high": 3, "critical": 4}
+        for p in requested_permissions:
+            level = risk_map.get(p, 1)
+            if level > risk_map.get(max_level, 3):
+                return {"approved": False, "reason": f"Permission '{p}' exceeds max allowed level ({max_level})", "requires_user": True}
+        return {"approved": True, "permissions": requested_permissions}
+
+    def audit_log(self, n=20):
+        entries = [{"type": "approved", "entries": self._approved[-n//2:]}, {"type": "rejected", "entries": self._rejected[-n//2:]}] if self._approved or self._rejected else []
+        return entries
+
+    def stats(self):
+        return {"pending": len(self._verification_queue), "approved": len(self._approved), "rejected": len(self._rejected), "policies": self._policies}
+
+    def to_dict(self):
+        return {"policies": self._policies, "approved": self._approved[-20:], "rejected": self._rejected[-20:]}
+
+    def from_dict(self, data):
+        if "policies" in data:
+            self._policies = data["policies"]
+        if "approved" in data:
+            self._approved = data["approved"]
+        if "rejected" in data:
+            self._rejected = data["rejected"]
+
+
+class KnowledgeContributionFramework:
+    """Distributed knowledge ecosystem with ownership, privacy, attribution."""
+
+    def __init__(self):
+        self._contributions = []
+        self._contributors = {}
+        self._collections = {}
+
+    def contribute(self, contributor_id, contributor_name, content_type, title, content, tags=None):
+        cid = f"contrib_{int(time.time())}"
+        contribution = {"id": cid, "contributor": contributor_id, "contributor_name": contributor_name, "type": content_type, "title": title, "content": content, "tags": tags or [], "license": "by-nc", "attributed": True, "time": time.time()}
+        self._contributions.append(contribution)
+        if contributor_id not in self._contributors:
+            self._contributors[contributor_id] = {"id": contributor_id, "name": contributor_name, "contributions": 0, "joined": time.time()}
+        self._contributors[contributor_id]["contributions"] += 1
+        return contribution
+
+    def create_collection(self, name, description, contributor_id):
+        col_id = f"col_{int(time.time())}"
+        self._collections[col_id] = {"id": col_id, "name": name, "description": description, "owner": contributor_id, "items": [], "created": time.time()}
+        return self._collections[col_id]
+
+    def add_to_collection(self, col_id, contrib_id):
+        if col_id in self._collections:
+            contrib = next((c for c in self._contributions if c["id"] == contrib_id), None)
+            if contrib:
+                self._collections[col_id]["items"].append(contrib)
+                return True
+        return False
+
+    def search(self, query):
+        results = []
+        for c in self._contributions:
+            if query.lower() in c["title"].lower() or query.lower() in c["content"][:200].lower():
+                results.append(c)
+        return results
+
+    def stats(self):
+        return {"contributions": len(self._contributions), "contributors": len(self._contributors), "collections": len(self._collections), "by_type": {}}
+
+    def to_dict(self):
+        return {"contributions": self._contributions[-50:], "contributors": self._contributors, "collections": self._collections}
+
+    def from_dict(self, data):
+        if "contributions" in data:
+            self._contributions = data["contributions"]
+        if "contributors" in data:
+            self._contributors = data["contributors"]
+        if "collections" in data:
+            self._collections = data["collections"]
+
+
+class EnterpriseFoundation:
+    """Organization support: team spaces, shared agents, org knowledge, permission hierarchy, internal automation."""
+
+    def __init__(self):
+        self._organizations = {}
+        self._teams = {}
+        self._org_knowledge = []
+
+    def create_organization(self, org_id, name, admin):
+        self._organizations[org_id] = {"id": org_id, "name": name, "admin": admin, "members": [admin], "agents": [], "knowledge_bases": [], "created": time.time()}
+        return self._organizations[org_id]
+
+    def add_member(self, org_id, member_id, role="member"):
+        if org_id in self._organizations:
+            if member_id not in self._organizations[org_id]["members"]:
+                self._organizations[org_id]["members"].append(member_id)
+            return True
+        return False
+
+    def create_team(self, org_id, name, members=None):
+        tid = f"team_{int(time.time())}"
+        self._teams[tid] = {"id": tid, "org": org_id, "name": name, "members": members or [], "shared_agents": [], "created": time.time()}
+        return self._teams[tid]
+
+    def share_agent(self, org_id, agent_id, agent_name):
+        if org_id in self._organizations:
+            entry = {"id": agent_id, "name": agent_name, "org": org_id, "shared": time.time()}
+            self._organizations[org_id]["agents"].append(entry)
+            return entry
+        return {"error": "Organization not found"}
+
+    def add_knowledge(self, org_id, title, content, department="general"):
+        entry = {"org": org_id, "title": title, "content": content, "department": department, "time": time.time()}
+        self._org_knowledge.append(entry)
+        if org_id in self._organizations:
+            self._organizations[org_id]["knowledge_bases"].append(entry)
+        return entry
+
+    def suggest_automation(self, org_id, department):
+        return {"org": org_id, "department": department, "suggested_automations": [f"Auto-reporting for {department}", f"Cross-team knowledge sync for {department}", f"{department} workflow optimization"]}
+
+    def stats(self):
+        return {"organizations": len(self._organizations), "teams": len(self._teams), "knowledge_entries": len(self._org_knowledge)}
+
+    def to_dict(self):
+        return {"organizations": self._organizations, "teams": self._teams, "knowledge": self._org_knowledge[-50:]}
+
+    def from_dict(self, data):
+        if "organizations" in data:
+            self._organizations = data["organizations"]
+        if "teams" in data:
+            self._teams = data["teams"]
+        if "knowledge" in data:
+            self._org_knowledge = data["knowledge"]
+
+
+class EcosystemArchitecture:
+    """Future economic and ecosystem architecture: marketplace, rewards, licensing, community."""
+
+    def __init__(self):
+        self._architecture = {
+            "economy": {"type": "intelligence_marketplace", "tokens": None, "rewards": "planned", "licensing": "enterprise_tiered"},
+            "layers": ["core", "intelligence_modules", "developer_tools", "enterprise_services", "community"],
+            "standards": ["ARCANIS-OIP", "module_manifest_v1", "agent_protocol_v1", "knowledge_format_v1"],
+            "growth_metrics": {"developers": 0, "modules": 0, "organizations": 0, "knowledge_contributions": 0},
+        }
+        self._roadmap = [{"phase": "foundation", "status": "current", "items": ["Developer platform", "SDK", "Marketplace", "Governance"]}, {"phase": "growth", "status": "planned", "items": ["Economy", "Enterprise suite", "Partner program"]}, {"phase": "civilization", "status": "future", "items": ["Autonomous developer agents", "Self-improving ecosystem", "Cross-platform intelligence"]}]
+
+    def get_architecture(self):
+        return self._architecture
+
+    def get_roadmap(self):
+        return self._roadmap
+
+    def record_growth(self, metric, value):
+        if metric in self._architecture["growth_metrics"]:
+            self._architecture["growth_metrics"][metric] = value
+
+    def stats(self):
+        return {"layers": len(self._architecture["layers"]), "standards": len(self._architecture["standards"]), "roadmap_phases": len(self._roadmap), "metrics": self._architecture["growth_metrics"]}
+
+    def to_dict(self):
+        return self.__dict__
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, '_'+k if k.startswith('_') else k, v)
+
+
+class IntelligenceEcosystemDeveloperCivilization:
+    """Phase 16 — The ecosystem layer that allows external developers, researchers, creators,
+    and intelligent agents to build on top of ARCANIS. Evolves ARCANIS from product to platform."""
+
+    def __init__(self):
+        self.platform = DeveloperPlatform()
+        self.sdk = IntelligenceSDK()
+        self.modules = ModuleArchitecture()
+        self.marketplace = MarketplaceFoundation()
+        self.agent_network = AgentCollaborationNetwork()
+        self.protocol = OpenIntelligenceProtocol()
+        self.governance = GovernanceSystem()
+        self.knowledge = KnowledgeContributionFramework()
+        self.enterprise = EnterpriseFoundation()
+        self.architecture = EcosystemArchitecture()
+        self._initialized = False
+
+    def initialize(self):
+        self.platform.register_developer("arcanis_labs", "ARCANIS Labs", "dev@arcanis.io")
+        self.platform.register_developer("community", "Community Developers", "community@arcanis.io")
+        self.agent_network.register_agent("agent_basic", "Basic Agent", ["communicate", "learn"])
+        self.agent_network.register_agent("agent_researcher", "Research Agent", ["research", "analyze", "synthesize"])
+        self.agent_network.register_agent("agent_coder", "Coding Agent", ["code", "debug", "test"])
+        self.architecture.record_growth("developers", 2)
+        self._initialized = True
+        return {"status": "iedc_initialized", "layers": 10}
+
+    def full_summary(self):
+        return {"platform": self.platform.stats(), "sdk": self.sdk.stats(), "modules": self.modules.stats(), "marketplace": self.marketplace.stats(), "agent_network": self.agent_network.stats(), "protocol": self.protocol.stats(), "governance": self.governance.stats(), "knowledge": self.knowledge.stats(), "enterprise": self.enterprise.stats(), "ecosystem": self.architecture.stats()}
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != '_initialized' and hasattr(v, 'to_dict')}
+
+    def from_dict(self, data):
+        for key in ["platform", "sdk", "modules", "marketplace", "agent_network", "protocol", "governance", "knowledge", "enterprise", "architecture"]:
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -12672,6 +13227,8 @@ class Shell:
         self.ril.initialize()
         self.acde = AutonomousCreationDiscoveryEngine()
         self.acde.initialize()
+        self.iedc = IntelligenceEcosystemDeveloperCivilization()
+        self.iedc.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -12715,11 +13272,11 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v8.0.0 - Autonomous Creation & Discovery Engine\033[0m")
-        print(f"{dm}  86 modules | 207 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Arcanis OS v9.0.0 - Intelligence Ecosystem & Developer Civilization\033[0m")
+        print(f"{dm}  86 modules | 220 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
-        print(f"{dm}  ACDE active: 10-layer creation engine | PIIN+RIL online\033[0m")
+        print(f"{dm}  IEDC active: 10-layer ecosystem | ACDE+PIIN+RIL online\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
         print(f"{dm}  Theme: {self.theme} | Type 'help' for commands\033[0m")
         print()
@@ -12979,6 +13536,17 @@ class Shell:
             "improve": self.cmd_acde_improve,
             "mode": self.cmd_acde_mode,
             "creations": self.cmd_acde_memory,
+            "iedc": self.cmd_iedc,
+            "dev-platform": self.cmd_iedc_platform,
+            "sdk": self.cmd_iedc_sdk,
+            "modarch": self.cmd_iedc_modules,
+            "market": self.cmd_iedc_marketplace,
+            "agnet": self.cmd_iedc_agnet,
+            "oip": self.cmd_iedc_protocol,
+            "govern": self.cmd_iedc_governance,
+            "econtribute": self.cmd_iedc_knowledge,
+            "enterprise": self.cmd_iedc_enterprise,
+            "ecosys": self.cmd_iedc_ecosystem,
         }
 
         handler = dispatch.get(command)
@@ -15389,6 +15957,264 @@ class Shell:
                 print(f"  - {name}")
         else:
             print(f"{dm}No results for '{query}'\033[0m")
+
+    # ======================== IEDC (Phase 16) ========================
+
+    def cmd_iedc(self, args):
+        """Intelligence Ecosystem & Developer Civilization — full summary."""
+        hl = self._c("hl"); dm = self._c("dm")
+        s = self.iedc.full_summary()
+        print(f"\033[{hl}mIEDC — Intelligence Ecosystem & Developer Civilization\033[0m")
+        print(f"{dm}  Platform:\033[0m {s['platform']['developers']} developers, {s['platform']['modules']} modules")
+        print(f"{dm}  SDK:\033[0m {s['sdk']['sdks']} SDKs, {s['sdk']['usage']} calls")
+        print(f"{dm}  Module Architecture:\033[0m {s['modules']['modules_defined']} defined")
+        print(f"{dm}  Marketplace:\033[0m {s['marketplace']['listings']} listings, {s['marketplace']['reviews']} reviews")
+        print(f"{dm}  Agent Network:\033[0m {s['agent_network']['agents']} agents, {s['agent_network']['messages']} messages")
+        print(f"{dm}  Protocol (OIP):\033[0m v{s['protocol']['version']}, {s['protocol']['handlers']} handlers")
+        print(f"{dm}  Governance:\033[0m {s['governance']['approved']} approved, {s['governance']['rejected']} rejected")
+        print(f"{dm}  Knowledge:\033[0m {s['knowledge']['contributions']} contributions, {s['knowledge']['contributors']} contributors")
+        print(f"{dm}  Enterprise:\033[0m {s['enterprise']['organizations']} orgs, {s['enterprise']['teams']} teams")
+        print(f"{dm}  Ecosystem:\033[0m {s['ecosystem']['layers']} layers, {s['ecosystem']['standards']} standards")
+
+    def cmd_iedc_platform(self, args):
+        """Developer platform. Usage: dev-platform <sub> [args]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        p = self.iedc.platform
+        if not args:
+            s = p.stats()
+            print(f"\033[{hl}mDeveloper Platform\033[0m")
+            print(f"{dm}  Developers:\033[0m {s['developers']}")
+            for d in p.list_developers():
+                print(f"    {d['name']} ({d['id']}) - {len(d['modules'])} modules")
+            print(f"{dm}  Modules by type:\033[0m {s['by_type']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 1:
+            result = p.register_developer(rest[0], " ".join(rest[1:]) if len(rest) > 1 else rest[0])
+            print(f"{ok}Developer registered: {result['name']}\033[0m")
+        elif sub == "publish" and len(rest) >= 2:
+            result = p.publish_module("arcanis_labs", rest[0], rest[1], description=" ".join(rest[2:]) if len(rest) > 2 else "")
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Module published: {result['name']} ({result['type']})\033[0m")
+
+    def cmd_iedc_sdk(self, args):
+        """Intelligence SDK. Usage: sdk [name] or sdk generate <sdk> <task>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        s = self.iedc.sdk
+        if not args:
+            print(f"\033[{hl}mIntelligence SDKs\033[0m")
+            for name, sdk in s.sdks.items():
+                print(f"{dm}  {sdk['name']} v{sdk['version']}:\033[0m {', '.join(sdk['methods'][:3])}...")
+            return
+        if args[0] == "generate" and len(args) >= 3:
+            result = s.generate_code(args[1], " ".join(args[2:]))
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{hl}Generated {args[1]} Code:\033[0m")
+                print(result['code'])
+        elif args[0] in s.sdks:
+            sdk = s.get_sdk(args[0])
+            print(f"\033[{hl}m{sdk['name']} v{sdk['version']}\033[0m")
+            for m in sdk['methods']:
+                print(f"  {m}()")
+        else:
+            print(f"{er}SDK not found. Available: {', '.join(s.sdks.keys())}\033[0m")
+
+    def cmd_iedc_modules(self, args):
+        """Module architecture. Usage: modarch <name> <category> [capabilities]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        m = self.iedc.modules
+        if not args:
+            s = m.stats()
+            print(f"\033[{hl}mModule Architecture\033[0m")
+            print(f"{dm}  Categories:\033[0m {', '.join(m.list_categories())}")
+            print(f"{dm}  Defined:\033[0m {s['modules_defined']}")
+            return
+        if len(args) >= 2:
+            result = m.define_module(args[0], args[1], capabilities=args[2:] if len(args) > 2 else ["general"])
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Module defined: {result['name']} [{result['category']}]\033[0m")
+
+    def cmd_iedc_marketplace(self, args):
+        """Intelligence marketplace. Usage: market <sub> [args]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        m = self.iedc.marketplace
+        if not args:
+            s = m.stats()
+            print(f"\033[{hl}mIntelligence Marketplace\033[0m")
+            print(f"{dm}  Listings:\033[0m {s['listings']}")
+            print(f"{dm}  Categories:\033[0m {', '.join(s['categories'])}")
+            for lid, listing in m.browse().items():
+                print(f"  {listing['name']} [{listing['category']}] - {listing['price']} - {listing['rating']:.1f}★")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "list" and len(rest) >= 2:
+            result = m.list_module(rest[0], " ".join(rest[1:]), "intelligence", "arcanis_labs")
+            print(f"{ok}Listed: {result['name']}\033[0m")
+        elif sub == "search" and rest:
+            results = m.search(" ".join(rest))
+            print(f"{dm}Results ({len(results)}):\033[0m")
+            for r in results:
+                print(f"  {r['name']}: {r['description'][:80]}")
+        elif sub == "rate" and len(rest) >= 2:
+            result = m.review_module(rest[0], int(rest[1]), " ".join(rest[2:]) if len(rest) > 2 else "")
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Rated {rest[0]}: {rest[1]}★\033[0m")
+
+    def cmd_iedc_agnet(self, args):
+        """Agent collaboration network. Usage: agnet <sub> [args]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        n = self.iedc.agent_network
+        if not args:
+            s = n.stats()
+            print(f"\033[{hl}mAgent Collaboration Network\033[0m")
+            print(f"{dm}  Agents:\033[0m {s['agents']}")
+            for aid, agent in n.discover_agents().items():
+                print(f"    {agent['name']}: {', '.join(agent['capabilities'][:3])} [{agent['status']}]")
+            print(f"{dm}  Messages:\033[0m {s['messages']}")
+            print(f"{dm}  Delegations:\033[0m {s['delegations']}")
+            opps = n.collaboration_opportunities()
+            if opps:
+                print(f"{dm}  Collaboration opportunities:\033[0m")
+                for o in opps[:3]:
+                    print(f"    {o['suggestion']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 1:
+            result = n.register_agent(rest[0], " ".join(rest[1:]) if len(rest) > 1 else rest[0], ["communicate"])
+            print(f"{ok}Agent registered: {result['name']}\033[0m")
+        elif sub == "send" and len(rest) >= 3:
+            result = n.send_message(rest[0], rest[1], " ".join(rest[2:]))
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Message sent: {rest[0]} -> {rest[1]}\033[0m")
+        elif sub == "delegate" and len(rest) >= 3:
+            result = n.delegate_task(rest[0], rest[1], " ".join(rest[2:]))
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Task delegated: {result['result']['output']}\033[0m")
+
+    def cmd_iedc_protocol(self, args):
+        """Open Intelligence Protocol. Usage: oip [sub]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        o = self.iedc.protocol
+        if not args:
+            s = o.stats()
+            print(f"\033[{hl}mOpen Intelligence Protocol (OIP)\033[0m")
+            print(f"{dm}  Version:\033[0m {s['version']}")
+            print(f"{dm}  Message types:\033[0m {', '.join(sorted(o._message_types))}")
+            print(f"{dm}  Handlers:\033[0m {s['handlers']}")
+            print(f"{dm}  Messages logged:\033[0m {s['messages_logged']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "send" and len(rest) >= 3:
+            msg = o.format_message(rest[0], rest[1], rest[2], {"data": " ".join(rest[3:]) if len(rest) > 3 else {}})
+            if "error" in msg:
+                print(f"{er}{msg['error']}\033[0m")
+            else:
+                print(f"{ok}OIP message created\033[0m")
+                print(f"  Type: {msg['type']} | From: {msg['sender']} -> {msg['recipient']}")
+        elif sub == "register" and len(rest) >= 2:
+            o.register_handler(rest[0], rest[1])
+            print(f"{ok}Handler registered: {rest[0]} -> {rest[1]}\033[0m")
+
+    def cmd_iedc_governance(self, args):
+        """Governance system. Usage: govern <sub> [args]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        g = self.iedc.governance
+        if not args:
+            s = g.stats()
+            print(f"\033[{hl}mGovernance System\033[0m")
+            print(f"{dm}  Pending:\033[0m {s['pending']}")
+            print(f"{dm}  Approved:\033[0m {s['approved']}")
+            print(f"{dm}  Rejected:\033[0m {s['rejected']}")
+            print(f"{dm}  Policies:\033[0m {s['policies']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "verify" and rest:
+            result = g.submit_for_verification(f"mod_{int(time.time())}", {"name": rest[0], "permissions": rest[1:] if len(rest) > 1 else [], "description": " ".join(rest) if len(rest) > 1 else "auto"})
+            if result["status"] == "approved":
+                print(f"{ok}Module '{result['module']}' verified and approved\033[0m")
+            else:
+                print(f"{er}Module rejected: {', '.join(result.get('issues', ['unknown']))}\033[0m")
+        elif sub == "check":
+            result = g.check_permissions("test", rest if rest else ["low"])
+            if result["approved"]:
+                print(f"{ok}Permissions approved\033[0m")
+            else:
+                print(f"{er}Permission denied: {result['reason']}\033[0m")
+
+    def cmd_iedc_knowledge(self, args):
+        """Knowledge contribution. Usage: econtribute <sub> [args]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        k = self.iedc.knowledge
+        if not args:
+            s = k.stats()
+            print(f"\033[{hl}mKnowledge Contribution Framework\033[0m")
+            print(f"{dm}  Contributors:\033[0m {s['contributors']}")
+            print(f"{dm}  Contributions:\033[0m {s['contributions']}")
+            print(f"{dm}  Collections:\033[0m {s['collections']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "add" and len(rest) >= 2:
+            result = k.contribute("user", "ARCANIS User", rest[0], " ".join(rest[1:]), " ".join(rest[1:]))
+            print(f"{ok}Contribution added: {result['title']}\033[0m")
+        elif sub == "search" and rest:
+            results = k.search(" ".join(rest))
+            print(f"{dm}Results ({len(results)}):\033[0m")
+            for r in results[:5]:
+                print(f"  [{r['type']}] {r['title']} by {r['contributor_name']}")
+
+    def cmd_iedc_enterprise(self, args):
+        """Enterprise foundation. Usage: enterprise <sub> [args]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        e = self.iedc.enterprise
+        if not args:
+            s = e.stats()
+            print(f"\033[{hl}mEnterprise Foundation\033[0m")
+            print(f"{dm}  Organizations:\033[0m {s['organizations']}")
+            print(f"{dm}  Teams:\033[0m {s['teams']}")
+            print(f"{dm}  Knowledge entries:\033[0m {s['knowledge_entries']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "create" and len(rest) >= 1:
+            result = e.create_organization(f"org_{int(time.time())}", rest[0], "admin")
+            print(f"{ok}Organization created: {result['name']}\033[0m")
+        elif sub == "team" and len(rest) >= 1:
+            result = e.create_team("org_main", " ".join(rest))
+            print(f"{ok}Team created: {result['name']}\033[0m")
+        elif sub == "knowledge" and len(rest) >= 2:
+            e.add_knowledge("org_main", rest[0], " ".join(rest[1:]))
+            print(f"{ok}Knowledge added: {rest[0]}\033[0m")
+        elif sub == "automation" and rest:
+            result = e.suggest_automation("org_main", " ".join(rest))
+            print(f"{hl}Suggested automations for {result['department']}:\033[0m")
+            for a in result['suggested_automations']:
+                print(f"  - {a}")
+
+    def cmd_iedc_ecosystem(self, args):
+        """Ecosystem architecture. Usage: ecosys"""
+        hl = self._c("hl"); dm = self._c("dm")
+        e = self.iedc.architecture
+        arch = e.get_architecture()
+        print(f"\033[{hl}mEcosystem Architecture\033[0m")
+        print(f"{dm}  Economy:\033[0m {arch['economy']}")
+        print(f"{dm}  Layers:\033[0m {', '.join(arch['layers'])}")
+        print(f"{dm}  Standards:\033[0m {', '.join(arch['standards'])}")
+        print(f"{dm}  Growth metrics:\033[0m {arch['growth_metrics']}")
+        print(f"\033[{hl}mRoadmap\033[0m")
+        for phase in e.get_roadmap():
+            status = '\033[32m✓\033[0m' if phase['status'] == 'current' else '\033[33m○\033[0m'
+            print(f"  {status} {phase['phase']}: {', '.join(phase['items'])}")
 
     # ======================== ENCRYPTION ========================
 

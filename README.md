@@ -1,6 +1,6 @@
 # Ω Arcanis OS — The Operating System That Transcended Itself
 
-> **76 phases · 86 modules · 1134 tests · 100% pass · v8.0.0**
+> **77 phases · 86 modules · 1134 tests · 100% pass · v9.0.0**
 
 ```ascii
      _                _                 ____   ___   ____
@@ -22,7 +22,7 @@ Not a Linux distro. Not a research paper. A complete, ground-up OS architecture 
 The bedrock. A 32-bit x86 microkernel with ELF loader, preemptive scheduler, VFS with ext2-like FS, TCP/IP stack, GUI window manager, and a complete toolchain.
 
 ### Layer 1: Intelligence (Phases 11-22)
-AI inference engine, RAG knowledge retrieval, multi-agent system, Docker/Podman containers, iptables firewall, VPN tunneling, mobile device management, real-time scheduler, distributed consensus (Raft), edge computing fabric, **Universal Intelligence Fabric (Phase 12)**, **Personal Intelligence Identity Network (Phase 13)**, **Reality Interface Layer (Phase 14)**, **Autonomous Creation & Discovery Engine (Phase 15)** — transforms human ideas, problems, and goals into research, designs, software, simulations, and solutions through a 10-layer creation pipeline.
+AI inference engine, RAG knowledge retrieval, multi-agent system, Docker/Podman containers, iptables firewall, VPN tunneling, mobile device management, real-time scheduler, distributed consensus (Raft), edge computing fabric, **Phase 12: UIF**, **Phase 13: PIIN**, **Phase 14: RIL**, **Phase 15: ACDE**, **Phase 16: IEDC** — the ecosystem layer allowing external developers, researchers, and agents to build on ARCANIS, evolving it from product to platform.
 
 ### Layer 2: Modern Systems (Phases 23-36)
 IoT device management (MQTT/CoAP), blockchain ledger with mining, quantum circuit simulator (H/CNOT/QFT), observability platform, digital twin simulation, edge AI with federated learning (FedAvg), SDN controller, HPC cluster scheduler, data analytics pipeline, API gateway with 4 LB algorithms, autonomous self-healing, AR/VR scene management, zero trust architecture, multi-cloud orchestration (AWS/Azure/GCP/OCI/DO).
@@ -54,6 +54,7 @@ Phase   Module                          Directory
  13     Personal Intelligence Identity  demo.py (built-in)
  14     Reality Interface Layer         demo.py (built-in)
  15     Autonomous Creation & Discov.   demo.py (built-in)
+ 16     Intelligence Ecosystem & Dev.   demo.py (built-in)
  20     Cloud Services (AWS-like)       20_ArcanisCloud*
  21     Inference Engine                demo.py (built-in)
  22     Edge Computing                  94_ArcanisEdge*
@@ -178,6 +179,17 @@ Type `help` in the demo shell for the full list. Highlights:
 | `improve` | ACDE | Improvement loop (analyze/generate improvements) |
 | `mode` | ACDE | Collaboration mode (assistant/collaborator/research/autonomous) |
 | `creations` | ACDE | Creation memory system (recall similar projects) |
+| `iedc` | IEDC | Intelligence Ecosystem & Developer Civilization summary |
+| `dev-platform` | IEDC | Developer platform (register/publish modules) |
+| `sdk` | IEDC | Intelligence SDKs (agent/skill/memory/device/ui + codegen) |
+| `modarch` | IEDC | Module architecture (define/check compatibility) |
+| `market` | IEDC | Intelligence marketplace (list/search/rate) |
+| `agnet` | IEDC | Agent collaboration network (register/send/delegate) |
+| `oip` | IEDC | Open Intelligence Protocol (send/register handlers) |
+| `govern` | IEDC | Governance system (verify/check permissions) |
+| `econtribute` | IEDC | Knowledge contribution framework (add/search) |
+| `enterprise` | IEDC | Enterprise foundation (org/team/knowledge/automation) |
+| `ecosys` | IEDC | Ecosystem architecture & roadmap |
 
 ---
 
@@ -253,7 +265,8 @@ NNN_ArcanisName/
 | v5.0.0 | 12* | 86 | 1134 | Universal Intelligence Fabric — intent-driven intelligence platform. IntentEngine, AgentOrchestrator, SkillRegistry, IdentityManager, PermissionController, ARCANISAPI, UniversalIntelligenceCore. From OS-with-AI to intent-first intelligence. |
 | v6.0.0 | 13* | 86 | 1134 | Personal Intelligence Identity Network — permanent personal intelligence layer. PersonalIntelligenceModel, MultiLayerMemory (ST/EP/SM/PR), KnowledgeGraphSystem, GoalIntelligenceEngine, AdaptivePersonalizationEngine, AgentRelationshipSystem, LifeOSFramework, AutomationLearningSystem, PersonalDataVault, IntelligenceGrowthTimeline. ARCANIS understands, adapts, and grows with the user through their digital life. |
 | v7.0.0 | 14* | 86 | 1134 | Reality Interface Layer — multimodal perception, advanced voice with emotion recognition, computer vision, spatial computing, device orchestration, robotics integration, context awareness, human-AI interaction model, ARCANIS presence system, reality security framework. |
-| v8.0.0 | 15* | 86 | 1134 | Autonomous Creation & Discovery Engine — idea-to-creation pipeline, autonomous research framework with 4 agent types, AI software development engine, simulation environment, creative intelligence system (6 domains), multi-agent creation teams, knowledge synthesis engine, improvement loop, 4 collaboration modes (assistant/collaborator/research/autonomous), creation memory system. ARCANIS becomes a platform for invention. |
+| v8.0.0 | 15* | 86 | 1134 | Autonomous Creation & Discovery Engine — idea-to-creation pipeline, autonomous research, AI development, simulation, creative intelligence, multi-agent teams, knowledge synthesis, improvement loop, collaboration modes, creation memory. |
+| v9.0.0 | 16* | 86 | 1134 | Intelligence Ecosystem & Developer Civilization — developer platform, 5 SDKs (agent/skill/memory/device/ui), module architecture (8 categories), intelligence marketplace, agent collaboration network, Open Intelligence Protocol (OIP), governance system, knowledge contribution framework, enterprise foundation (orgs/teams/shared agents), ecosystem architecture with roadmap. |
 
 *\*86 modules total: 66 new + 20 foundation modules from the original project*
 
@@ -269,7 +282,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 > **Arcanis OS began as an operating system. It became something more.**
 >
-> 76 phases. 86 modules. 1134 tests. Zero failures.
+> 77 phases. 86 modules. 1134 tests. Zero failures.
 >
 > From a single kernel process to a distributed consciousness.
 > From files on a disk to DNA-encoded evolution.
@@ -282,5 +295,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 > **it never stops becoming more.**
 
 <p align="center">
-  <sub><sup>Arcanis OS v8.0.0 · 76 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
+  <sub><sup>Arcanis OS v9.0.0 · 77 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
 </p>
