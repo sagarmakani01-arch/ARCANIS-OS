@@ -1,6 +1,6 @@
 # Ω Arcanis OS — The Operating System That Transcended Itself
 
-> **72 phases · 86 modules · 1134 tests · 100% pass · v25.0.0**
+> **72 phases · 86 modules · 1134 tests · 100% pass · v4.0.0**
 
 ```ascii
      _                _                 ____   ___   ____
@@ -210,35 +210,10 @@ NNN_ArcanisName/
 
 | Version | Phases | Modules | Tests | Milestone |
 |---------|--------|---------|-------|-----------|
-| v1.0.0  | 0-22   | 12      | —     | Foundation + Enterprise layers |
-| v2.0.0  | 23-26  | 16      | 106   | Modern systems (IoT, Blockchain, Quantum, Monitoring) |
-| v2.5.0  | 27-30  | 22      | 127   | Digital Twin, Edge AI, SDN, HPC |
-| v3.0.0  | 31-36  | 28      | 164   | Analytics, Gateway, Autonomous, AR/VR, Zero Trust, Multi-Cloud |
-| v3.2.0  | 37-39  | 31      | 189   | DevOps, Power, Localization |
-| v4.0.0  | 40-51  | 43      | 272   | Cognitive Kernel through Universal Compute |
-| v5.0.0  | 52-61  | 53      | 332   | Neural Interface through Distributed Soul |
-| v6.0.0  | 62-71  | 66      | 390   | Dream Engine through Omega OS |
-| v6.0.0  | —      | 86*     | 390   | Including 20 foundation modules |
-| v7.0.0  | —      | 86      | 420   | Real AI NN, Distributed mode, Toffoli/Grover/noise, Config/Persistence, Themes, Scripting engine, Pip package, Quantum deepening |
-| v8.0.0  | —      | 86      | 478   | Win32 API Bridge, Native Code JIT, PE Loader, Multiprocessing Kernel, GUI Desktop, Sound System, FAT32 Driver |
-| v9.0.0  | —      | 86      | 513   | Arc programming language (lexer, parser, VM), FAT32 writer, B-tree database engine |
-| v10.0.0 | —      | 86      | 547   | Generative OS sub-agents, auto-code writing, meta-learning |
-| v11.0.0 | —      | 86      | 581   | Arc language v2 (closures, patterns, macros), full static type system |
-| v12.0.0 | —      | 86      | 626   | x86-64 codegen, optimizer, Arc IDE, read-eval-print loop, test framework |
-| v13.0.0 | —      | 86      | 647   | Cognitive OS — cross-modal reasoning, concept blending, metaphor understanding |
-| v14.0.0 | —      | 86      | 681   | Quantum Mind — qualia processing, quantum consciousness, quantum reality |
-| v15.0.0 | —      | 86      | 720   | Dream Weaver — lucid dreaming, dream engineering, shared dream, dream API, emotion engine |
-| v16.0.0 | —      | 86      | 760   | Time Weaver — causality engine, time locks, parallel timelines, self-healing timeline |
-| v17.0.0 | —      | 86      | 882   | Living Software Engine — alive/dead/sleeping states, hunger/social/rest needs, aging, reproduction, mutation, personality, memory, feel |
-| v18.0.0 | —      | 86      | 1013  | Reality Layer — reality anchoring, multi-reality merging, memory/behavior/object transfers, paradox detection, perception persistence |
-| v19.0.0 | —      | 86      | 1021  | Autonomous World Engine — world simulation, real-world API integration, adaptive learning, self-assembling modules, alternate history engine |
-| v20.0.0 | — | 86 | 1134 | Self-Evolving Intelligence — XP skills, evolution profiles, benchmarking, feedback learning, improvement engine, architecture optimizer, research lab, evolution memory, transparent governance |
-| v21.0.0 | — | 86 | 1134 | AI-Native OS Interface — Professional Redesign |
-| v21.1.0 | — | 86 | 1134 | Complete OS redesign — one continuous intelligent canvas |
-| v22.0.0 | — | 86 | 1134 | The Living Canvas — Intelligence Woven Into Every Pixel |
-| v23.0.0 | — | 86 | 1134 | The Unified Intelligence Fabric — From Operating System to Operating Ecosystem |
-| v24.0.0 | — | 86 | 1134 | The Intelligence Ecosystem — From Operating System to Intelligence Infrastructure |
-| v25.0.0 | — | 86 | 1134 | The Intelligence Foundry — Engineering Intelligence, Not Software |
+| v1.0.0 | 0-71 | 86 | 1134 | Foundation — 72-phase OS architecture from microkernel to transcendence (kernel, FS, TCP/IP, GUI, shell, blockchain, quantum, IoT, AI, monitoring, edge, HPC, analytics, AR/VR, zero trust, multi-cloud, cognitive kernel, reality layer, consciousness, eternity) |
+| v2.0.0 | — | 86 | 1134 | AI-Native Platform — Arc language & compiler, Win32 bridge, JIT, PE loader, desktop environment, cognitive operating system, agent civilization, digital twin mind |
+| v3.0.0 | — | 86 | 1134 | Living Intelligence — living software engine, reality layer, autonomous world, self-evolving intelligence, complete AI-native OS redesign as one continuous intelligent canvas |
+| v4.0.0 | — | 86 | 1134 | Intelligence Infrastructure — universal session layer, device discovery, agent/knowledge/mission marketplaces, developer SDK, open intelligence protocol, ecosystem economy, intelligence foundry with designer, trainer, simulator, evaluator, deployment engine, version evolution |
 
 *\*86 modules total: 66 new + 20 foundation modules from the original project*
 
@@ -267,5 +242,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 > **it never stops becoming more.**
 
 <p align="center">
-  <sub><sup>Arcanis OS v25.0.0 · 72 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
+  <sub><sup>Arcanis OS v4.0.0 · 72 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
 </p>

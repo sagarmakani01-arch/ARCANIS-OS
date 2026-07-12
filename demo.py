@@ -10012,7 +10012,7 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v25.0.0 — Intelligence Foundry\033[0m")
+        print(f"{dm}  Arcanis OS v4.0.0 — Intelligence Infrastructure\033[0m")
         print(f"{dm}  86 modules | 173 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
