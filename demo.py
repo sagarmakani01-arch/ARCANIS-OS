@@ -4029,6 +4029,7 @@ class ArcDesktop:
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
         cx, cy = w // 2, h // 2
+        self._cx, self._cy = cx, cy
 
         top_h = 44
         self.canvas.create_rectangle(0, 0, w, top_h, fill=self.BG_DEEP, outline="", tags="topbar_bg")
@@ -4040,8 +4041,14 @@ class ArcDesktop:
         self.canvas.create_line(w // 2 - 30, top_h, w // 2 + 30, top_h,
                                 fill=self.ACCENT, width=2, tags="accent_line")
 
+        core_y = top_h + 80
+        self.canvas.create_oval(cx - 20, core_y - 20, cx + 20, core_y + 20,
+                                fill="", outline=self.ACCENT, width=1, tags="core_ring")
+        self.canvas.create_text(cx, core_y, text="\u25c9",
+                                fill=self.ACCENT, font=("Segoe UI", 20), tags="core_symbol")
+
         greeting = self.twin.get_personalized_greeting()
-        label_y = h // 2 - 100
+        label_y = core_y + 50
         self.canvas.create_text(cx, label_y, text=greeting["greeting"] + ".",
                                 fill=self.FG_SOFT, font=("Segoe UI", 14), tags="greeting_text")
 
@@ -4094,6 +4101,18 @@ class ArcDesktop:
                 self.canvas.itemconfig("accent_line", fill=f"#{alpha:02x}{alpha:02x}{alpha:02x}")
             except Exception:
                 pass
+            try:
+                sw = self.root.winfo_screenwidth()
+                sh = self.root.winfo_screenheight()
+                _cx, _cy = getattr(self, "_cx", sw // 2), getattr(self, "_cy", sh // 2)
+                pulse = 18 + int(4 * _m.sin(t * 0.03))
+                r = int(90 + 30 * _m.sin(t * 0.025))
+                g = int(106 + 30 * _m.sin(t * 0.025 + 1))
+                b = int(184 + 30 * _m.sin(t * 0.025 + 2))
+                self.canvas.itemconfig("core_symbol", fill=f"#{r:02x}{g:02x}{b:02x}")
+                self.canvas.coords("core_ring", _cx - pulse, _cy - pulse, _cx + pulse, _cy + pulse)
+            except Exception:
+                pass
             self.root.after(40, self._animate_ambient)
         except Exception:
             self.root.after(1000, self._animate_ambient)
@@ -4122,20 +4141,87 @@ class ArcDesktop:
 
     def _on_intent(self, event=None):
         intent = self.intent_entry.get().strip()
-        if intent:
-            self.mission = intent
-            self.twin.remember_mission(intent)
-            self.twin.context.track_action("mission_start", intent)
-            self.civilization = AgentCivilization(digital_twin=self.twin)
-            self.civilization.start_mission(intent)
-            self._living_app = self.living.create_app(intent)
-            self.reality.understand_goal(intent)
-            self.world.analyze_query(intent)
-            self.evolution.record_task_result("agent_research", True)
-            self._init_knowledge()
-            self._init_timeline()
-            self.intent_entry.place_forget()
-            self._render_mission()
+        if not intent:
+            return
+        self.mission = intent
+        if not self._permissions_granted:
+            self._show_permissions()
+            return
+        self._start_mission()
+
+    def _show_permissions(self):
+        if self._permissions_showing:
+            return
+        self._permissions_showing = True
+        w = self.root.winfo_screenwidth()
+        h = self.root.winfo_screenheight()
+        cx, cy = w // 2, h // 2
+        pw, ph = 440, 280
+        px, py = cx - pw // 2, cy - ph // 2
+
+        self.canvas.create_rectangle(px, py, px + pw, py + ph,
+                                     fill="#0c0c18", outline=self.ACCENT, width=1, tags="perm_bg")
+        self.canvas.create_text(cx, py + 28, text="ARCANIS AI requires permissions",
+                                fill=self.FG_BRIGHT, font=("Segoe UI", 11, "bold"), tags="perm_title")
+
+        items = [
+            ("Files", "Access project files and documents"),
+            ("Memory", "Remember missions and preferences"),
+            ("Applications", "Create and manage applications"),
+            ("Devices", "Monitor connected devices"),
+            ("Knowledge", "Build and query knowledge graphs"),
+        ]
+        for i, (name, desc) in enumerate(items):
+            iy = py + 60 + i * 32
+            self.canvas.create_text(px + 30, iy, text=name,
+                                    fill=self.FG_SOFT, font=("Segoe UI", 8, "bold"), anchor="w", tags=f"perm_item_{i}")
+            self.canvas.create_text(px + 110, iy, text=desc,
+                                    fill="#555577", font=("Segoe UI", 8), anchor="w", tags=f"perm_desc_{i}")
+
+        btn_y = py + ph - 48
+        self.canvas.create_rectangle(px + 30, btn_y, px + 190, btn_y + 32,
+                                     fill=self.ACCENT, outline="", tags="perm_accept")
+        self.canvas.create_text(px + 110, btn_y + 16, text="Accept",
+                                fill="#ffffff", font=("Segoe UI", 9, "bold"), tags="perm_accept_text")
+        self.canvas.tag_bind("perm_accept", "<Button-1>", lambda e: self._accept_permissions())
+        self.canvas.tag_bind("perm_accept", "<Enter>", lambda e: self.canvas.itemconfig("perm_accept", fill=self.FG_GLOW))
+        self.canvas.tag_bind("perm_accept", "<Leave>", lambda e: self.canvas.itemconfig("perm_accept", fill=self.ACCENT))
+
+        self.canvas.create_rectangle(px + 210, btn_y, px + pw - 30, btn_y + 32,
+                                     fill="", outline="#2a2a44", tags="perm_decline")
+        self.canvas.create_text(px + 110 + 180, btn_y + 16, text="Decline",
+                                fill=self.FG_SOFT, font=("Segoe UI", 9), tags="perm_decline_text")
+        self.canvas.tag_bind("perm_decline", "<Button-1>", lambda e: self._decline_permissions())
+
+    def _accept_permissions(self):
+        self._permissions_granted = True
+        self._permissions_showing = False
+        self.canvas.delete("perm_title", "perm_bg")
+        for i in range(5):
+            self.canvas.delete(f"perm_item_{i}", f"perm_desc_{i}")
+        self.canvas.delete("perm_accept", "perm_accept_text", "perm_decline", "perm_decline_text")
+        self._start_mission()
+
+    def _decline_permissions(self):
+        self._permissions_showing = False
+        self.canvas.delete("perm_title", "perm_bg")
+        for i in range(5):
+            self.canvas.delete(f"perm_item_{i}", f"perm_desc_{i}")
+        self.canvas.delete("perm_accept", "perm_accept_text", "perm_decline", "perm_decline_text")
+
+    def _start_mission(self):
+        self.twin.remember_mission(self.mission)
+        self.twin.context.track_action("mission_start", self.mission)
+        self.civilization = AgentCivilization(digital_twin=self.twin)
+        self.civilization.start_mission(self.mission)
+        self._living_app = self.living.create_app(self.mission)
+        self.reality.understand_goal(self.mission)
+        self.world.analyze_query(self.mission)
+        self.evolution.record_task_result("agent_research", True)
+        self._init_knowledge()
+        self._init_timeline()
+        self.intent_entry.place_forget()
+        self._render_mission()
 
     # ================================================================
     # AGENT SYSTEM — Specialized Autonomous Collaborators
