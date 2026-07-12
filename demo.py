@@ -4705,51 +4705,618 @@ class MissionManager:
 
 
 class AgentMarketplace:
-    """Registry of available agent types that can be spawned."""
-
-    BUILTIN_TYPES = [
-        {"type": "researcher", "name": "Research Agent", "role": "Gathers knowledge, finds papers, analyzes information", "color": "#33bbcc", "skills": {"research": 0.8, "analysis": 0.7}},
-        {"type": "engineer", "name": "Engineering Agent", "role": "Designs architecture, plans systems, builds solutions", "color": "#5533cc", "skills": {"engineering": 0.8, "design": 0.7}},
-        {"type": "coder", "name": "Coding Agent", "role": "Writes, tests, and refines code across languages", "color": "#7744ff", "skills": {"programming": 0.8, "debugging": 0.7}},
-        {"type": "designer", "name": "Design Agent", "role": "Creates visual designs, prototypes, UI/UX", "color": "#cc44aa", "skills": {"design": 0.8, "creativity": 0.7}},
-        {"type": "analyst", "name": "Analysis Agent", "role": "Analyzes data, identifies patterns, generates insights", "color": "#3366dd", "skills": {"analysis": 0.8, "statistics": 0.6}},
-        {"type": "planner", "name": "Planning Agent", "role": "Defines milestones, manages timelines, tracks progress", "color": "#8888bb", "skills": {"planning": 0.8, "organization": 0.7}},
-        {"type": "critic", "name": "Critic Agent", "role": "Reviews work, finds gaps, suggests improvements", "color": "#ff6644", "skills": {"critique": 0.8, "quality": 0.7}},
-        {"type": "mentor", "name": "Learning Mentor", "role": "Creates learning paths, explains concepts, tracks progress", "color": "#44bb88", "skills": {"teaching": 0.8, "communication": 0.7}},
-    ]
+    """Intelligence Ecosystem — Agent Marketplace with publishing, ratings, search, categories, collaboration."""
 
     def __init__(self):
-        self._types = {t["type"]: t for t in self.BUILTIN_TYPES}
+        self._published = {}
         self._installed = {}
+        self._ratings = {}
+        self._categories = {
+            "research": "Research & Analysis",
+            "engineering": "Engineering & Design",
+            "development": "Software Development",
+            "creative": "Creative & Design",
+            "business": "Business & Finance",
+            "education": "Education & Learning",
+            "health": "Health & Medicine",
+            "science": "Science & Simulation",
+        }
+        self._init_builtins()
 
-    def register_type(self, agent_type, name, role, color="#7744ff", skills=None):
-        self._types[agent_type] = {"type": agent_type, "name": name, "role": role, "color": color, "skills": skills or {}}
+    def _init_builtins(self):
+        builtins = [
+            {"type": "researcher", "name": "Research Agent", "role": "Gathers knowledge, finds papers, analyzes information", "category": "research", "color": "#33bbcc", "skills": {"research": 0.8, "analysis": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "engineer", "name": "Engineering Agent", "role": "Designs architecture, plans systems, builds solutions", "category": "engineering", "color": "#5533cc", "skills": {"engineering": 0.8, "design": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "coder", "name": "Coding Agent", "role": "Writes, tests, and refines code across languages", "category": "development", "color": "#7744ff", "skills": {"programming": 0.8, "debugging": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "designer", "name": "Design Agent", "role": "Creates visual designs, prototypes, UI/UX", "category": "creative", "color": "#cc44aa", "skills": {"design": 0.8, "creativity": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "analyst", "name": "Analysis Agent", "role": "Analyzes data, identifies patterns, generates insights", "category": "research", "color": "#3366dd", "skills": {"analysis": 0.8, "statistics": 0.6}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "planner", "name": "Planning Agent", "role": "Defines milestones, manages timelines, tracks progress", "category": "business", "color": "#8888bb", "skills": {"planning": 0.8, "organization": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "critic", "name": "Critic Agent", "role": "Reviews work, finds gaps, suggests improvements", "category": "development", "color": "#ff6644", "skills": {"critique": 0.8, "quality": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "mentor", "name": "Learning Mentor", "role": "Creates learning paths, explains concepts, tracks progress", "category": "education", "color": "#44bb88", "skills": {"teaching": 0.8, "communication": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "medical_ai", "name": "Medical Research Agent", "role": "Analyzes medical data, finds treatments, tracks clinical trials", "category": "health", "color": "#44aaff", "skills": {"medical_knowledge": 0.8, "data_analysis": 0.7, "research": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "legal_ai", "name": "Legal Analysis Agent", "role": "Reviews contracts, finds precedents, ensures compliance", "category": "business", "color": "#8866cc", "skills": {"legal_knowledge": 0.8, "analysis": 0.7, "writing": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "physics_sim", "name": "Physics Simulation Agent", "role": "Runs physics simulations, models systems, analyzes results", "category": "science", "color": "#66ddff", "skills": {"physics": 0.8, "simulation": 0.8, "mathematics": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "climate_ai", "name": "Climate Research Agent", "role": "Models climate data, predicts patterns, suggests interventions", "category": "science", "color": "#22bb88", "skills": {"climate_science": 0.8, "modeling": 0.7, "analysis": 0.7}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+            {"type": "robotics_ai", "name": "Robotics Agent", "role": "Controls robots, plans movements, processes sensor data", "category": "engineering", "color": "#ff8844", "skills": {"robotics": 0.8, "control_systems": 0.7, "computer_vision": 0.6}, "author": "ARCANIS", "version": "1.0.0", "price": 0},
+        ]
+        for b in builtins:
+            self._published[b["type"]] = b
+            self._installed[b["type"]] = b
+
+    def publish(self, agent_type, name, role, author, category="general", color="#7744ff", skills=None, version="1.0.0", price=0):
+        entry = {
+            "type": agent_type, "name": name, "role": role,
+            "author": author, "category": category, "color": color,
+            "skills": skills or {}, "version": version, "price": price,
+            "published": time.time(), "installs": 0, "rating": 0.0, "ratings_count": 0,
+        }
+        self._published[agent_type] = entry
+        return entry
 
     def install(self, agent_type):
-        if agent_type in self._types:
-            self._installed[agent_type] = self._types[agent_type]
+        if agent_type in self._published:
+            self._installed[agent_type] = self._published[agent_type]
+            self._published[agent_type]["installs"] = self._published[agent_type].get("installs", 0) + 1
             return True
         return False
 
     def spawn(self, agent_type, agent_id=None):
-        if agent_type not in self._installed and agent_type not in self._types:
-            return None
-        info = self._types.get(agent_type) or self._installed.get(agent_type)
+        info = self._installed.get(agent_type) or self._published.get(agent_type)
         if not info:
             return None
-        agent = Agent(agent_id or agent_type, info["name"], info["role"], info["color"])
+        agent = Agent(agent_id or f"{agent_type}_{int(time.time())}", info["name"], info["role"], info.get("color", "#7744ff"))
         for skill, level in info.get("skills", {}).items():
             agent.add_skill(skill, level)
         return agent
 
-    def available_types(self):
-        return list(self._types.keys())
+    def rate(self, agent_type, rating):
+        if agent_type not in self._published:
+            return False
+        rating = max(1, min(5, rating))
+        entry = self._published[agent_type]
+        prev_total = entry.get("rating", 0) * entry.get("ratings_count", 0)
+        entry["ratings_count"] = entry.get("ratings_count", 0) + 1
+        entry["rating"] = (prev_total + rating) / entry["ratings_count"]
+        return True
 
-    def installed_types(self):
-        return list(self._installed.keys())
+    def search(self, query=None, category=None, author=None):
+        results = list(self._published.values())
+        if query:
+            q = query.lower()
+            results = [r for r in results if q in r["name"].lower() or q in r["role"].lower() or q in r["type"].lower()]
+        if category and category in self._categories:
+            results = [r for r in results if r.get("category") == category]
+        if author:
+            results = [r for r in results if r.get("author", "").lower() == author.lower()]
+        return sorted(results, key=lambda r: r.get("rating", 0), reverse=True)
+
+    def list_installed(self):
+        return list(self._installed.values())
 
     def get_info(self, agent_type):
-        return self._types.get(agent_type) or self._installed.get(agent_type)
+        return self._published.get(agent_type) or self._installed.get(agent_type)
+
+    def to_dict(self):
+        return {"published": self._published, "installed": {k: True for k in self._installed}}
+
+    def from_dict(self, data):
+        for k, v in data.get("published", {}).items():
+            if k not in self._published:
+                self._published[k] = v
+        for k in data.get("installed", {}):
+            if k in self._published and k not in self._installed:
+                self._installed[k] = self._published[k]
+
+
+class KnowledgeMarketplace:
+    """Modular knowledge packs — knowledge graphs, learning paths, templates, expert agents."""
+
+    def __init__(self):
+        self._packs = {}
+        self._installed_packs = {}
+        self._init_builtins()
+
+    def _init_builtins(self):
+        builtins = [
+            {
+                "id": "quantum_computing", "name": "Quantum Computing Pack",
+                "description": "Complete quantum computing knowledge — circuits, algorithms, error correction",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0, "category": "science",
+                "concepts": ["qubit", "superposition", "entanglement", "quantum_gate", "qft", "grover", "shor", "error_correction"],
+                "learning_paths": [{"name": "Quantum Basics", "steps": ["qubit", "superposition", "entanglement"]}, {"name": "Quantum Algorithms", "steps": ["qft", "grover", "shor"]}],
+                "templates": ["bell_state", "quantum_teleportation", "qft_circuit"],
+                "expert_agents": ["physics_sim"],
+            },
+            {
+                "id": "machine_learning", "name": "Machine Learning Pack",
+                "description": "Foundations of ML — neural networks, training, optimization, deployment",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0, "category": "development",
+                "concepts": ["neural_network", "backpropagation", "gradient_descent", "cnn", "rnn", "transformer", "reinforcement_learning"],
+                "learning_paths": [{"name": "ML Fundamentals", "steps": ["neural_network", "backpropagation", "gradient_descent"]}, {"name": "Advanced Architectures", "steps": ["cnn", "rnn", "transformer"]}],
+                "templates": ["image_classifier", "text_generator", "rl_agent"],
+                "expert_agents": ["researcher", "analyst"],
+            },
+            {
+                "id": "robotics_engineering", "name": "Robotics Pack",
+                "description": "Robotics engineering — kinematics, control, perception, planning",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0, "category": "engineering",
+                "concepts": ["kinematics", "dynamics", "control_theory", "computer_vision", "slam", "motion_planning", "sensor_fusion"],
+                "learning_paths": [{"name": "Robot Foundations", "steps": ["kinematics", "dynamics", "control_theory"]}, {"name": "Robot Perception", "steps": ["computer_vision", "slam", "sensor_fusion"]}],
+                "templates": ["arm_controller", "mobile_robot", "vision_pipeline"],
+                "expert_agents": ["engineer", "robotics_ai"],
+            },
+            {
+                "id": "cybersecurity", "name": "Cybersecurity Pack",
+                "description": "Security — cryptography, network defense, threat analysis, zero trust",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0, "category": "development",
+                "concepts": ["cryptography", "network_security", "threat_modeling", "zero_trust", "intrusion_detection", "forensics"],
+                "learning_paths": [{"name": "Security Basics", "steps": ["cryptography", "network_security", "threat_modeling"]}, {"name": "Advanced Defense", "steps": ["zero_trust", "intrusion_detection", "forensics"]}],
+                "templates": ["firewall_rules", "audit_pipeline", "incident_response"],
+                "expert_agents": ["analyst", "critic"],
+            },
+            {
+                "id": "astrophysics", "name": "Astrophysics Pack",
+                "description": "Astrophysics — stellar evolution, cosmology, exoplanets, gravitational waves",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0, "category": "science",
+                "concepts": ["stellar_evolution", "cosmology", "exoplanets", "gravitational_waves", "dark_matter", "general_relativity"],
+                "learning_paths": [{"name": "Astrophysics Foundations", "steps": ["stellar_evolution", "cosmology", "general_relativity"]}, {"name": "Modern Topics", "steps": ["exoplanets", "gravitational_waves", "dark_matter"]}],
+                "templates": ["stellar_simulation", "cosmic_expansion", "exoplanet_detection"],
+                "expert_agents": ["researcher", "physics_sim"],
+            },
+        ]
+        for p in builtins:
+            self._packs[p["id"]] = p
+            self._installed_packs[p["id"]] = p
+
+    def create_pack(self, pack_id, name, description, author, category="general", version="1.0.0", price=0):
+        pack = {
+            "id": pack_id, "name": name, "description": description,
+            "author": author, "category": category, "version": version, "price": price,
+            "concepts": [], "learning_paths": [], "templates": [], "expert_agents": [],
+            "published": time.time(), "installs": 0, "rating": 0.0,
+        }
+        self._packs[pack_id] = pack
+        return pack
+
+    def add_concept(self, pack_id, concept):
+        if pack_id in self._packs and concept not in self._packs[pack_id]["concepts"]:
+            self._packs[pack_id]["concepts"].append(concept)
+
+    def add_learning_path(self, pack_id, name, steps):
+        if pack_id in self._packs:
+            self._packs[pack_id]["learning_paths"].append({"name": name, "steps": steps})
+
+    def add_template(self, pack_id, template):
+        if pack_id in self._packs and template not in self._packs[pack_id]["templates"]:
+            self._packs[pack_id]["templates"].append(template)
+
+    def add_expert_agent(self, pack_id, agent_type):
+        if pack_id in self._packs and agent_type not in self._packs[pack_id]["expert_agents"]:
+            self._packs[pack_id]["expert_agents"].append(agent_type)
+
+    def install_pack(self, pack_id):
+        if pack_id in self._packs:
+            self._installed_packs[pack_id] = self._packs[pack_id]
+            self._packs[pack_id]["installs"] = self._packs[pack_id].get("installs", 0) + 1
+            return True
+        return False
+
+    def search(self, query=None, category=None):
+        results = list(self._packs.values())
+        if query:
+            q = query.lower()
+            results = [r for r in results if q in r["name"].lower() or q in r["description"].lower()]
+        if category:
+            results = [r for r in results if r.get("category") == category]
+        return results
+
+    def list_installed(self):
+        return list(self._installed_packs.values())
+
+    def get_pack(self, pack_id):
+        return self._packs.get(pack_id)
+
+    def to_dict(self):
+        return {"packs": self._packs, "installed": {k: True for k in self._installed_packs}}
+
+    def from_dict(self, data):
+        for k, v in data.get("packs", {}).items():
+            if k not in self._packs:
+                self._packs[k] = v
+        for k in data.get("installed", {}):
+            if k in self._packs and k not in self._installed_packs:
+                self._installed_packs[k] = self._packs[k]
+
+
+class MissionMarketplace:
+    """Shareable mission templates — complete workflows with goals, agents, steps."""
+
+    def __init__(self):
+        self._missions = {}
+        self._installed_missions = {}
+        self._init_builtins()
+
+    def _init_builtins(self):
+        builtins = [
+            {
+                "id": "build_startup", "name": "Build a Startup",
+                "description": "Complete startup launch — planning, research, finance, marketing, legal, documentation",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0,
+                "goal": "Launch a successful startup from idea to market",
+                "agents": ["planner", "researcher", "analyst", "designer"],
+                "phases": ["research", "planning", "finance", "marketing", "legal", "documentation"],
+                "estimated_hours": 40,
+            },
+            {
+                "id": "build_robot", "name": "Build a Robot Arm",
+                "description": "Design, simulate, and build a robotic arm — kinematics, control, fabrication",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0,
+                "goal": "Design and build a functional robotic arm",
+                "agents": ["engineer", "robotics_ai", "physics_sim", "designer"],
+                "phases": ["research", "design", "simulation", "implementation", "testing"],
+                "estimated_hours": 60,
+            },
+            {
+                "id": "learn_ai", "name": "Become an AI Engineer",
+                "description": "Personalized learning path — curriculum, projects, mentors, practice missions, portfolio",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0,
+                "goal": "Master artificial intelligence engineering",
+                "agents": ["mentor", "researcher", "coder", "critic"],
+                "phases": ["foundations", "ml_basics", "deep_learning", "specialization", "portfolio"],
+                "estimated_hours": 200,
+            },
+            {
+                "id": "climate_research", "name": "Climate Research Project",
+                "description": "Comprehensive climate analysis — data collection, modeling, prediction, intervention design",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0,
+                "goal": "Analyze climate patterns and design intervention strategies",
+                "agents": ["climate_ai", "researcher", "analyst", "physics_sim"],
+                "phases": ["data_collection", "modeling", "analysis", "prediction", "intervention"],
+                "estimated_hours": 80,
+            },
+            {
+                "id": "quantum_research", "name": "Quantum Computing Research",
+                "description": "Explore quantum algorithms — circuits, error correction, quantum advantage",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0,
+                "goal": "Advance quantum computing research",
+                "agents": ["physics_sim", "researcher", "coder", "analyst"],
+                "phases": ["foundations", "algorithm_design", "simulation", "analysis", "publication"],
+                "estimated_hours": 100,
+            },
+            {
+                "id": "medical_diagnosis", "name": "Medical Diagnosis System",
+                "description": "Build an AI-assisted medical diagnosis pipeline — data, models, validation, deployment",
+                "author": "ARCANIS", "version": "1.0.0", "price": 0,
+                "goal": "Create a medical diagnosis support system",
+                "agents": ["medical_ai", "researcher", "coder", "analyst", "critic"],
+                "phases": ["research", "data_prep", "modeling", "validation", "deployment"],
+                "estimated_hours": 120,
+            },
+        ]
+        for m in builtins:
+            self._missions[m["id"]] = m
+            self._installed_missions[m["id"]] = m
+
+    def create_mission(self, mission_id, name, description, author, goal, agents=None, phases=None, version="1.0.0", price=0):
+        mission = {
+            "id": mission_id, "name": name, "description": description,
+            "author": author, "version": version, "price": price,
+            "goal": goal, "agents": agents or [],
+            "phases": phases or [], "estimated_hours": 0,
+            "published": time.time(), "installs": 0, "rating": 0.0,
+        }
+        self._missions[mission_id] = mission
+        return mission
+
+    def install_mission(self, mission_id):
+        if mission_id in self._missions:
+            self._installed_missions[mission_id] = self._missions[mission_id]
+            self._missions[mission_id]["installs"] = self._missions[mission_id].get("installs", 0) + 1
+            return True
+        return False
+
+    def search(self, query=None, category=None):
+        results = list(self._missions.values())
+        if query:
+            q = query.lower()
+            results = [r for r in results if q in r["name"].lower() or q in r["description"].lower() or q in r["goal"].lower()]
+        return results
+
+    def list_installed(self):
+        return list(self._installed_missions.values())
+
+    def get_mission(self, mission_id):
+        return self._missions.get(mission_id)
+
+    def to_dict(self):
+        return {"missions": self._missions, "installed": {k: True for k in self._installed_missions}}
+
+    def from_dict(self, data):
+        for k, v in data.get("missions", {}).items():
+            if k not in self._missions:
+                self._missions[k] = v
+        for k in data.get("installed", {}):
+            if k in self._missions and k not in self._installed_missions:
+                self._installed_missions[k] = self._missions[k]
+
+
+class DeveloperPlatform:
+    """SDK tools for creating and publishing agents, knowledge packs, and missions to the ecosystem."""
+
+    def __init__(self, agent_market=None, knowledge_market=None, mission_market=None):
+        self.agent_market = agent_market
+        self.knowledge_market = knowledge_market
+        self.mission_market = mission_market
+        self._projects = {}
+        self._templates = {
+            "agent": {
+                "description": "Create a new agent type for the marketplace",
+                "fields": ["type_id", "name", "role", "category", "skills"],
+            },
+            "knowledge_pack": {
+                "description": "Create a knowledge pack with concepts, learning paths, templates",
+                "fields": ["pack_id", "name", "description", "category", "concepts"],
+            },
+            "mission_template": {
+                "description": "Create a shareable mission template with agents and phases",
+                "fields": ["mission_id", "name", "description", "goal", "agents", "phases"],
+            },
+        }
+
+    def new_project(self, project_type, project_id, name):
+        if project_type not in self._templates:
+            return None
+        project = {
+            "id": project_id, "name": name, "type": project_type,
+            "created": time.time(), "status": "draft",
+            "fields": {},
+        }
+        self._projects[project_id] = project
+        return project
+
+    def set_field(self, project_id, field, value):
+        if project_id not in self._projects:
+            return False
+        self._projects[project_id]["fields"][field] = value
+        return True
+
+    def build_agent(self, project_id):
+        proj = self._projects.get(project_id)
+        if not proj or proj["type"] != "agent":
+            return None
+        fields = proj["fields"]
+        agent_type = fields.get("type_id", project_id)
+        if self.agent_market:
+            entry = self.agent_market.publish(
+                agent_type=agent_type,
+                name=fields.get("name", "Custom Agent"),
+                role=fields.get("role", "General purpose agent"),
+                author=fields.get("author", "developer"),
+                category=fields.get("category", "general"),
+                skills=fields.get("skills", {}),
+            )
+            proj["status"] = "published"
+            return entry
+        return None
+
+    def build_knowledge_pack(self, project_id):
+        proj = self._projects.get(project_id)
+        if not proj or proj["type"] != "knowledge_pack":
+            return None
+        fields = proj["fields"]
+        pack_id = fields.get("pack_id", project_id)
+        if self.knowledge_market:
+            pack = self.knowledge_market.create_pack(
+                pack_id=pack_id,
+                name=fields.get("name", "Custom Pack"),
+                description=fields.get("description", ""),
+                author=fields.get("author", "developer"),
+                category=fields.get("category", "general"),
+            )
+            for c in fields.get("concepts", []):
+                self.knowledge_market.add_concept(pack_id, c)
+            proj["status"] = "published"
+            return pack
+        return None
+
+    def build_mission(self, project_id):
+        proj = self._projects.get(project_id)
+        if not proj or proj["type"] != "mission_template":
+            return None
+        fields = proj["fields"]
+        mission_id = fields.get("mission_id", project_id)
+        if self.mission_market:
+            mission = self.mission_market.create_mission(
+                mission_id=mission_id,
+                name=fields.get("name", "Custom Mission"),
+                description=fields.get("description", ""),
+                author=fields.get("author", "developer"),
+                goal=fields.get("goal", "Complete a project"),
+                agents=fields.get("agents", []),
+                phases=fields.get("phases", []),
+            )
+            proj["status"] = "published"
+            return mission
+        return None
+
+    def list_projects(self, status=None):
+        results = list(self._projects.values())
+        if status:
+            results = [p for p in results if p["status"] == status]
+        return results
+
+    def get_project(self, project_id):
+        return self._projects.get(project_id)
+
+    def sdk_info(self):
+        return {
+            "templates": list(self._templates.keys()),
+            "projects": len(self._projects),
+            "published": sum(1 for p in self._projects.values() if p["status"] == "published"),
+        }
+
+
+class OpenIntelligenceProtocol:
+    """Universal protocol for ecosystem-wide communication — agents, missions, knowledge, devices."""
+
+    PROTOCOL_VERSION = "1.0.0"
+
+    MESSAGE_TYPES = [
+        "agent.request", "agent.response", "agent.broadcast",
+        "mission.create", "mission.update", "mission.complete",
+        "knowledge.query", "knowledge.share", "knowledge.sync",
+        "marketplace.list", "marketplace.install", "marketplace.publish",
+        "device.discover", "device.status", "device.command",
+        "ecosystem.sync", "ecosystem.heartbeat",
+    ]
+
+    def __init__(self):
+        self._handlers = {}
+        self._message_log = []
+
+    def register_handler(self, msg_type, handler):
+        self._handlers[msg_type] = handler
+
+    def create_message(self, msg_type, sender, target="*", payload=None):
+        msg = {
+            "protocol": self.PROTOCOL_VERSION,
+            "type": msg_type,
+            "sender": sender,
+            "target": target,
+            "payload": payload or {},
+            "timestamp": time.time(),
+            "id": hashlib.md5(f"{msg_type}{sender}{time.time()}".encode()).hexdigest()[:16],
+        }
+        return msg
+
+    def send(self, msg, socket=None):
+        self._message_log.append(msg)
+        encoded = json.dumps(msg) + "\n"
+        if socket:
+            try:
+                socket.sendall(encoded.encode())
+                return True
+            except Exception:
+                return False
+        return True
+
+    def receive(self, data):
+        try:
+            msg = json.loads(data)
+            if msg.get("protocol") != self.PROTOCOL_VERSION:
+                return None
+            self._message_log.append(msg)
+            msg_type = msg.get("type")
+            if msg_type in self._handlers:
+                self._handlers[msg_type](msg)
+            return msg
+        except Exception:
+            return None
+
+    def to_dict(self):
+        return {"version": self.PROTOCOL_VERSION, "message_types": self.MESSAGE_TYPES, "message_count": len(self._message_log)}
+
+
+class EcosystemEconomy:
+    """Economy layer — credits, subscriptions, publishing, revenue for the intelligence ecosystem."""
+
+    def __init__(self):
+        self._accounts = {}
+        self._transactions = []
+        self._subscriptions = {}
+        self._pricing_tiers = {
+            "free": {"price": 0, "features": ["basic_agents", "basic_knowledge"]},
+            "creator": {"price": 10, "features": ["publish_agents", "publish_knowledge", "publish_missions", "analytics"]},
+            "enterprise": {"price": 100, "features": ["private_network", "custom_agents", "priority_support", "audit_logs", "sla"]},
+        }
+
+    def create_account(self, account_id, name, tier="free"):
+        self._accounts[account_id] = {
+            "id": account_id, "name": name, "tier": tier,
+            "credits": 100 if tier == "free" else 1000,
+            "created": time.time(),
+        }
+        if tier != "free":
+            self._subscriptions[account_id] = {
+                "tier": tier, "started": time.time(),
+                "active": True, "renewal": time.time() + 2592000,
+            }
+        return self._accounts[account_id]
+
+    def add_credits(self, account_id, amount):
+        if account_id in self._accounts:
+            self._accounts[account_id]["credits"] += amount
+            self._transactions.append({"type": "credit", "account": account_id, "amount": amount, "time": time.time()})
+
+    def spend_credits(self, account_id, amount, item=None):
+        acct = self._accounts.get(account_id)
+        if not acct or acct["credits"] < amount:
+            return False
+        acct["credits"] -= amount
+        self._transactions.append({"type": "spend", "account": account_id, "amount": amount, "item": item, "time": time.time()})
+        return True
+
+    def get_tier_features(self, tier):
+        return self._pricing_tiers.get(tier, self._pricing_tiers["free"])
+
+    def account_summary(self, account_id):
+        acct = self._accounts.get(account_id)
+        if not acct:
+            return None
+        sub = self._subscriptions.get(account_id)
+        return {
+            "name": acct["name"], "tier": acct["tier"],
+            "credits": acct["credits"],
+            "subscription": sub["tier"] if sub and sub.get("active") else "none",
+            "transactions": sum(1 for t in self._transactions if t["account"] == account_id),
+        }
+
+
+class IntelligenceEcosystem:
+    """Top-level orchestrator for the entire ARCANIS Intelligence Ecosystem."""
+
+    def __init__(self):
+        self.agent_market = AgentMarketplace()
+        self.knowledge_market = KnowledgeMarketplace()
+        self.mission_market = MissionMarketplace()
+        self.dev_platform = DeveloperPlatform(
+            agent_market=self.agent_market,
+            knowledge_market=self.knowledge_market,
+            mission_market=self.mission_market,
+        )
+        self.protocol = OpenIntelligenceProtocol()
+        self.economy = EcosystemEconomy()
+        self._account_id = f"user_{socket.gethostname()}_{int(time.time())}"
+
+    def init_account(self, name="Developer", tier="free"):
+        return self.economy.create_account(self._account_id, name, tier)
+
+    def summary(self):
+        return {
+            "agents": len(self.agent_market._published),
+            "agents_installed": len(self.agent_market._installed),
+            "knowledge_packs": len(self.knowledge_market._packs),
+            "missions": len(self.mission_market._missions),
+            "dev_projects": len(self.dev_platform._projects),
+            "protocol_messages": len(self.protocol._message_log),
+            "account": self.economy.account_summary(self._account_id),
+        }
+
+    def to_dict(self):
+        return {
+            "agent_market": self.agent_market.to_dict(),
+            "knowledge_market": self.knowledge_market.to_dict(),
+            "mission_market": self.mission_market.to_dict(),
+            "economy": {"accounts": self.economy._accounts, "transactions": self.economy._transactions[-50:]},
+        }
+
+    def from_dict(self, data):
+        if "agent_market" in data:
+            self.agent_market.from_dict(data["agent_market"])
+        if "knowledge_market" in data:
+            self.knowledge_market.from_dict(data["knowledge_market"])
+        if "mission_market" in data:
+            self.mission_market.from_dict(data["mission_market"])
 
 
 class AgentTraining:
@@ -8729,6 +9296,8 @@ class Shell:
         self.session_mgr = SessionManager(shell=self)
         self.discovery = DiscoveryService(device_name=socket.gethostname())
         self.discovery.start()
+        self.ecosystem = IntelligenceEcosystem()
+        self.ecosystem.init_account(name=socket.gethostname(), tier="creator")
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -8772,7 +9341,7 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v23.0.0 — Unified Intelligence Fabric\033[0m")
+        print(f"{dm}  Arcanis OS v24.0.0 — Intelligence Ecosystem\033[0m")
         print(f"{dm}  86 modules | 173 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
@@ -8983,6 +9552,12 @@ class Shell:
             "session": self.cmd_session,
             "discover": self.cmd_discover,
             "devices": self.cmd_devices,
+            "ecosystem": self.cmd_ecosystem,
+            "market": self.cmd_market,
+            "publish": self.cmd_publish,
+            "install": self.cmd_install,
+            "sdk": self.cmd_sdk,
+            "protocol": self.cmd_protocol,
         }
 
         handler = dispatch.get(command)
@@ -9657,6 +10232,273 @@ class Shell:
         for d in devices:
             ls = time.strftime("%H:%M:%S", time.localtime(d.get("last_seen", 0)))
             print(f"  {d['name']:<24} {d['address']:<16} {d['hostname']:<24} {ls:<20}")
+
+    # ======================== ECOSYSTEM COMMANDS ========================
+
+    def cmd_ecosystem(self, args):
+        """Intelligence Ecosystem — agents, knowledge, missions, economy overview."""
+        ic = self._c("info")
+        ok = self._c("ok")
+        if not args:
+            e = self.ecosystem
+            s = e.summary()
+            print(f"{ic}ARCANIS Intelligence Ecosystem\033[0m")
+            print(f"  {ok}Agent Marketplace:\033[0m {s['agents']} types ({s['agents_installed']} installed)")
+            print(f"  {ok}Knowledge Marketplace:\033[0m {s['knowledge_packs']} packs")
+            print(f"  {ok}Mission Marketplace:\033[0m {s['missions']} templates")
+            print(f"  {ok}Developer SDK:\033[0m {s['dev_projects']} projects")
+            print(f"  {ok}Protocol:\033[0m {s['protocol_messages']} messages")
+            acct = s.get("account")
+            if acct:
+                print(f"  {ok}Account:\033[0m {acct['name']} ({acct['tier']}) — {acct['credits']} credits")
+            print()
+            print(f"  \033[1;36mCommands:\033[0m")
+            print(f"    ecosystem summary              Show this overview")
+            print(f"    market agents [query]          Browse agent marketplace")
+            print(f"    market knowledge [query]       Browse knowledge packs")
+            print(f"    market missions [query]        Browse mission templates")
+            print(f"    publish agent <id> <name>...   Publish an agent to marketplace")
+            print(f"    install <type> <id>            Install from marketplace")
+            print(f"    sdk new <type> <id> <name>     Create a new SDK project")
+            print(f"    sdk build <id>                 Build and publish SDK project")
+            print(f"    protocol status                Show protocol info")
+            return
+        if args[0] == "summary":
+            s = self.ecosystem.summary()
+            acct = s.get("account")
+            print(f"{ic}Ecosystem Summary:\033[0m")
+            print(f"  Agents: {s['agents']} published, {s['agents_installed']} installed")
+            print(f"  Knowledge: {s['knowledge_packs']} packs available")
+            print(f"  Missions: {s['missions']} templates")
+            print(f"  SDK Projects: {s['dev_projects']} ({s['dev_projects']} published)")
+            print(f"  Protocol Messages: {s['protocol_messages']}")
+            if acct:
+                print(f"  Account: {acct['name']} ({acct['tier']}) — {acct['credits']} credits")
+
+    def cmd_market(self, args):
+        """Browse the intelligence marketplaces."""
+        er = self._c("err")
+        ic = self._c("info")
+        if not args:
+            print(f"{er}Usage: market <agents|knowledge|missions> [query]\033[0m")
+            return
+        market_type = args[0]
+        query = " ".join(args[1:]) if len(args) > 1 else None
+
+        if market_type == "agents":
+            results = self.ecosystem.agent_market.search(query=query)
+            if not results:
+                print("No agents found")
+                return
+            print(f"{ic}Agent Marketplace:\033[0m")
+            print(f"  {'TYPE':<20} {'NAME':<28} {'CATEGORY':<16} {'RATING':<8} {'PRICE':<8} {'AUTHOR':<16}")
+            for r in results:
+                mark = " *" if r["type"] in self.ecosystem.agent_market._installed else "  "
+                rat = f"{r.get('rating', 0):.1f}" if r.get('ratings_count', 0) > 0 else "-"
+                print(f"  {r['type']:<20}{r['name'][:26]:<28}{r.get('category',''):<16}{rat:<8}{r.get('price',0):<8}{r.get('author',''):<16}{mark}")
+
+        elif market_type == "knowledge":
+            results = self.ecosystem.knowledge_market.search(query=query)
+            if not results:
+                print("No knowledge packs found")
+                return
+            print(f"{ic}Knowledge Marketplace:\033[0m")
+            print(f"  {'ID':<24} {'NAME':<30} {'CATEGORY':<16} {'CONCEPTS':<10} {'AUTHOR':<16}")
+            for r in results:
+                mark = " *" if r["id"] in self.ecosystem.knowledge_market._installed_packs else "  "
+                print(f"  {r['id']:<24}{r['name'][:28]:<30}{r.get('category',''):<16}{len(r.get('concepts',[])):<10}{r.get('author',''):<16}{mark}")
+
+        elif market_type == "missions":
+            results = self.ecosystem.mission_market.search(query=query)
+            if not results:
+                print("No mission templates found")
+                return
+            print(f"{ic}Mission Marketplace:\033[0m")
+            print(f"  {'ID':<24} {'NAME':<30} {'AGENTS':<20} {'PHASES':<10} {'AUTHOR':<16}")
+            for r in results:
+                mark = " *" if r["id"] in self.ecosystem.mission_market._installed_missions else "  "
+                print(f"  {r['id']:<24}{r['name'][:28]:<30}{', '.join(r.get('agents',[]))[:18]:<20}{len(r.get('phases',[])):<10}{r.get('author',''):<16}{mark}")
+
+        else:
+            print(f"{er}Unknown marketplace: {market_type}\033[0m")
+
+    def cmd_publish(self, args):
+        """Publish intelligence to the ecosystem."""
+        er = self._c("err")
+        ok = self._c("ok")
+        if len(args) < 3:
+            print(f"{er}Usage:\033[0m")
+            print(f"  publish agent <type_id> <name> [category]")
+            print(f"  publish knowledge <pack_id> <name> [category]")
+            print(f"  publish mission <mission_id> <name> <goal>")
+            return
+        pub_type = args[0]
+        pub_id = args[1]
+        pub_name = args[2]
+
+        if pub_type == "agent":
+            category = args[3] if len(args) > 3 else "general"
+            role = " ".join(args[4:]) if len(args) > 4 else f"An intelligent {pub_name} agent"
+            entry = self.ecosystem.agent_market.publish(
+                agent_type=pub_id, name=pub_name, role=role,
+                author=socket.gethostname(), category=category,
+            )
+            if entry:
+                print(f"{ok}Agent published: {pub_name} ({pub_id})\033[0m")
+            else:
+                print(f"{er}Failed to publish agent\033[0m")
+
+        elif pub_type == "knowledge":
+            category = args[3] if len(args) > 3 else "general"
+            description = " ".join(args[4:]) if len(args) > 4 else f"A knowledge pack about {pub_name}"
+            pack = self.ecosystem.knowledge_market.create_pack(
+                pack_id=pub_id, name=pub_name, description=description,
+                author=socket.gethostname(), category=category,
+            )
+            if pack:
+                print(f"{ok}Knowledge pack created: {pub_name}\033[0m")
+                print(f"  Add concepts with: ecosystem knowledge add_concept {pub_id} <concept>")
+            else:
+                print(f"{er}Failed to create knowledge pack\033[0m")
+
+        elif pub_type == "mission":
+            goal = " ".join(args[3:]) if len(args) > 3 else "Complete a mission"
+            mission = self.ecosystem.mission_market.create_mission(
+                mission_id=pub_id, name=pub_name, description=goal,
+                author=socket.gethostname(), goal=goal,
+            )
+            if mission:
+                print(f"{ok}Mission template created: {pub_name}\033[0m")
+            else:
+                print(f"{er}Failed to create mission template\033[0m")
+        else:
+            print(f"{er}Unknown publish type: {pub_type}\033[0m")
+
+    def cmd_install(self, args):
+        """Install intelligence from the marketplace."""
+        er = self._c("err")
+        ok = self._c("ok")
+        if len(args) < 2:
+            print(f"{er}Usage: install <agent|knowledge|mission> <id>\033[0m")
+            return
+        install_type = args[0]
+        install_id = args[1]
+
+        if install_type == "agent":
+            if self.ecosystem.agent_market.install(install_id):
+                info = self.ecosystem.agent_market.get_info(install_id)
+                print(f"{ok}Agent installed: {info['name']}\033[0m")
+                print(f"  Spawn with: agent spawn {install_id}")
+            else:
+                print(f"{er}Agent not found: {install_id}\033[0m")
+
+        elif install_type == "knowledge":
+            if self.ecosystem.knowledge_market.install_pack(install_id):
+                pack = self.ecosystem.knowledge_market.get_pack(install_id)
+                print(f"{ok}Knowledge pack installed: {pack['name']}\033[0m")
+                print(f"  Concepts: {', '.join(pack.get('concepts', []))}")
+                print(f"  Learning paths: {len(pack.get('learning_paths', []))}")
+            else:
+                print(f"{er}Knowledge pack not found: {install_id}\033[0m")
+
+        elif install_type == "mission":
+            if self.ecosystem.mission_market.install_mission(install_id):
+                mission = self.ecosystem.mission_market.get_mission(install_id)
+                print(f"{ok}Mission template installed: {mission['name']}\033[0m")
+                print(f"  Goal: {mission.get('goal', '')}")
+                print(f"  Agents: {', '.join(mission.get('agents', []))}")
+            else:
+                print(f"{er}Mission template not found: {install_id}\033[0m")
+        else:
+            print(f"{er}Unknown install type: {install_type}\033[0m")
+
+    def cmd_sdk(self, args):
+        """Developer SDK — create and build intelligence projects."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if not args:
+            info = self.ecosystem.dev_platform.sdk_info()
+            print(f"{ic}ARCANIS Developer SDK\033[0m")
+            print(f"  Templates: {', '.join(info['templates'])}")
+            print(f"  Projects: {info['projects']} ({info['published']} published)")
+            print()
+            print(f"  \033[1;36mUsage:\033[0m")
+            print(f"    sdk new agent <id> <name>         New agent project")
+            print(f"    sdk new knowledge_pack <id> <name>  New knowledge pack project")
+            print(f"    sdk new mission_template <id> <name> New mission project")
+            print(f"    sdk set <id> <field> <value>      Set a project field")
+            print(f"    sdk build <id>                    Build and publish project")
+            print(f"    sdk list [status]                 List projects")
+            return
+        action = args[0]
+        if action == "new":
+            if len(args) < 4:
+                print(f"{er}Usage: sdk new <type> <id> <name>\033[0m")
+                return
+            ptype, pid, pname = args[1], args[2], args[3]
+            proj = self.ecosystem.dev_platform.new_project(ptype, pid, pname)
+            if proj:
+                print(f"{ok}SDK project created: {pname} ({pid})\033[0m")
+                print(f"  Type: {ptype}")
+                print(f"  Use 'sdk set {pid} <field> <value>' to configure")
+            else:
+                print(f"{er}Unknown project type: {ptype}\033[0m")
+        elif action == "set":
+            if len(args) < 4:
+                print(f"{er}Usage: sdk set <id> <field> <value>\033[0m")
+                return
+            pid, field = args[1], args[2]
+            value = " ".join(args[3:])
+            if self.ecosystem.dev_platform.set_field(pid, field, value):
+                print(f"{ok}Field set: {field} = {value}\033[0m")
+            else:
+                print(f"{er}Project not found: {pid}\033[0m")
+        elif action == "build":
+            if len(args) < 2:
+                print(f"{er}Usage: sdk build <id>\033[0m")
+                return
+            pid = args[1]
+            proj = self.ecosystem.dev_platform.get_project(pid)
+            if not proj:
+                print(f"{er}Project not found: {pid}\033[0m")
+                return
+            ptype = proj["type"]
+            if ptype == "agent":
+                result = self.ecosystem.dev_platform.build_agent(pid)
+            elif ptype == "knowledge_pack":
+                result = self.ecosystem.dev_platform.build_knowledge_pack(pid)
+            elif ptype == "mission_template":
+                result = self.ecosystem.dev_platform.build_mission(pid)
+            else:
+                result = None
+            if result:
+                print(f"{ok}Project built and published: {proj['name']}\033[0m")
+                print(f"  Type: {ptype}")
+                print(f"  Available in marketplace")
+            else:
+                print(f"{er}Build failed — check field values\033[0m")
+        elif action == "list":
+            status = args[1] if len(args) > 1 else None
+            projects = self.ecosystem.dev_platform.list_projects(status=status)
+            if not projects:
+                print("No SDK projects")
+                return
+            print(f"{ic}SDK Projects:\033[0m")
+            for p in projects:
+                print(f"  {p['type']:<18} {p['id']:<20} {p['name']:<24} {p['status']:<12}")
+        else:
+            print(f"{er}Unknown SDK action: {action}\033[0m")
+
+    def cmd_protocol(self, args):
+        """Open Intelligence Protocol — ecosystem communication."""
+        ic = self._c("info")
+        info = self.ecosystem.protocol.to_dict()
+        print(f"{ic}Open Intelligence Protocol v{info['version']}\033[0m")
+        print(f"  Message types supported: {len(info['message_types'])}")
+        for mt in info['message_types']:
+            print(f"    - {mt}")
+        print(f"  Messages sent/received: {info['message_count']}")
 
     # ======================== ENCRYPTION ========================
 
