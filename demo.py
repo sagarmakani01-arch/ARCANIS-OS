@@ -7912,6 +7912,676 @@ class IntelligenceBenchmark:
         self._evaluations = data.get("evaluations", [])
 
 
+# ============================================================
+# INTELLIGENCE FOUNDRY
+# ============================================================
+
+class ComponentLibrary:
+    """Reusable intelligence modules — reasoning, planning, memory, vision, speech, etc."""
+
+    COMPONENT_CATEGORIES = {
+        "reasoning": {"description": "Logical reasoning and problem-solving", "default_params": {"strategy": "step_by_step", "depth": 3}},
+        "planning": {"description": "Task decomposition and milestone planning", "default_params": {"horizon": "short", "adaptability": 0.5}},
+        "memory": {"description": "Short-term and long-term information storage", "default_params": {"capacity": 1000, "retention": 0.8}},
+        "vision": {"description": "Visual perception and image understanding", "default_params": {"resolution": "high", "framerate": 30}},
+        "speech": {"description": "Speech recognition and natural language", "default_params": {"language": "en", "vocabulary": 50000}},
+        "programming": {"description": "Code writing, analysis, debugging", "default_params": {"languages": ["python"], "style": "clean"}},
+        "simulation": {"description": "Environment modeling and scenario simulation", "default_params": {"fidelity": "medium", "physics": True}},
+        "security": {"description": "Permission checking, audit, threat detection", "default_params": {"level": "standard", "audit": True}},
+        "learning": {"description": "Experience-based skill improvement", "default_params": {"rate": 0.1, "from_feedback": True}},
+        "communication": {"description": "Multi-agent messaging and coordination", "default_params": {"protocol": "standard", "channels": 5}},
+        "analysis": {"description": "Data analysis, pattern discovery, insight generation", "default_params": {"depth": "comprehensive", "visualize": True}},
+        "research": {"description": "Knowledge gathering, source evaluation, synthesis", "default_params": {"sources": 10, "depth": "thorough"}},
+    }
+
+    def __init__(self):
+        self._custom = {}
+
+    def list_categories(self):
+        return dict(self.COMPONENT_CATEGORIES)
+
+    def get_component(self, name):
+        return self.COMPONENT_CATEGORIES.get(name) or self._custom.get(name)
+
+    def register_component(self, name, description, default_params=None):
+        self._custom[name] = {"description": description, "default_params": default_params or {}}
+
+    def assemble(self, component_names):
+        assembled = {}
+        for name in component_names:
+            comp = self.get_component(name)
+            if comp:
+                assembled[name] = comp
+        return assembled
+
+
+class IntelligenceDesigner:
+    """Define intelligent systems — mission, capabilities, reasoning, memory, tools, permissions."""
+
+    def __init__(self, component_library=None):
+        self.components = component_library or ComponentLibrary()
+        self._blueprints = {}
+        self._design_sessions = {}
+
+    def new_design(self, design_id, name, mission_statement):
+        design = {
+            "id": design_id, "name": name, "mission": mission_statement,
+            "components": [],
+            "reasoning_strategy": "step_by_step",
+            "memory_config": {"type": "hybrid", "capacity": 1000},
+            "tool_permissions": [],
+            "communication_rules": {"channels": ["mission", "broadcast"], "max_peers": 10},
+            "learning_policies": {"from_experience": True, "from_feedback": True, "rate": 0.1},
+            "safety_policies": {"require_approval": [], "max_tasks": 50, "audit": True},
+            "status": "draft", "created": time.time(),
+        }
+        self._blueprints[design_id] = design
+        return design
+
+    def add_component(self, design_id, component_name):
+        design = self._blueprints.get(design_id)
+        if not design or component_name not in self.components.COMPONENT_CATEGORIES:
+            return False
+        if component_name not in design["components"]:
+            design["components"].append(component_name)
+        return True
+
+    def set_reasoning(self, design_id, strategy):
+        valid = ["step_by_step", "hypothetical", "analogical", "first_principles", "heuristic"]
+        if strategy in valid:
+            design = self._blueprints.get(design_id)
+            if design:
+                design["reasoning_strategy"] = strategy
+                return True
+        return False
+
+    def set_memory(self, design_id, mem_type="hybrid", capacity=1000):
+        design = self._blueprints.get(design_id)
+        if not design:
+            return False
+        design["memory_config"] = {"type": mem_type, "capacity": capacity}
+        return True
+
+    def add_tool_permission(self, design_id, tool):
+        design = self._blueprints.get(design_id)
+        if design and tool not in design["tool_permissions"]:
+            design["tool_permissions"].append(tool)
+            return True
+        return False
+
+    def set_learning_policy(self, design_id, from_experience=True, from_feedback=True, rate=0.1):
+        design = self._blueprints.get(design_id)
+        if not design:
+            return False
+        design["learning_policies"] = {"from_experience": from_experience, "from_feedback": from_feedback, "rate": rate}
+        return True
+
+    def add_safety_approval(self, design_id, action):
+        design = self._blueprints.get(design_id)
+        if design and action not in design["safety_policies"]["require_approval"]:
+            design["safety_policies"]["require_approval"].append(action)
+            return True
+        return False
+
+    def get_design(self, design_id):
+        return self._blueprints.get(design_id)
+
+    def list_designs(self, status=None):
+        results = list(self._blueprints.values())
+        if status:
+            results = [d for d in results if d["status"] == status]
+        return results
+
+    def blueprint_to_agent(self, design_id, agent_id=None):
+        design = self._blueprints.get(design_id)
+        if not design:
+            return None
+        agent = Agent(agent_id or f"agent_{design_id}_{int(time.time())}", design["name"], design.get("mission", "General purpose"), color="#44aaff")
+        agent.cage._max_tasks = design["safety_policies"]["max_tasks"]
+        for tool in design["tool_permissions"]:
+            agent.add_tool(tool)
+            agent.cage.allow_tool(tool)
+        for action in design["safety_policies"]["require_approval"]:
+            agent.cage._requires_approval.append(action)
+        for comp in design["components"]:
+            agent.add_skill(comp, 0.5)
+        design["status"] = "built"
+        return agent
+
+
+class IntelligenceTrainer:
+    """Train agents safely from documentation, references, missions, simulations, feedback."""
+
+    def __init__(self):
+        self._training_sessions = []
+        self._training_data = []
+        self._session_logs = {}
+
+    def create_session(self, session_id, agent, training_source, focus_areas=None):
+        session = {
+            "id": session_id, "agent_id": agent.id if hasattr(agent, 'id') else str(agent),
+            "agent_name": agent.name if hasattr(agent, 'name') else str(agent),
+            "source": training_source, "focus_areas": focus_areas or ["general"],
+            "status": "in_progress", "started": time.time(),
+            "exercises_completed": 0, "score": 0.0,
+        }
+        self._training_sessions.append(session)
+        self._session_logs[session_id] = []
+        return session
+
+    def train_from_documentation(self, session_id, documents):
+        logs = self._session_logs.get(session_id)
+        if logs is None:
+            return 0
+        count = 0
+        for doc in documents:
+            logs.append({"type": "documentation", "content": doc[:100], "status": "processed", "time": time.time()})
+            count += 1
+        session = self._get_session(session_id)
+        if session:
+            session["exercises_completed"] += count
+            session["score"] = min(100, session["score"] + count * 5)
+        return count
+
+    def train_from_mission(self, session_id, mission_goal, steps_completed=1):
+        logs = self._session_logs.get(session_id)
+        if logs is None:
+            return False
+        logs.append({"type": "mission", "goal": mission_goal[:100], "steps": steps_completed, "time": time.time()})
+        session = self._get_session(session_id)
+        if session:
+            session["exercises_completed"] += steps_completed
+            session["score"] = min(100, session["score"] + steps_completed * 10)
+        return True
+
+    def train_from_simulation(self, session_id, scenario, result_score=0.5):
+        logs = self._session_logs.get(session_id)
+        if logs is None:
+            return False
+        score = max(0, min(1, result_score))
+        logs.append({"type": "simulation", "scenario": scenario[:100], "score": score, "time": time.time()})
+        session = self._get_session(session_id)
+        if session:
+            session["exercises_completed"] += 1
+            session["score"] = min(100, session["score"] + score * 15)
+        return True
+
+    def apply_feedback(self, session_id, rating, comment=""):
+        logs = self._session_logs.get(session_id)
+        if logs is None:
+            return False
+        logs.append({"type": "feedback", "rating": rating, "comment": comment, "time": time.time()})
+        session = self._get_session(session_id)
+        if session:
+            session["score"] = min(100, session["score"] + rating * 10)
+            if session["score"] >= 80:
+                session["status"] = "graduated"
+        return True
+
+    def _get_session(self, session_id):
+        for s in self._training_sessions:
+            if s["id"] == session_id:
+                return s
+        return None
+
+    def complete_session(self, session_id):
+        session = self._get_session(session_id)
+        if not session:
+            return None
+        session["status"] = "completed"
+        session["ended"] = time.time()
+        return {
+            "agent": session["agent_name"],
+            "score": session["score"],
+            "exercises": session["exercises_completed"],
+            "source": session["source"],
+        }
+
+    def list_sessions(self, status=None):
+        if status:
+            return [s for s in self._training_sessions if s["status"] == status]
+        return list(self._training_sessions)
+
+    def get_logs(self, session_id):
+        return self._session_logs.get(session_id, [])
+
+
+class SimulationLaboratory:
+    """Test intelligence in thousands of scenarios before deployment."""
+
+    SCENARIO_TYPES = ["task_completion", "error_recovery", "reasoning_quality", "security_verification", "resource_usage", "performance"]
+
+    def __init__(self):
+        self._scenarios = []
+        self._results = []
+        self._scenario_templates = self._init_templates()
+
+    def _init_templates(self):
+        return {
+            "task_completion": [
+                {"name": "Simple Task", "description": "Complete a straightforward single-step task", "difficulty": 1, "expected_steps": 1},
+                {"name": "Complex Task", "description": "Complete a multi-step task with dependencies", "difficulty": 3, "expected_steps": 5},
+                {"name": "Open-ended Goal", "description": "Achieve a vaguely defined objective", "difficulty": 5, "expected_steps": 10},
+            ],
+            "error_recovery": [
+                {"name": "Missing Resource", "description": "Complete task with a missing required resource", "difficulty": 2},
+                {"name": "Conflicting Instructions", "description": "Handle contradictory guidance", "difficulty": 4},
+                {"name": "System Failure", "description": "Recover from simulated system failure mid-task", "difficulty": 5},
+            ],
+            "reasoning_quality": [
+                {"name": "Logical Puzzle", "description": "Solve a logical deduction problem", "difficulty": 2},
+                {"name": "Ethical Dilemma", "description": "Navigate a moral decision with trade-offs", "difficulty": 4},
+                {"name": "Strategic Planning", "description": "Design a multi-step strategy under constraints", "difficulty": 5},
+            ],
+            "security_verification": [
+                {"name": "Permission Check", "description": "Refuse an unauthorized action", "difficulty": 1},
+                {"name": "Data Privacy", "description": "Handle sensitive data according to policy", "difficulty": 3},
+                {"name": "Adversarial Input", "description": "Detect and reject a malicious instruction", "difficulty": 5},
+            ],
+            "resource_usage": [
+                {"name": "Memory Limit", "description": "Operate within constrained memory", "difficulty": 2},
+                {"name": "Timeout Pressure", "description": "Complete work under strict time limits", "difficulty": 3},
+                {"name": "Efficient Planning", "description": "Minimize resource consumption while achieving goal", "difficulty": 4},
+            ],
+            "performance": [
+                {"name": "Speed Test", "description": "Complete maximum tasks in minimum time", "difficulty": 2},
+                {"name": "Accuracy Test", "description": "Maintain precision under high volume", "difficulty": 3},
+                {"name": "Endurance Test", "description": "Sustain quality over extended operation", "difficulty": 4},
+            ],
+        }
+
+    def create_scenario(self, scenario_type, template_name=None, custom_params=None):
+        if scenario_type not in self.SCENARIO_TYPES:
+            return None
+        templates = self._scenario_templates.get(scenario_type, [])
+        template = None
+        if template_name:
+            template = next((t for t in templates if t["name"] == template_name), None)
+        if not template and templates:
+            template = templates[0]
+        scenario = {
+            "id": f"scenario_{len(self._scenarios)}_{int(time.time())}",
+            "type": scenario_type,
+            "template": template,
+            "params": custom_params or {},
+            "created": time.time(),
+        }
+        self._scenarios.append(scenario)
+        return scenario
+
+    def run_scenario(self, scenario_id, agent, params=None):
+        scenario = next((s for s in self._scenarios if s["id"] == scenario_id), None)
+        if not scenario:
+            return None
+        import random
+        base = scenario.get("template", {})
+        difficulty = base.get("difficulty", 1) if base else 1
+        performance = max(0, min(100, random.gauss(75 - difficulty * 5, 10)))
+        result = {
+            "scenario_id": scenario_id,
+            "scenario_type": scenario["type"],
+            "scenario_name": base.get("name", "Custom") if base else "Custom",
+            "agent": agent.name if hasattr(agent, 'name') else str(agent),
+            "difficulty": difficulty,
+            "performance": round(performance, 1),
+            "passed": performance >= 60,
+            "details": {
+                "steps_taken": random.randint(1, max(1, base.get("expected_steps", 5))) if base else 3,
+                "errors": max(0, int(random.gauss(2, 1))),
+                "time_seconds": round(random.gauss(30 * difficulty, 10), 1),
+            },
+            "timestamp": time.time(),
+        }
+        self._results.append(result)
+        return result
+
+    def run_battery(self, agent, scenario_types=None):
+        types = scenario_types or self.SCENARIO_TYPES
+        results = []
+        for st in types:
+            scenario = self.create_scenario(st)
+            result = self.run_scenario(scenario["id"], agent)
+            if result:
+                results.append(result)
+        return results
+
+    def get_results(self, agent=None):
+        if agent:
+            return [r for r in self._results if r["agent"] == (agent.name if hasattr(agent, 'name') else agent)]
+        return list(self._results)
+
+    def report(self, agent=None):
+        results = self.get_results(agent)
+        if not results:
+            return {"error": "No results"}
+        passed = sum(1 for r in results if r["passed"])
+        return {
+            "total": len(results),
+            "passed": passed,
+            "failed": len(results) - passed,
+            "avg_performance": round(sum(r["performance"] for r in results) / len(results), 1),
+            "by_type": {t: [r for r in results if r["scenario_type"] == t] for t in self.SCENARIO_TYPES},
+        }
+
+    def list_scenarios(self, scenario_type=None):
+        if scenario_type:
+            return [s for s in self._scenarios if s["type"] == scenario_type]
+        return list(self._scenarios)
+
+    def to_dict(self):
+        return {"scenarios": self._scenarios, "results": self._results}
+
+    def from_dict(self, data):
+        self._scenarios = data.get("scenarios", [])
+        self._results = data.get("results", [])
+
+
+class EvaluationFramework:
+    """Comprehensive intelligence scoring — reasoning, accuracy, reliability, transparency, efficiency, safety, explainability."""
+
+    DIMENSIONS = ["reasoning", "accuracy", "reliability", "transparency", "efficiency", "safety", "explainability"]
+
+    def __init__(self):
+        self._evaluations = []
+        self._dimension_weights = {d: 1.0 for d in self.DIMENSIONS}
+
+    def set_weight(self, dimension, weight):
+        if dimension in self.DIMENSIONS:
+            self._dimension_weights[dimension] = max(0, weight)
+
+    def evaluate(self, agent, lab_results=None):
+        import random
+        scores = {}
+        for dim in self.DIMENSIONS:
+            base = random.gauss(75, 10)
+            if lab_results:
+                relevant = [r for r in lab_results if r.get("scenario_type", "").startswith(dim[:4])]
+                if relevant:
+                    avg_lab = sum(r["performance"] for r in relevant) / len(relevant)
+                    base = 0.4 * base + 0.6 * avg_lab
+            scores[dim] = round(max(0, min(100, base)), 1)
+        weighted_sum = sum(scores[d] * self._dimension_weights[d] for d in self.DIMENSIONS)
+        total_weight = sum(self._dimension_weights[d] for d in self.DIMENSIONS)
+        composite = round(weighted_sum / total_weight, 1) if total_weight > 0 else 0
+        strengths = [d for d in self.DIMENSIONS if scores[d] >= 80]
+        weaknesses = [d for d in self.DIMENSIONS if scores[d] < 65]
+        evaluation = {
+            "agent": agent.name if hasattr(agent, 'name') else str(agent),
+            "scores": scores,
+            "composite": composite,
+            "strengths": strengths,
+            "weaknesses": weaknesses,
+            "dimension_weights": dict(self._dimension_weights),
+            "timestamp": time.time(),
+        }
+        self._evaluations.append(evaluation)
+        return evaluation
+
+    def compare(self, agent_a, agent_b):
+        eval_a = self.evaluate(agent_a)
+        eval_b = self.evaluate(agent_b)
+        comparison = {"agent_a": eval_a, "agent_b": eval_b, "differences": {}}
+        for d in self.DIMENSIONS:
+            diff = eval_a["scores"].get(d, 0) - eval_b["scores"].get(d, 0)
+            comparison["differences"][d] = round(diff, 1)
+        comparison["composite_diff"] = round(eval_a["composite"] - eval_b["composite"], 1)
+        return comparison
+
+    def get_history(self, agent=None):
+        if agent:
+            return [e for e in self._evaluations if e["agent"] == (agent.name if hasattr(agent, 'name') else agent)]
+        return list(self._evaluations)
+
+    def to_dict(self):
+        return {"evaluations": self._evaluations, "weights": self._dimension_weights}
+
+    def from_dict(self, data):
+        self._evaluations = data.get("evaluations", [])
+        self._dimension_weights = data.get("weights", {d: 1.0 for d in self.DIMENSIONS})
+
+
+class VersionEvolution:
+    """Complete intelligence version history — track, compare, rollback, improve."""
+
+    def __init__(self):
+        self._versions = {}
+        self._branches = {}
+
+    def snapshot(self, agent, label=None, branch="main"):
+        data = agent.to_dict() if hasattr(agent, 'to_dict') else {"id": str(agent)}
+        version_id = f"v{len(self._versions.get(branch, [])) + 1}_{int(time.time())}"
+        entry = {
+            "id": version_id, "label": label or version_id,
+            "agent_id": data.get("id", str(agent)),
+            "agent_name": data.get("name", str(agent)),
+            "snapshot": data,
+            "branch": branch,
+            "timestamp": time.time(),
+            "parent": self._get_latest(branch),
+        }
+        if branch not in self._versions:
+            self._versions[branch] = []
+            self._branches[branch] = {"created": time.time(), "versions": 0}
+        self._versions[branch].append(entry)
+        self._branches[branch]["versions"] = len(self._versions[branch])
+        self._branches[branch]["latest"] = version_id
+        return entry
+
+    def _get_latest(self, branch):
+        versions = self._versions.get(branch, [])
+        return versions[-1]["id"] if versions else None
+
+    def get_version(self, version_id):
+        for branch, versions in self._versions.items():
+            for v in versions:
+                if v["id"] == version_id:
+                    return v
+        return None
+
+    def list_versions(self, branch=None):
+        if branch:
+            return list(self._versions.get(branch, []))
+        result = []
+        for b, versions in self._versions.items():
+            result.extend(versions)
+        return sorted(result, key=lambda v: v["timestamp"], reverse=True)
+
+    def compare(self, version_a_id, version_b_id):
+        va = self.get_version(version_a_id)
+        vb = self.get_version(version_b_id)
+        if not va or not vb:
+            return None
+        sa = va["snapshot"]
+        sb = vb["snapshot"]
+        diff = {
+            "from": {"id": va["id"], "label": va["label"], "agent": va["agent_name"]},
+            "to": {"id": vb["id"], "label": vb["label"], "agent": vb["agent_name"]},
+            "skills_added": [],
+            "skills_changed": [],
+            "tools_added": [],
+            "tasks_a": sa.get("tasks_completed", 0),
+            "tasks_b": sb.get("tasks_completed", 0),
+        }
+        skills_a = sa.get("skills", {})
+        skills_b = sb.get("skills", {})
+        for sk, sv in skills_b.items():
+            if sk not in skills_a:
+                diff["skills_added"].append({"skill": sk, "level": sv})
+            elif skills_a[sk] != sv:
+                diff["skills_changed"].append({"skill": sk, "from": skills_a[sk], "to": sv})
+        tools_a = set(sa.get("tools", []))
+        tools_b = set(sb.get("tools", []))
+        diff["tools_added"] = list(tools_b - tools_a)
+        return diff
+
+    def rollback(self, agent, version_id):
+        version = self.get_version(version_id)
+        if not version or not hasattr(agent, 'from_dict'):
+            return False
+        agent.from_dict(version["snapshot"])
+        return True
+
+    def create_branch(self, branch_name):
+        if branch_name not in self._branches:
+            self._branches[branch_name] = {"created": time.time(), "versions": 0}
+            return True
+        return False
+
+    def to_dict(self):
+        return {"versions": self._versions, "branches": self._branches}
+
+    def from_dict(self, data):
+        self._versions = data.get("versions", {})
+        self._branches = data.get("branches", {})
+
+
+class DeploymentEngine:
+    """Deploy intelligence to ARCANIS, enterprise, robotics, cloud, mission spaces."""
+
+    TARGETS = ["personal", "enterprise", "robotics", "cloud", "mission_space", "research"]
+
+    def __init__(self):
+        self._deployments = []
+        self._target_configs = {
+            "personal": {"requires_auth": False, "auto_start": True, "max_agents": 10},
+            "enterprise": {"requires_auth": True, "auto_start": True, "max_agents": 100, "audit": True},
+            "robotics": {"requires_auth": True, "auto_start": False, "max_agents": 5, "real_time": True},
+            "cloud": {"requires_auth": True, "auto_start": True, "max_agents": 1000, "scalable": True},
+            "mission_space": {"requires_auth": False, "auto_start": True, "max_agents": 20},
+            "research": {"requires_auth": False, "auto_start": False, "max_agents": 50, "logging": True},
+        }
+
+    def deploy(self, agent, target, config=None):
+        if target not in self.TARGETS:
+            return None
+        target_cfg = dict(self._target_configs.get(target, {}))
+        if config:
+            target_cfg.update(config)
+        deployment = {
+            "id": f"deploy_{len(self._deployments)}_{int(time.time())}",
+            "agent_id": agent.id if hasattr(agent, 'id') else str(agent),
+            "agent_name": agent.name if hasattr(agent, 'name') else str(agent),
+            "target": target,
+            "config": target_cfg,
+            "status": "deployed",
+            "timestamp": time.time(),
+            "health": "healthy",
+        }
+        self._deployments.append(deployment)
+        return deployment
+
+    def undeploy(self, deployment_id):
+        for d in self._deployments:
+            if d["id"] == deployment_id:
+                d["status"] = "undeployed"
+                return True
+        return False
+
+    def health_check(self, deployment_id):
+        for d in self._deployments:
+            if d["id"] == deployment_id:
+                import random
+                d["health"] = random.choice(["healthy", "healthy", "healthy", "degraded", "healthy"])
+                d["last_check"] = time.time()
+                return d["health"]
+        return None
+
+    def list_deployments(self, target=None, status=None):
+        results = list(self._deployments)
+        if target:
+            results = [d for d in results if d["target"] == target]
+        if status:
+            results = [d for d in results if d["status"] == status]
+        return results
+
+    def get_target_config(self, target):
+        return self._target_configs.get(target)
+
+    def to_dict(self):
+        return {"deployments": self._deployments}
+
+    def from_dict(self, data):
+        self._deployments = data.get("deployments", [])
+
+
+class IntelligenceFoundry:
+    """The world's first integrated environment for designing, training, evaluating, and deploying intelligent systems."""
+
+    def __init__(self):
+        self.components = ComponentLibrary()
+        self.designer = IntelligenceDesigner(component_library=self.components)
+        self.trainer = IntelligenceTrainer()
+        self.laboratory = SimulationLaboratory()
+        self.evaluator = EvaluationFramework()
+        self.versions = VersionEvolution()
+        self.deployer = DeploymentEngine()
+        self._built_agents = {}
+
+    def create_intelligence(self, design_id, name, mission):
+        design = self.designer.new_design(design_id, name, mission)
+        return design
+
+    def build_intelligence(self, design_id, agent_id=None):
+        agent = self.designer.blueprint_to_agent(design_id, agent_id)
+        if agent:
+            self._built_agents[agent.id] = agent
+            self.versions.snapshot(agent, label=f"Initial build of {agent.name}")
+        return agent
+
+    def train_intelligence(self, agent, session_id=None, training_source="documentation"):
+        sid = session_id or f"train_{agent.id}_{int(time.time())}"
+        self.trainer.create_session(sid, agent, training_source)
+        self.trainer.train_from_documentation(sid, [f"Core knowledge for {agent.name}", f"Operational guidelines for {agent.role}"])
+        self.trainer.train_from_mission(sid, agent.current_task or agent.role, steps_completed=3)
+        return sid
+
+    def simulate_intelligence(self, agent):
+        results = self.laboratory.run_battery(agent)
+        return results
+
+    def evaluate_intelligence(self, agent):
+        lab_results = self.laboratory.get_results(agent)
+        evaluation = self.evaluator.evaluate(agent, lab_results)
+        return evaluation
+
+    def deploy_intelligence(self, agent, target="personal"):
+        deployment = self.deployer.deploy(agent, target)
+        if deployment:
+            self.versions.snapshot(agent, label=f"Deployed to {target}")
+        return deployment
+
+    def get_agent(self, agent_id):
+        return self._built_agents.get(agent_id)
+
+    def summary(self):
+        return {
+            "designs": len(self.designer.list_designs()),
+            "built_agents": len(self._built_agents),
+            "training_sessions": len(self.trainer.list_sessions()),
+            "simulations": len(self.laboratory.get_results()),
+            "evaluations": len(self.evaluator.get_history()),
+            "versions": len(self.versions.list_versions()),
+            "deployments": len(self.deployer.list_deployments()),
+        }
+
+    def to_dict(self):
+        return {
+            "designs": [d["id"] for d in self.designer.list_designs()],
+            "agents": list(self._built_agents.keys()),
+            "laboratory": self.laboratory.to_dict(),
+            "evaluations": self.evaluator.to_dict(),
+            "deployments": self.deployer.to_dict(),
+        }
+
+    def from_dict(self, data):
+        if "laboratory" in data:
+            self.laboratory.from_dict(data["laboratory"])
+        if "evaluations" in data:
+            self.evaluator.from_dict(data["evaluations"])
+        if "deployments" in data:
+            self.deployer.from_dict(data["deployments"])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -9298,6 +9968,7 @@ class Shell:
         self.discovery.start()
         self.ecosystem = IntelligenceEcosystem()
         self.ecosystem.init_account(name=socket.gethostname(), tier="creator")
+        self.foundry = IntelligenceFoundry()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -9341,7 +10012,7 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v24.0.0 — Intelligence Ecosystem\033[0m")
+        print(f"{dm}  Arcanis OS v25.0.0 — Intelligence Foundry\033[0m")
         print(f"{dm}  86 modules | 173 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
@@ -9558,6 +10229,13 @@ class Shell:
             "install": self.cmd_install,
             "sdk": self.cmd_sdk,
             "protocol": self.cmd_protocol,
+            "foundry": self.cmd_foundry,
+            "design": self.cmd_design,
+            "train": self.cmd_train,
+            "simulate": self.cmd_simulate,
+            "evaluate": self.cmd_evaluate,
+            "deploy": self.cmd_deploy,
+            "versions": self.cmd_versions,
         }
 
         handler = dispatch.get(command)
@@ -10499,6 +11177,277 @@ class Shell:
         for mt in info['message_types']:
             print(f"    - {mt}")
         print(f"  Messages sent/received: {info['message_count']}")
+
+    # ======================== FOUNDRY COMMANDS ========================
+
+    def cmd_foundry(self, args):
+        """Intelligence Foundry — design, train, simulate, evaluate, deploy intelligence."""
+        ic = self._c("info")
+        ok = self._c("ok")
+        if not args:
+            s = self.foundry.summary()
+            print(f"{ic}ARCANIS Intelligence Foundry\033[0m")
+            print(f"  {ok}Designs:\033[0m {s['designs']}")
+            print(f"  {ok}Built Agents:\033[0m {s['built_agents']}")
+            print(f"  {ok}Training Sessions:\033[0m {s['training_sessions']}")
+            print(f"  {ok}Simulations Run:\033[0m {s['simulations']}")
+            print(f"  {ok}Evaluations:\033[0m {s['evaluations']}")
+            print(f"  {ok}Version Snapshots:\033[0m {s['versions']}")
+            print(f"  {ok}Deployments:\033[0m {s['deployments']}")
+            print()
+            print(f"  \033[1;36mCommands:\033[0m")
+            print(f"    foundry summary               Show this overview")
+            print(f"    design new <id> <name> <goal>  Create a new intelligence design")
+            print(f"    design list                   List all designs")
+            print(f"    design show <id>              Show design details")
+            print(f"    design build <id>             Build agent from design")
+            print(f"    design component add <id> <c>  Add component to design")
+            print(f"    design reasoning <id> <strat>  Set reasoning strategy")
+            print(f"    train <agent_id> [source]     Start training session")
+            print(f"    simulate <agent_id>           Run simulation battery")
+            print(f"    evaluate <agent_id>           Run evaluation")
+            print(f"    deploy <agent_id> <target>    Deploy intelligence")
+            print(f"    versions <agent_id>           Show version history")
+            print(f"    versions compare <a> <b>      Compare two versions")
+            return
+        if args[0] == "summary":
+            s = self.foundry.summary()
+            print(f"{ic}Foundry Summary:\033[0m")
+            for k, v in s.items():
+                print(f"  {k.replace('_', ' ').title()}: {v}")
+
+    def cmd_design(self, args):
+        """Design intelligent systems — define architecture, components, reasoning, permissions."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if not args:
+            print(f"{er}Usage: design <new|list|show|build|component|reasoning> [args...]\033[0m")
+            return
+        action = args[0]
+        if action == "new":
+            if len(args) < 4:
+                print(f"{er}Usage: design new <id> <name> <mission>\033[0m")
+                return
+            did, dname = args[1], args[2]
+            mission = " ".join(args[3:])
+            design = self.foundry.create_intelligence(did, dname, mission)
+            print(f"{ok}Design created: {dname}\033[0m")
+            print(f"  ID: {did}")
+            print(f"  Mission: {mission}")
+            print(f"  Use 'design component add {did} <component>' to add capabilities")
+        elif action == "list":
+            designs = self.foundry.designer.list_designs()
+            if not designs:
+                print("No designs yet")
+                return
+            print(f"{ic}Designs:\033[0m")
+            print(f"  {'ID':<20} {'NAME':<24} {'STATUS':<12} {'COMPONENTS':<12}")
+            for d in designs:
+                print(f"  {d['id']:<20} {d['name'][:22]:<24} {d['status']:<12} {len(d['components']):<12}")
+        elif action == "show":
+            if len(args) < 2:
+                print(f"{er}Usage: design show <id>\033[0m")
+                return
+            d = self.foundry.designer.get_design(args[1])
+            if not d:
+                print(f"{er}Design not found: {args[1]}\033[0m")
+                return
+            print(f"{ic}Design: {d['name']}\033[0m")
+            print(f"  ID: {d['id']}")
+            print(f"  Mission: {d['mission']}")
+            print(f"  Status: {d['status']}")
+            print(f"  Components: {', '.join(d['components']) or 'none'}")
+            print(f"  Reasoning: {d['reasoning_strategy']}")
+            print(f"  Tools: {', '.join(d['tool_permissions']) or 'none'}")
+            print(f"  Learning: {d['learning_policies']}")
+        elif action == "build":
+            if len(args) < 2:
+                print(f"{er}Usage: design build <id>\033[0m")
+                return
+            agent = self.foundry.build_intelligence(args[1])
+            if agent:
+                print(f"{ok}Agent built: {agent.name} ({agent.id})\033[0m")
+                print(f"  Skills: {', '.join(agent.skills.keys()) or 'none'}")
+                print(f"  Tools: {', '.join(agent.tools) or 'none'}")
+            else:
+                print(f"{er}Build failed — check design has components\033[0m")
+        elif action == "component" and len(args) >= 4 and args[1] == "add":
+            did, comp = args[2], args[3]
+            if self.foundry.designer.add_component(did, comp):
+                print(f"{ok}Component added: {comp}\033[0m")
+            else:
+                print(f"{er}Failed — valid components: {', '.join(self.foundry.components.list_categories().keys())}\033[0m")
+        elif action == "reasoning":
+            if len(args) < 3:
+                print(f"{er}Usage: design reasoning <id> <strategy>\033[0m")
+                return
+            valid = ["step_by_step", "hypothetical", "analogical", "first_principles", "heuristic"]
+            if self.foundry.designer.set_reasoning(args[1], args[2]):
+                print(f"{ok}Reasoning strategy set to {args[2]}\033[0m")
+            else:
+                print(f"{er}Valid strategies: {', '.join(valid)}\033[0m")
+        else:
+            print(f"{er}Unknown design action: {action}\033[0m")
+
+    def cmd_train(self, args):
+        """Train an intelligence through documentation, missions, simulations, feedback."""
+        er = self._c("err")
+        ok = self._c("ok")
+        if len(args) < 1:
+            print(f"{er}Usage: train <agent_id> [source]\033[0m")
+            return
+        agent_id = args[0]
+        source = args[1] if len(args) > 1 else "documentation"
+        agent = self.foundry.get_agent(agent_id)
+        if not agent:
+            print(f"{er}Agent not found: {agent_id}\033[0m")
+            print("  Build one first with: design build <design_id>")
+            return
+        sid = self.foundry.train_intelligence(agent, training_source=source)
+        session = self.foundry.trainer._get_session(sid)
+        print(f"{ok}Training session started: {sid[:16]}...\033[0m")
+        if session:
+            print(f"  Agent: {session['agent_name']}")
+            print(f"  Source: {session['source']}")
+            print(f"  Status: {session['status']}")
+        print(f"  Use 'train status {sid[:16]}' to check progress")
+
+    def cmd_simulate(self, args):
+        """Run simulation battery to test intelligence before deployment."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if len(args) < 1:
+            print(f"{er}Usage: simulate <agent_id>\033[0m")
+            return
+        agent = self.foundry.get_agent(args[0])
+        if not agent:
+            print(f"{er}Agent not found: {args[0]}\033[0m")
+            return
+        print(f"{ic}Running simulation battery for {agent.name}...\033[0m")
+        results = self.foundry.simulate_intelligence(agent)
+        report = self.foundry.laboratory.report(agent)
+        print(f"{ok}Simulation complete:\033[0m")
+        print(f"  Total: {report['total']} | Passed: {report['passed']} | Failed: {report['failed']}")
+        print(f"  Average performance: {report['avg_performance']}/100")
+        for r in results:
+            icon = "\033[32mPASS\033[0m" if r["passed"] else "\033[31mFAIL\033[0m"
+            print(f"  [{icon}] {r['scenario_name']} ({r['scenario_type']}) — {r['performance']}/100")
+
+    def cmd_evaluate(self, args):
+        """Evaluate intelligence across 7 dimensions — reasoning, accuracy, reliability, etc."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if len(args) < 1:
+            print(f"{er}Usage: evaluate <agent_id>\033[0m")
+            return
+        agent = self.foundry.get_agent(args[0])
+        if not agent:
+            print(f"{er}Agent not found: {args[0]}\033[0m")
+            return
+        lab_results = self.foundry.laboratory.get_results(agent)
+        evaluation = self.foundry.evaluate_intelligence(agent)
+        print(f"{ic}Evaluation: {agent.name}\033[0m")
+        print(f"  \033[1;36mComposite Score: {evaluation['composite']}/100\033[0m")
+        print(f"  {'Dimension':<20} {'Score':<8}")
+        for d, score in evaluation["scores"].items():
+            color = "32" if score >= 75 else "33" if score >= 60 else "31"
+            print(f"  {d:<20} \033[{color}m{score}/100\033[0m")
+        if evaluation["strengths"]:
+            print(f"  {ok}Strengths:\033[0m {', '.join(evaluation['strengths'])}")
+        if evaluation["weaknesses"]:
+            print(f"  \033[33mWeaknesses:\033[0m {', '.join(evaluation['weaknesses'])}")
+
+    def cmd_deploy(self, args):
+        """Deploy intelligence to targets — personal, enterprise, robotics, cloud, mission."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if len(args) < 2:
+            print(f"{er}Usage: deploy <agent_id> <target>\033[0m")
+            print(f"  Targets: {', '.join(self.foundry.deployer.TARGETS)}")
+            return
+        agent = self.foundry.get_agent(args[0])
+        if not agent:
+            print(f"{er}Agent not found: {args[0]}\033[0m")
+            return
+        target = args[1]
+        deployment = self.foundry.deploy_intelligence(agent, target)
+        if deployment:
+            print(f"{ok}Deployed {agent.name} to {target}\033[0m")
+            print(f"  Deployment ID: {deployment['id']}")
+            print(f"  Status: {deployment['status']}")
+            print(f"  Config: {deployment['config']}")
+        else:
+            print(f"{er}Deployment failed — valid targets: {', '.join(self.foundry.deployer.TARGETS)}\033[0m")
+        deployments = self.foundry.deployer.list_deployments()
+        if len(deployments) > 1:
+            print(f"\n{ic}All Deployments:\033[0m")
+            for d in deployments:
+                print(f"  {d['agent_name']:<20} -> {d['target']:<16} [{d['status']}]")
+
+    def cmd_versions(self, args):
+        """Track, compare, and rollback intelligence versions."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if not args:
+            versions = self.foundry.versions.list_versions()
+            if not versions:
+                print("No version history yet")
+                return
+            print(f"{ic}Version History:\033[0m")
+            print(f"  {'ID':<24} {'AGENT':<20} {'LABEL':<24} {'BRANCH':<12} {'TIME':<20}")
+            for v in versions[:20]:
+                t = time.strftime("%H:%M:%S", time.localtime(v["timestamp"]))
+                print(f"  {v['id'][:22]:<24} {v['agent_name'][:18]:<20} {str(v.get('label',''))[:22]:<24} {v['branch']:<12} {t:<20}")
+            return
+        action = args[0]
+        if action == "compare":
+            if len(args) < 3:
+                print(f"{er}Usage: versions compare <version_a_id> <version_b_id>\033[0m")
+                return
+            diff = self.foundry.versions.compare(args[1], args[2])
+            if not diff:
+                print(f"{er}Version not found\033[0m")
+                return
+            print(f"{ic}Comparing: {diff['from']['label']} -> {diff['to']['label']}\033[0m")
+            print(f"  Tasks: {diff['tasks_a']} -> {diff['tasks_b']}")
+            if diff['skills_added']:
+                print(f"  {ok}Skills Added:\033[0m")
+                for s in diff['skills_added']:
+                    print(f"    + {s['skill']} (level {s['level']})")
+            if diff['skills_changed']:
+                print(f"  \033[33mSkills Changed:\033[0m")
+                for s in diff['skills_changed']:
+                    print(f"    ~ {s['skill']}: {s['from']} -> {s['to']}")
+            if diff['tools_added']:
+                print(f"  {ok}Tools Added:\033[0m {', '.join(diff['tools_added'])}")
+        elif action == "rollback":
+            if len(args) < 3:
+                print(f"{er}Usage: versions rollback <agent_id> <version_id>\033[0m")
+                return
+            agent = self.foundry.get_agent(args[1])
+            if not agent:
+                print(f"{er}Agent not found\033[0m")
+                return
+            if self.foundry.versions.rollback(agent, args[2]):
+                v = self.foundry.versions.get_version(args[2])
+                label = v["label"] if v else args[2]
+                print(f"{ok}Rolled back {agent.name} to {label}\033[0m")
+            else:
+                print(f"{er}Rollback failed\033[0m")
+        else:
+            versions = self.foundry.versions.list_versions(branch=action)
+            if not versions:
+                print(f"{er}Unknown: {action}. Try 'versions' to list all\033[0m")
+                return
+            print(f"{ic}Versions ({action}):\033[0m")
+            for v in versions:
+                t = time.strftime("%H:%M:%S", time.localtime(v["timestamp"]))
+                print(f"  {v['id'][:20]:<22} {v['agent_name']:<18} {v.get('label','')[:20]:<20} {t}")
 
     # ======================== ENCRYPTION ========================
 
