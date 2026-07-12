@@ -1,6 +1,6 @@
 # Ω Arcanis OS — The Operating System That Transcended Itself
 
-> **72 phases · 86 modules · 1134 tests · 100% pass · v20.0.0**
+> **72 phases · 86 modules · 1134 tests · 100% pass · v22.0.0**
 
 ```ascii
      _                _                 ____   ___   ____
@@ -232,7 +232,10 @@ NNN_ArcanisName/
 | v17.0.0 | —      | 86      | 882   | Living Software Engine — alive/dead/sleeping states, hunger/social/rest needs, aging, reproduction, mutation, personality, memory, feel |
 | v18.0.0 | —      | 86      | 1013  | Reality Layer — reality anchoring, multi-reality merging, memory/behavior/object transfers, paradox detection, perception persistence |
 | v19.0.0 | —      | 86      | 1021  | Autonomous World Engine — world simulation, real-world API integration, adaptive learning, self-assembling modules, alternate history engine |
-| v20.0.0 | —      | 86      | 1134  | Self-Evolving Intelligence — XP skills, evolution profiles, benchmarking, feedback learning, improvement engine, architecture optimizer, research lab, evolution memory, transparent governance |
+| v20.0.0 | — | 86 | 1134 | Self-Evolving Intelligence — XP skills, evolution profiles, benchmarking, feedback learning, improvement engine, architecture optimizer, research lab, evolution memory, transparent governance |
+| v21.0.0 | — | 86 | 1134 | AI-Native OS Interface — Professional Redesign |
+| v21.1.0 | — | 86 | 1134 | Complete OS redesign — one continuous intelligent canvas |
+| v22.0.0 | — | 86 | 1134 | The Living Canvas — Intelligence Woven Into Every Pixel |
 
 *\*86 modules total: 66 new + 20 foundation modules from the original project*
 
@@ -261,5 +264,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 > **it never stops becoming more.**
 
 <p align="center">
-  <sub><sup>Arcanis OS v20.0.0 · 72 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
+  <sub><sup>Arcanis OS v22.0.0 · 72 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
 </p>
