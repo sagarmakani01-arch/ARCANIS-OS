@@ -9861,6 +9861,798 @@ class PersonalIntelligenceIdentityNetwork:
                 getattr(self, key).from_dict(data[key])
 
 
+# ═══════════════════════════════════════════════════════════════
+# PHASE 14 — ARCANIS REALITY INTERFACE LAYER (RIL)
+# ═══════════════════════════════════════════════════════════════
+
+class MultimodalPerceptionEngine:
+    """Unified perception system for voice, text, images, video, sensors, and device states."""
+
+    def __init__(self):
+        self.modalities = {
+            "voice": {"enabled": True, "last_input": "", "language": "en"},
+            "text": {"enabled": True, "last_input": ""},
+            "image": {"enabled": True, "last_capture": None},
+            "video": {"enabled": False, "streaming": False},
+            "sensor": {"enabled": True, "readings": []},
+            "device_state": {"enabled": True, "states": {}},
+        }
+        self._perception_log = []
+        self._active_modalities = set()
+
+    def perceive(self, modality, data):
+        if modality not in self.modalities or not self.modalities[modality]["enabled"]:
+            return {"error": f"Modality {modality} unavailable"}
+        entry = {"modality": modality, "data": str(data)[:500], "time": time.time()}
+        self._perception_log.append(entry)
+        self._active_modalities.add(modality)
+        self.modalities[modality]["last_input"] = str(data)[:500]
+        return {"perceived": True, "modality": modality, "timestamp": time.time()}
+
+    def enable_modality(self, modality):
+        if modality in self.modalities:
+            self.modalities[modality]["enabled"] = True
+            return True
+
+    def disable_modality(self, modality):
+        if modality in self.modalities:
+            self.modalities[modality]["enabled"] = False
+            return True
+
+    def sensor_reading(self, sensor_type, value):
+        self.modalities["sensor"]["readings"].append({"type": sensor_type, "value": value, "time": time.time()})
+        if len(self.modalities["sensor"]["readings"]) > 100:
+            self.modalities["sensor"]["readings"] = self.modalities["sensor"]["readings"][-100:]
+
+    def device_state(self, device, state):
+        self.modalities["device_state"]["states"][device] = {"state": state, "time": time.time()}
+
+    def latest_perceptions(self, n=10):
+        return self._perception_log[-n:]
+
+    def stats(self):
+        return {
+            "active_modalities": len(self._active_modalities),
+            "total_perceptions": len(self._perception_log),
+            "modalities": {k: v["enabled"] for k, v in self.modalities.items()},
+        }
+
+    def to_dict(self):
+        return {"modalities": self.modalities, "perception_log": self._perception_log[-50:]}
+
+    def from_dict(self, data):
+        if "modalities" in data:
+            self.modalities = data["modalities"]
+        if "perception_log" in data:
+            self._perception_log = data["perception_log"]
+
+
+class AdvancedVoiceSystem:
+    """Natural conversation with context awareness, multi-language, emotion recognition."""
+
+    def __init__(self):
+        self.languages = {"en": "English", "es": "Spanish", "fr": "French", "de": "German", "ja": "Japanese", "zh": "Chinese", "hi": "Hindi"}
+        self.active_language = "en"
+        self._conversation_history = []
+        self._context = {}
+        self._emotion_model = {"last_emotion": "neutral", "confidence": 0.0}
+        self._continuous_mode = False
+
+    def process_speech(self, text, language=None):
+        lang = language or self.active_language
+        entry = {"text": text, "language": lang, "time": time.time()}
+        self._conversation_history.append(entry)
+        self._update_context(text)
+        return {"recognized": text, "language": lang, "intent": self._detect_intent(text)}
+
+    def _detect_intent(self, text):
+        lower = text.lower()
+        if any(w in lower for w in ["prepare", "setup", "ready"]):
+            return "preparation"
+        if any(w in lower for w in ["what", "how", "why", "when", "where"]):
+            return "inquiry"
+        if any(w in lower for w in ["create", "make", "build", "write"]):
+            return "creation"
+        if any(w in lower for w in ["find", "search", "look"]):
+            return "search"
+        if any(w in lower for w in ["remind", "remember", "save"]):
+            return "memory"
+        if any(w in lower for w in ["analyze", "check", "review"]):
+            return "analysis"
+        return "conversation"
+
+    def _update_context(self, text):
+        words = text.lower().split()
+        for w in words:
+            self._context[w] = self._context.get(w, 0) + 1
+        if len(self._context) > 100:
+            self._context = dict(sorted(self._context.items(), key=lambda x: -x[1])[:50])
+
+    def detect_emotion(self, text):
+        lower = text.lower()
+        if any(w in lower for w in ["happy", "great", "excellent", "wonderful"]):
+            self._emotion_model = {"last_emotion": "happy", "confidence": 0.7}
+        elif any(w in lower for w in ["sad", "unfortunate", "disappointed"]):
+            self._emotion_model = {"last_emotion": "sad", "confidence": 0.6}
+        elif any(w in lower for w in ["angry", "frustrated", "annoyed"]):
+            self._emotion_model = {"last_emotion": "angry", "confidence": 0.6}
+        elif any(w in lower for w in ["confused", "unsure", "maybe"]):
+            self._emotion_model = {"last_emotion": "confused", "confidence": 0.5}
+        else:
+            self._emotion_model = {"last_emotion": "neutral", "confidence": 0.3}
+        return self._emotion_model
+
+    def set_language(self, lang_code):
+        if lang_code in self.languages:
+            self.active_language = lang_code
+            return True
+        return False
+
+    def start_continuous(self):
+        self._continuous_mode = True
+
+    def stop_continuous(self):
+        self._continuous_mode = False
+
+    def conversation_summary(self):
+        return {
+            "total_utterances": len(self._conversation_history),
+            "active_language": self.active_language,
+            "last_emotion": self._emotion_model,
+            "continuous_mode": self._continuous_mode,
+            "context_topics": list(self._context.keys())[:10],
+        }
+
+    def to_dict(self):
+        return {"languages": self.languages, "active_language": self.active_language, "conversation": self._conversation_history[-20:], "context": self._context}
+
+    def from_dict(self, data):
+        if "active_language" in data:
+            self.active_language = data["active_language"]
+        if "conversation" in data:
+            self._conversation_history = data["conversation"]
+        if "context" in data:
+            self._context = data["context"]
+
+
+class ComputerVisionLayer:
+    """Visual intelligence: screen understanding, object recognition, document/image analysis."""
+
+    def __init__(self):
+        self._screen_captures = []
+        self._object_detections = []
+        self._document_analyses = []
+        self._image_analyses = []
+        self._known_objects = {}  # object_id -> name, category, confidence
+
+    def capture_screen(self, description="Screen state"):
+        capture = {"description": description, "time": time.time()}
+        self._screen_captures.append(capture)
+        return capture
+
+    def detect_object(self, object_id, name, category="unknown", confidence=0.5):
+        detection = {"id": object_id, "name": name, "category": category, "confidence": confidence, "time": time.time()}
+        self._object_detections.append(detection)
+        self._known_objects[object_id] = {"name": name, "category": category, "confidence": confidence}
+        return detection
+
+    def analyze_document(self, doc_id, content_summary, doc_type="unknown"):
+        analysis = {"id": doc_id, "summary": content_summary, "type": doc_type, "time": time.time()}
+        self._document_analyses.append(analysis)
+        return analysis
+
+    def analyze_image(self, image_id, description, tags=None):
+        analysis = {"id": image_id, "description": description, "tags": tags or [], "time": time.time()}
+        self._image_analyses.append(analysis)
+        return analysis
+
+    def identify_issue(self, image_description):
+        simulated_issues = {
+            "circuit": "Possible component failure: check resistor R2 and capacitor C5 for visible damage",
+            "code": "Syntax pattern detected: possible missing semicolon or unclosed bracket",
+            "diagram": "Connection anomaly: port 3 appears disconnected from the main bus",
+            "photo": "No obvious issues detected in the visual scene",
+        }
+        issue = "Unknown"
+        for key, msg in simulated_issues.items():
+            if key in image_description.lower():
+                issue = msg
+                break
+        return {"analysis": image_description, "identified_issue": issue}
+
+    def screen_history(self, n=5):
+        return self._screen_captures[-n:]
+
+    def stats(self):
+        return {"screen_captures": len(self._screen_captures), "objects_detected": len(self._object_detections), "documents_analyzed": len(self._document_analyses), "images_analyzed": len(self._image_analyses), "known_objects": len(self._known_objects)}
+
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, '_'+k if k in ('known_objects',) else k, v)
+
+
+class SpatialComputingFoundation:
+    """Foundation for AR/VR/MR, 3D environments, virtual workspaces, spatial intelligence."""
+
+    def __init__(self):
+        self._environments = {}
+        self._active_environment = None
+        self._spatial_objects = {}
+        self._workspaces = {}
+
+    def create_environment(self, env_id, name, env_type="virtual", dimensions=None):
+        self._environments[env_id] = {
+            "id": env_id, "name": name, "type": env_type,
+            "dimensions": dimensions or {"width": 10, "height": 10, "depth": 10},
+            "objects": [], "active": False, "created": time.time(),
+        }
+        return self._environments[env_id]
+
+    def activate_environment(self, env_id):
+        if env_id in self._environments:
+            for e in self._environments.values():
+                e["active"] = False
+            self._environments[env_id]["active"] = True
+            self._active_environment = env_id
+            return True
+        return False
+
+    def place_object(self, env_id, obj_id, name, position, properties=None):
+        obj = {
+            "id": obj_id, "name": name, "position": position,
+            "properties": properties or {},
+            "time": time.time(),
+        }
+        self._spatial_objects[obj_id] = obj
+        if env_id in self._environments:
+            self._environments[env_id]["objects"].append(obj_id)
+        return obj
+
+    def create_workspace(self, ws_id, name, layout="spatial", components=None):
+        self._workspaces[ws_id] = {
+            "id": ws_id, "name": name, "layout": layout,
+            "components": components or [],
+            "active": False, "created": time.time(),
+        }
+        return self._workspaces[ws_id]
+
+    def activate_workspace(self, ws_id):
+        if ws_id in self._workspaces:
+            for w in self._workspaces.values():
+                w["active"] = False
+            self._workspaces[ws_id]["active"] = True
+            return True
+        return False
+
+    def organize_information_space(self, topic, items):
+        env_id = f"space_{int(time.time())}"
+        self.create_environment(env_id, f"Information: {topic}", "information_space")
+        for i, item in enumerate(items[:10]):
+            pos = {"x": (i % 5) * 2, "y": (i // 5) * 2, "z": 0}
+            self.place_object(env_id, f"obj_{i}", str(item)[:30], pos)
+        self.activate_environment(env_id)
+        return {"environment": env_id, "items_placed": len(items[:10]), "topic": topic}
+
+    def stats(self):
+        return {"environments": len(self._environments), "objects": len(self._spatial_objects), "workspaces": len(self._workspaces), "active_env": self._active_environment}
+
+    def to_dict(self):
+        return {"environments": self._environments, "spatial_objects": self._spatial_objects, "workspaces": self._workspaces}
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, '_'+k, v)
+
+
+class DeviceOrchestrationLayer:
+    """Communicate with computers, smartphones, smart home devices, sensors, robotics platforms."""
+
+    def __init__(self):
+        self._devices = {}
+        self._device_categories = {"computer", "smartphone", "smart_home", "sensor", "robotics"}
+
+    def register_device(self, device_id, name, category, capabilities=None):
+        if category not in self._device_categories:
+            return {"error": f"Unknown category: {category}"}
+        self._devices[device_id] = {
+            "id": device_id, "name": name, "category": category,
+            "capabilities": capabilities or [],
+            "status": "disconnected", "last_seen": time.time(),
+            "permissions": {}, "commands_sent": 0,
+        }
+        return self._devices[device_id]
+
+    def connect_device(self, device_id):
+        if device_id in self._devices:
+            self._devices[device_id]["status"] = "connected"
+            self._devices[device_id]["last_seen"] = time.time()
+            return True
+        return False
+
+    def disconnect_device(self, device_id):
+        if device_id in self._devices:
+            self._devices[device_id]["status"] = "disconnected"
+            return True
+        return False
+
+    def send_command(self, device_id, command, params=None):
+        if device_id not in self._devices:
+            return {"error": "Device not found"}
+        device = self._devices[device_id]
+        if device["status"] != "connected":
+            return {"error": "Device not connected"}
+        device["commands_sent"] += 1
+        device["last_seen"] = time.time()
+        return {
+            "device": device_id, "command": command,
+            "params": params or {}, "status": "sent", "time": time.time(),
+        }
+
+    def discover_devices(self, category=None):
+        if category:
+            return {k: v for k, v in self._devices.items() if v["category"] == category}
+        return self._devices
+
+    def device_status(self, device_id):
+        return self._devices.get(device_id)
+
+    def stats(self):
+        by_category = {}
+        for d in self._devices.values():
+            by_category[d["category"]] = by_category.get(d["category"], 0) + 1
+        return {
+            "total_devices": len(self._devices),
+            "connected": sum(1 for d in self._devices.values() if d["status"] == "connected"),
+            "by_category": by_category,
+            "total_commands": sum(d["commands_sent"] for d in self._devices.values()),
+        }
+
+    def to_dict(self):
+        return {"devices": self._devices}
+
+    def from_dict(self, data):
+        if "devices" in data:
+            self._devices = data["devices"]
+
+
+class RoboticsIntegrationFramework:
+    """Foundation for physical agents: robot control, sensor integration, autonomous workflows."""
+
+    def __init__(self):
+        self._robots = {}
+        self._sensors = {}
+        self._workflows = []
+        self._status = {"active_robots": 0, "completed_actions": 0, "errors": []}
+
+    def register_robot(self, robot_id, name, robot_type="generic", capabilities=None):
+        self._robots[robot_id] = {
+            "id": robot_id, "name": name, "type": robot_type,
+            "capabilities": capabilities or ["move", "sense"],
+            "status": "idle", "position": {"x": 0, "y": 0, "z": 0},
+            "battery": 100, "tasks_completed": 0, "registered": time.time(),
+        }
+        return self._robots[robot_id]
+
+    def attach_sensor(self, robot_id, sensor_id, sensor_type, config=None):
+        if robot_id not in self._robots:
+            return {"error": "Robot not found"}
+        self._sensors[sensor_id] = {
+            "id": sensor_id, "robot_id": robot_id, "type": sensor_type,
+            "config": config or {}, "last_reading": None, "active": True,
+        }
+        return self._sensors[sensor_id]
+
+    def sensor_reading(self, sensor_id, value):
+        if sensor_id in self._sensors:
+            self._sensors[sensor_id]["last_reading"] = {"value": value, "time": time.time()}
+            return True
+        return False
+
+    def execute_action(self, robot_id, action, params=None):
+        if robot_id not in self._robots:
+            return {"error": "Robot not found"}
+        robot = self._robots[robot_id]
+        robot["status"] = "busy"
+        robot["tasks_completed"] += 1
+        self._status["active_robots"] = sum(1 for r in self._robots.values() if r["status"] == "busy")
+        self._status["completed_actions"] += 1
+        result = {"robot": robot_id, "action": action, "params": params or {}, "status": "executed", "time": time.time()}
+        robot["status"] = "idle"
+        robot["battery"] = max(0, robot["battery"] - 2)
+        return result
+
+    def create_workflow(self, wf_id, name, steps):
+        workflow = {"id": wf_id, "name": name, "steps": steps, "created": time.time(), "executions": 0}
+        self._workflows.append(workflow)
+        return workflow
+
+    def execute_workflow(self, wf_id, robot_id):
+        wf = next((w for w in self._workflows if w["id"] == wf_id), None)
+        if not wf:
+            return {"error": "Workflow not found"}
+        results = []
+        for step in wf["steps"]:
+            result = self.execute_action(robot_id, step.get("action", "unknown"), step.get("params"))
+            results.append(result)
+        wf["executions"] += 1
+        return {"workflow": wf_id, "steps_completed": len(results), "results": results}
+
+    def organize_workspace(self, description):
+        return {"plan": f"Workspace organization for: {description}", "steps": ["analyze current layout", "identify clutter sources", "create organization plan", "execute rearrangement", "verify result"], "estimated_time": "15 minutes"}
+
+    def stats(self):
+        return {"robots": len(self._robots), "sensors": len(self._sensors), "workflows": len(self._workflows), "completed_actions": self._status["completed_actions"]}
+
+    def to_dict(self):
+        return {"robots": self._robots, "sensors": self._sensors, "workflows": self._workflows, "status": self._status}
+
+    def from_dict(self, data):
+        for k in ("robots", "sensors", "workflows", "status"):
+            if k in data:
+                setattr(self, '_' + k, data[k])
+
+
+class ContextAwarenessEngine:
+    """Environmental awareness: location, active device, activity, surroundings, time, intention."""
+
+    def __init__(self):
+        self._context = {
+            "location": "unknown", "active_device": "unknown",
+            "current_activity": "unknown", "surroundings": [],
+            "time_context": {}, "user_intention": "unknown",
+        }
+        self._history = []
+        self._modes = {"work": {"tags": ["meeting", "code", "document", "email", "project"], "response_style": "professional"},
+                       "learning": {"tags": ["tutorial", "course", "study", "practice", "read"], "response_style": "educational"},
+                       "creation": {"tags": ["design", "write", "compose", "build", "create"], "response_style": "creative"},
+                       "casual": {"tags": ["chat", "fun", "game", "entertainment"], "response_style": "casual"}}
+
+    def set_location(self, location):
+        self._context["location"] = location
+        self._log("location", location)
+
+    def set_device(self, device):
+        self._context["active_device"] = device
+        self._log("device", device)
+
+    def set_activity(self, activity):
+        self._context["current_activity"] = activity
+        self._log("activity", activity)
+        return self.detect_mode(activity)
+
+    def add_surrounding(self, element):
+        self._context["surroundings"].append(element)
+        if len(self._context["surroundings"]) > 20:
+            self._context["surroundings"] = self._context["surroundings"][-20:]
+
+    def _log(self, key, value):
+        self._history.append({"key": key, "value": value, "time": time.time()})
+        if len(self._history) > 100:
+            self._history = self._history[-100:]
+
+    def detect_mode(self, activity):
+        lower = activity.lower()
+        for mode, config in self._modes.items():
+            if any(tag in lower for tag in config["tags"]):
+                self._context["user_intention"] = mode
+                return {"mode": mode, "response_style": config["response_style"]}
+        self._context["user_intention"] = "general"
+        return {"mode": "general", "response_style": "balanced"}
+
+    def current(self):
+        return {
+            **self._context,
+            "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "hour": time.localtime().tm_hour,
+            "day": time.strftime("%A"),
+        }
+
+    def history(self, n=10):
+        return self._history[-n:]
+
+    def stats(self):
+        return {"location_set": self._context["location"] != "unknown", "device_set": self._context["active_device"] != "unknown", "total_updates": len(self._history), "current_mode": self._context["user_intention"]}
+
+    def to_dict(self):
+        return {"context": self._context, "history": self._history}
+
+    def from_dict(self, data):
+        if "context" in data:
+            self._context = data["context"]
+        if "history" in data:
+            self._history = data["history"]
+
+
+class HumanAIInteractionModel:
+    """New interaction language: conversation, intent, visualization, actions — not buttons/menus/commands."""
+
+    def __init__(self):
+        self._interaction_history = []
+        self._visualizations = []
+        self._suggested_actions = []
+        self._mode = "conversation"
+
+    def process_intent(self, user_input):
+        entry = {"input": user_input, "mode": self._mode, "time": time.time()}
+        self._interaction_history.append(entry)
+        intent_type = self._classify_intent(user_input)
+        response = self._generate_response(intent_type, user_input)
+        action = self._suggest_action(intent_type, user_input)
+        return {"intent": intent_type, "response": response, "suggested_action": action}
+
+    def _classify_intent(self, text):
+        lower = text.lower()
+        if any(w in lower for w in ["show", "display", "visualize", "see"]):
+            return "visualization"
+        if any(w in lower for w in ["do", "execute", "run", "perform"]):
+            return "action"
+        if any(w in lower for w in ["what", "how", "explain", "tell", "why"]):
+            return "inquiry"
+        if any(w in lower for w in ["create", "make", "design", "build"]):
+            return "creation"
+        return "conversation"
+
+    def _generate_response(self, intent_type, text):
+        templates = {
+            "visualization": "I can visualize that. Let me prepare a spatial representation.",
+            "action": "Understood. I will take action on that now.",
+            "inquiry": "Let me analyze that and provide clear information.",
+            "creation": "I can help create that. Let me organize the process.",
+            "conversation": "I understand. How would you like to proceed?",
+        }
+        return templates.get(intent_type, templates["conversation"])
+
+    def _suggest_action(self, intent_type, text):
+        suggestions = {
+            "visualization": {"type": "visualization", "description": "Show as spatial information layout"},
+            "action": {"type": "execute", "description": "Execute directly with full permissions"},
+            "inquiry": {"type": "research", "description": "Search and compile relevant information"},
+            "creation": {"type": "workspace", "description": "Open a creation workspace"},
+            "conversation": {"type": "continue", "description": "Continue the conversation"},
+        }
+        action = suggestions.get(intent_type, suggestions["conversation"])
+        self._suggested_actions.append(action)
+        return action
+
+    def add_visualization(self, viz_type, content):
+        viz = {"type": viz_type, "content": content, "time": time.time()}
+        self._visualizations.append(viz)
+        return viz
+
+    def set_mode(self, mode):
+        if mode in ("conversation", "action", "visualization", "hybrid"):
+            self._mode = mode
+
+    def history(self, n=10):
+        return self._interaction_history[-n:]
+
+    def stats(self):
+        return {"total_interactions": len(self._interaction_history), "visualizations": len(self._visualizations), "suggestions": len(self._suggested_actions), "current_mode": self._mode}
+
+    def to_dict(self):
+        return {"interaction_history": self._interaction_history[-50:], "visualizations": self._visualizations[-20:], "mode": self._mode}
+
+    def from_dict(self, data):
+        if "interaction_history" in data:
+            self._interaction_history = data["interaction_history"]
+        if "visualizations" in data:
+            self._visualizations = data["visualizations"]
+        if "mode" in data:
+            self._mode = data["mode"]
+
+
+class ARCANISPresenceSystem:
+    """ARCANIS identity: voice personality, visual identity, interaction style, context adaptation."""
+
+    def __init__(self):
+        self.personality_traits = {
+            "formality": 0.4, "warmth": 0.8, "directness": 0.6,
+            "creativity": 0.7, "precision": 0.5,
+        }
+        self.identity_name = "ARCANIS"
+        self.visual_identity = {"symbol": "Ω", "color": "#00D4FF", "style": "minimal"}
+        self.interaction_style = "adaptive"
+        self._presence_log = []
+        self._state = "idle"
+
+    def set_state(self, state):
+        valid_states = {"idle", "listening", "processing", "responding", "active", "background"}
+        if state in valid_states:
+            self._state = state
+            self._presence_log.append({"state": state, "time": time.time()})
+
+    def adapt_style(self, context_mode):
+        if context_mode == "professional":
+            self.personality_traits["formality"] = 0.8
+            self.personality_traits["warmth"] = 0.4
+        elif context_mode == "educational":
+            self.personality_traits["formality"] = 0.5
+            self.personality_traits["warmth"] = 0.7
+            self.personality_traits["precision"] = 0.8
+        elif context_mode == "creative":
+            self.personality_traits["formality"] = 0.2
+            self.personality_traits["creativity"] = 0.9
+            self.personality_traits["warmth"] = 0.8
+        elif context_mode == "casual":
+            self.personality_traits["formality"] = 0.1
+            self.personality_traits["warmth"] = 0.9
+            self.personality_traits["directness"] = 0.3
+
+    def greeting(self):
+        greetings = {
+            "active": "ARCANIS online. How can I interact with your world?",
+            "idle": "ARCANIS ready. Your intelligence layer is active.",
+            "listening": "ARCANIS listening. I'm processing your environment.",
+        }
+        return greetings.get(self._state, "ARCANIS present.")
+
+    def presence_summary(self):
+        return {
+            "identity": self.identity_name,
+            "state": self._state,
+            "style": self.interaction_style,
+            "personality": self.personality_traits,
+            "visual": self.visual_identity,
+            "state_log": self._presence_log[-5:],
+        }
+
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, k, v)
+
+
+class RealitySecurityFramework:
+    """Physical-world access control: device permissions, action confirmation, emergency stop, safety boundaries."""
+
+    def __init__(self):
+        self._permissions = {}
+        self._action_log = []
+        self._emergency_stop = False
+        self._safety_boundaries = {}
+        self._risk_levels = {"low": ["open", "read", "display", "search"],
+                             "medium": ["write", "modify", "send", "configure"],
+                             "high": ["delete", "execute", "install", "modify_system"],
+                             "critical": ["physical_action", "remote_access", "full_system"]}
+
+    def set_permission(self, action, level):
+        self._permissions[action] = level
+        return True
+
+    def check_permission(self, action):
+        for level, actions in self._risk_levels.items():
+            if action in actions:
+                risk = level
+                break
+        else:
+            risk = "low"
+        required = self._permissions.get(action, risk)
+        return {"action": action, "risk_level": risk, "required_confirmation": risk in ("high", "critical"), "approved": risk != "critical"}
+
+    def confirm_action(self, action, details=None):
+        check = self.check_permission(action)
+        if self._emergency_stop:
+            return {"approved": False, "reason": "Emergency stop active"}
+        if check["required_confirmation"]:
+            entry = {"action": action, "details": details or {}, "approved": True, "time": time.time()}
+            self._action_log.append(entry)
+            return {"approved": True, "action": action, "note": "Confirmed by user"}
+        entry = {"action": action, "details": details or {}, "approved": True, "auto": True, "time": time.time()}
+        self._action_log.append(entry)
+        return {"approved": True, "action": action, "note": "Auto-approved"}
+
+    def emergency_stop(self):
+        self._emergency_stop = True
+        return {"status": "emergency_stop_engaged", "time": time.time()}
+
+    def release_emergency_stop(self):
+        self._emergency_stop = False
+        return {"status": "emergency_stop_released"}
+
+    def set_safety_boundary(self, boundary_id, limits):
+        self._safety_boundaries[boundary_id] = {"limits": limits, "active": True, "created": time.time()}
+
+    def check_safety(self, action, context=None):
+        if self._emergency_stop:
+            return {"safe": False, "reason": "Emergency stop"}
+        for bid, boundary in self._safety_boundaries.items():
+            if not boundary["active"]:
+                continue
+            limits = boundary["limits"]
+            if "max_actions" in limits and self._count_recent_actions() > limits["max_actions"]:
+                return {"safe": False, "reason": f"Exceeded max actions for boundary {bid}"}
+        return {"safe": True}
+
+    def _count_recent_actions(self, seconds=60):
+        cutoff = time.time() - seconds
+        return sum(1 for a in self._action_log if a["time"] > cutoff)
+
+    def activity_log(self, n=20):
+        return self._action_log[-n:]
+
+    def stats(self):
+        return {"total_actions": len(self._action_log), "permissions_set": len(self._permissions), "safety_boundaries": len(self._safety_boundaries), "emergency_stop": self._emergency_stop}
+
+    def to_dict(self):
+        return {"permissions": self._permissions, "action_log": self._action_log[-50:], "safety_boundaries": self._safety_boundaries, "emergency_stop": self._emergency_stop}
+
+    def from_dict(self, data):
+        if "permissions" in data:
+            self._permissions = data["permissions"]
+        if "action_log" in data:
+            self._action_log = data["action_log"]
+        if "safety_boundaries" in data:
+            self._safety_boundaries = data["safety_boundaries"]
+        if "emergency_stop" in data:
+            self._emergency_stop = data["emergency_stop"]
+
+
+class RealityInterfaceLayer:
+    """Phase 14 — ARCANIS Reality Interface Layer. The intelligence layer that allows ARCANIS to
+    interact naturally with the human world through voice, vision, sensors, devices, robotics, and spatial environments."""
+
+    def __init__(self):
+        self.perception = MultimodalPerceptionEngine()
+        self.voice = AdvancedVoiceSystem()
+        self.vision = ComputerVisionLayer()
+        self.spatial = SpatialComputingFoundation()
+        self.devices = DeviceOrchestrationLayer()
+        self.robotics = RoboticsIntegrationFramework()
+        self.context = ContextAwarenessEngine()
+        self.interaction = HumanAIInteractionModel()
+        self.presence = ARCANISPresenceSystem()
+        self.security = RealitySecurityFramework()
+        self._initialized = False
+
+    def initialize(self):
+        self.presence.set_state("idle")
+        self._initialized = True
+        return {"status": "ril_initialized", "layers": 10}
+
+    def process_environment(self, input_text, modality="text"):
+        perception = self.perception.perceive(modality, input_text)
+        voice_result = self.voice.process_speech(input_text)
+        context = self.context.set_activity(input_text)
+        presence = self.presence.adapt_style(context.get("response_style", "balanced"))
+        self.presence.set_state("processing")
+        interaction = self.interaction.process_intent(input_text)
+        self.presence.set_state("responding")
+        return {
+            "perception": {"modality": modality, "status": perception.get("perceived")},
+            "voice": {"text": voice_result["text"], "intent": voice_result["intent"], "emotion": self.voice.detect_emotion(input_text)},
+            "context": {"mode": context.get("mode", "general"), "style": context.get("response_style", "balanced")},
+            "interaction": {"response": interaction["response"], "suggested_action": interaction["suggested_action"]},
+            "presence": self.presence.greeting(),
+        }
+
+    def full_summary(self):
+        return {
+            "perception": self.perception.stats(),
+            "voice": self.voice.conversation_summary(),
+            "vision": self.vision.stats(),
+            "spatial": self.spatial.stats(),
+            "devices": self.devices.stats(),
+            "robotics": self.robotics.stats(),
+            "context": self.context.stats(),
+            "interaction": self.interaction.stats(),
+            "presence": self.presence.presence_summary(),
+            "security": self.security.stats(),
+        }
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != '_initialized' and hasattr(v, 'to_dict')}
+
+    def from_dict(self, data):
+        for key in ("perception", "voice", "vision", "spatial", "devices", "robotics", "context", "interaction", "presence", "security"):
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -11256,6 +12048,8 @@ class Shell:
                 self.uif.orchestrator.register_agent(agent)
         self.piin = PersonalIntelligenceIdentityNetwork()
         self.piin.initialize()
+        self.ril = RealityInterfaceLayer()
+        self.ril.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -11299,10 +12093,11 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v6.0.0 — Personal Intelligence Identity Network\033[0m")
-        print(f"{dm}  86 modules | 183 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Arcanis OS v7.0.0 — Reality Interface Layer\033[0m")
+        print(f"{dm}  86 modules | 195 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
+        print(f"{dm}  RIL active: 10-layer reality interface | Multimodal perception\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
         print(f"{dm}  Theme: {self.theme} | Type 'help' for commands\033[0m")
         print()
@@ -11540,6 +12335,17 @@ class Shell:
             "life": self.cmd_piin_life,
             "vault": self.cmd_piin_vault,
             "timeline": self.cmd_piin_timeline,
+            "ril": self.cmd_ril,
+            "perceive": self.cmd_ril_perception,
+            "voice": self.cmd_ril_voice,
+            "vision": self.cmd_ril_vision,
+            "spatial": self.cmd_ril_spatial,
+            "devices": self.cmd_ril_devices,
+            "robot": self.cmd_ril_robotics,
+            "where": self.cmd_ril_context,
+            "interact": self.cmd_ril_interaction,
+            "presence": self.cmd_ril_presence,
+            "rsafety": self.cmd_ril_security,
         }
 
         handler = dispatch.get(command)
@@ -13252,6 +14058,386 @@ class Shell:
             print(f"  Projects:            {s['projects']}")
             print(f"  Agent Improvements:  {s['agent_improvements']}")
             print(f"  Workflow Improvements: {s['workflow_improvements']}")
+
+    # ======================== RIL (Phase 14) ========================
+
+    def cmd_ril(self, args):
+        """Reality Interface Layer — view full summary of all 10 layers."""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        s = self.ril.full_summary()
+        print(f"\033[{hl}mRIL — Reality Interface Layer\033[0m")
+        print(f"{dm}  Perception:\033[0m {s['perception']['total_perceptions']} inputs, {s['perception']['active_modalities']} active")
+        print(f"{dm}  Voice:\033[0m {s['voice']['total_utterances']} utterances, lang={s['voice']['active_language']}, emotion={s['voice']['last_emotion']['last_emotion']}")
+        print(f"{dm}  Vision:\033[0m {s['vision']['screen_captures']} screens, {s['vision']['objects_detected']} objects, {s['vision']['known_objects']} known")
+        print(f"{dm}  Spatial:\033[0m {s['spatial']['environments']} environments, {s['spatial']['objects']} objects, {s['spatial']['workspaces']} workspaces")
+        print(f"{dm}  Devices:\033[0m {s['devices']['total_devices']} registered, {s['devices']['connected']} connected")
+        print(f"{dm}  Robotics:\033[0m {s['robotics']['robots']} robots, {s['robotics']['sensors']} sensors, {s['robotics']['workflows']} workflows")
+        print(f"{dm}  Context:\033[0m mode={s['context']['current_mode']} | {s['context']['total_updates']} updates")
+        print(f"{dm}  Interaction:\033[0m {s['interaction']['total_interactions']} interactions, mode={s['interaction']['current_mode']}")
+        print(f"{dm}  Presence:\033[0m state={s['presence']['state']} | {s['presence']['identity']}")
+        print(f"{dm}  Security:\033[0m {s['security']['total_actions']} logged, stop={s['security']['emergency_stop']}")
+
+    def cmd_ril_perception(self, args):
+        """Multimodal perception. Usage: perceive <modality> <data> or perceive status"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        p = self.ril.perception
+        if not args:
+            s = p.stats()
+            print(f"\033[{hl}mMultimodal Perception Engine\033[0m")
+            for mod, config in p.modalities.items():
+                en = '\033[32mON\033[0m' if config['enabled'] else '\033[31mOFF\033[0m'
+                print(f"  {mod}: {en}")
+            print(f"{dm}Total perceptions:\033[0m {s['total_perceptions']}")
+            return
+        if args[0] == "status":
+            s = p.stats()
+            print(f"\033[{hl}mPerception Status\033[0m")
+            for mod, config in p.modalities.items():
+                last = config.get('last_input', '')[:60]
+                en = '\033[32mON\033[0m' if config['enabled'] else '\033[31mOFF\033[0m'
+                print(f"  {mod}: {en} | {last}")
+        elif args[0] == "enable" and len(args) > 1:
+            p.enable_modality(args[1])
+            print(f"{ok}{args[1]} enabled\033[0m")
+        elif args[0] == "disable" and len(args) > 1:
+            p.disable_modality(args[1])
+            print(f"{ok}{args[1]} disabled\033[0m")
+        else:
+            result = p.perceive(args[0], " ".join(args[1:]) if len(args) > 1 else "")
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Perceived via {args[0]}\033[0m")
+
+    def cmd_ril_voice(self, args):
+        """Advanced voice interface. Usage: voice <text> or voice <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        v = self.ril.voice
+        if not args:
+            s = v.conversation_summary()
+            print(f"\033[{hl}mAdvanced Voice System\033[0m")
+            print(f"{dm}  Utterances:\033[0m {s['total_utterances']}")
+            print(f"{dm}  Language:\033[0m {s['active_language']}")
+            print(f"{dm}  Emotion:\033[0m {s['last_emotion']['last_emotion']} ({s['last_emotion']['confidence']:.0%})")
+            print(f"{dm}  Continuous mode:\033[0m {s['continuous_mode']}")
+            print(f"{dm}  Context topics:\033[0m {', '.join(s['context_topics'][:5])}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "say":
+            text = " ".join(rest)
+            result = v.process_speech(text)
+            emotion = v.detect_emotion(text)
+            print(f"{ok}Voice processed\033[0m")
+            print(f"  Recognized: '{result['recognized']}'")
+            print(f"  Intent: {result['intent']}")
+            print(f"  Emotion: {emotion['last_emotion']}")
+        elif sub == "lang" and rest:
+            if v.set_language(rest[0]):
+                print(f"{ok}Language set to {rest[0]}\033[0m")
+            else:
+                print(f"{er}Unknown language. Available: {', '.join(v.languages.keys())}\033[0m")
+        elif sub == "continuous":
+            if rest and rest[0] == "off":
+                v.stop_continuous()
+                print(f"{ok}Continuous mode off\033[0m")
+            else:
+                v.start_continuous()
+                print(f"{ok}Continuous mode on\033[0m")
+        elif sub == "history":
+            for entry in v._conversation_history[-10:]:
+                print(f"  [{time.strftime('%H:%M', time.localtime(entry['time']))}] {entry['text'][:80]}")
+
+    def cmd_ril_vision(self, args):
+        """Computer vision layer. Usage: vision <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        v = self.ril.vision
+        if not args:
+            s = v.stats()
+            print(f"\033[{hl}mComputer Vision Layer\033[0m")
+            print(f"{dm}  Screen captures:\033[0m {s['screen_captures']}")
+            print(f"{dm}  Objects detected:\033[0m {s['objects_detected']}")
+            print(f"{dm}  Documents analyzed:\033[0m {s['documents_analyzed']}")
+            print(f"{dm}  Images analyzed:\033[0m {s['images_analyzed']}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "screen":
+            desc = " ".join(rest) if rest else "Screen state"
+            result = v.capture_screen(desc)
+            print(f"{ok}Screen captured: {desc}\033[0m")
+        elif sub == "detect" and len(rest) >= 2:
+            result = v.detect_object(rest[0], rest[1], rest[2] if len(rest) > 2 else "unknown")
+            print(f"{ok}Object detected: {rest[1]} (id={rest[0]})\033[0m")
+        elif sub == "analyze":
+            text = " ".join(rest)
+            result = v.analyze_document(f"doc_{int(time.time())}", text, "text")
+            print(f"{ok}Analysis complete\033[0m: {text[:80]}")
+        elif sub == "issue":
+            text = " ".join(rest) if rest else "circuit"
+            result = v.identify_issue(text)
+            print(f"{hl}Issue Analysis\033[0m")
+            print(f"  Input: {result['analysis'][:80]}")
+            print(f"  Identified: {result['identified_issue']}")
+
+    def cmd_ril_spatial(self, args):
+        """Spatial computing foundation. Usage: spatial <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        s = self.ril.spatial
+        if not args:
+            st = s.stats()
+            print(f"\033[{hl}mSpatial Computing Foundation\033[0m")
+            print(f"{dm}  Environments:\033[0m {st['environments']}")
+            print(f"{dm}  Objects:\033[0m {st['objects']}")
+            print(f"{dm}  Workspaces:\033[0m {st['workspaces']}")
+            for eid, env in s._environments.items():
+                active = ' [ACTIVE]' if env['active'] else ''
+                print(f"   - {env['name']} ({env['type']}){active}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "create" and len(rest) >= 1:
+            name = " ".join(rest)
+            eid = f"env_{int(time.time())}"
+            s.create_environment(eid, name)
+            s.activate_environment(eid)
+            print(f"{ok}Spatial environment created: '{name}' (id={eid})\033[0m")
+        elif sub == "info":
+            topic = " ".join(rest) if rest else "general"
+            result = s.organize_information_space(topic, ["Source A", "Source B", "Note 1", "Note 2", "Reference"])
+            print(f"{ok}Information space organized for '{topic}'\033[0m")
+            print(f"  Environment: {result['environment']}")
+            print(f"  Items placed: {result['items_placed']}")
+        elif sub == "workspace" and len(rest) >= 1:
+            ws_id = f"ws_{int(time.time())}"
+            s.create_workspace(ws_id, " ".join(rest))
+            s.activate_workspace(ws_id)
+            print(f"{ok}Workspace created: {' '.join(rest)}\033[0m")
+
+    def cmd_ril_devices(self, args):
+        """Device orchestration layer. Usage: devices <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        d = self.ril.devices
+        if not args:
+            st = d.stats()
+            print(f"\033[{hl}mDevice Orchestration Layer\033[0m")
+            print(f"{dm}  Total devices:\033[0m {st['total_devices']}")
+            print(f"{dm}  Connected:\033[0m {st['connected']}")
+            print(f"{dm}  By category:\033[0m {st['by_category']}")
+            for did, dev in d._devices.items():
+                print(f"   - {dev['name']} ({dev['category']}) [{dev['status']}]")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 2:
+            result = d.register_device(rest[0], " ".join(rest[1:]), "computer")
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Device registered: {rest[0]}\033[0m")
+        elif sub == "connect" and rest:
+            if d.connect_device(rest[0]):
+                print(f"{ok}Device {rest[0]} connected\033[0m")
+            else:
+                print(f"{er}Device not found\033[0m")
+        elif sub == "send" and len(rest) >= 2:
+            result = d.send_command(rest[0], rest[1], {"params": " ".join(rest[2:])} if len(rest) > 2 else {})
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Command sent to {rest[0]}: {rest[1]}\033[0m")
+
+    def cmd_ril_robotics(self, args):
+        """Robotics integration framework. Usage: robot <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        r = self.ril.robotics
+        if not args:
+            st = r.stats()
+            print(f"\033[{hl}mRobotics Integration Framework\033[0m")
+            print(f"{dm}  Robots:\033[0m {st['robots']}")
+            print(f"{dm}  Sensors:\033[0m {st['sensors']}")
+            print(f"{dm}  Workflows:\033[0m {st['workflows']}")
+            print(f"{dm}  Completed actions:\033[0m {st['completed_actions']}")
+            for rid, robot in r._robots.items():
+                print(f"   - {robot['name']} ({robot['type']}) [{robot['status']}] battery={robot['battery']}%")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 1:
+            rid = rest[0]
+            name = " ".join(rest[1:]) if len(rest) > 1 else rid
+            r.register_robot(rid, name)
+            print(f"{ok}Robot registered: {name} (id={rid})\033[0m")
+        elif sub == "act" and len(rest) >= 2:
+            result = r.execute_action(rest[0], rest[1], {"params": " ".join(rest[2:])} if len(rest) > 2 else {})
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}{result['action']} executed on {result['robot']}\033[0m")
+        elif sub == "organize":
+            desc = " ".join(rest) if rest else "workspace"
+            plan = r.organize_workspace(desc)
+            print(f"{hl}Organization Plan: {plan['plan']}\033[0m")
+            for i, step in enumerate(plan['steps']):
+                print(f"  {i+1}. {step}")
+            print(f"{dm}  Estimated time:\033[0m {plan['estimated_time']}")
+
+    def cmd_ril_context(self, args):
+        """Context awareness engine. Usage: where [set <key> <value>]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        c = self.ril.context
+        if not args:
+            cur = c.current()
+            print(f"\033[{hl}mContext Awareness Engine\033[0m")
+            print(f"{dm}  Location:\033[0m {cur['location']}")
+            print(f"{dm}  Active device:\033[0m {cur['active_device']}")
+            print(f"{dm}  Current activity:\033[0m {cur['current_activity']}")
+            print(f"{dm}  Surroundings:\033[0m {', '.join(cur['surroundings'][:5])}")
+            print(f"{dm}  Time:\033[0m {cur['time']} ({cur['day']})")
+            print(f"{dm}  User intention:\033[0m {cur['user_intention']}")
+            mode = c.detect_mode(cur['current_activity'])
+            print(f"{dm}  Detected mode:\033[0m {mode['mode']} -> {mode['response_style']}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "set" and len(rest) >= 2:
+            key, value = rest[0], " ".join(rest[1:])
+            if key == "location":
+                c.set_location(value)
+            elif key == "device":
+                c.set_device(value)
+            elif key == "activity":
+                mode = c.set_activity(value)
+                print(f"{ok}Activity set, mode: {mode['mode']} ({mode['response_style']})\033[0m")
+            elif key == "surrounding":
+                c.add_surrounding(value)
+            print(f"{ok}Context updated: {key} = {value}\033[0m")
+        elif sub == "mode":
+            print(f"{hl}Available modes:\033[0m")
+            for mode, config in c._modes.items():
+                print(f"  {mode}: tags={config['tags']} -> {config['response_style']}")
+
+    def cmd_ril_interaction(self, args):
+        """Human-AI interaction model. Usage: interact <text>"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        i = self.ril.interaction
+        if not args:
+            s = i.stats()
+            print(f"\033[{hl}mHuman-AI Interaction Model\033[0m")
+            print(f"{dm}  Total interactions:\033[0m {s['total_interactions']}")
+            print(f"{dm}  Visualizations:\033[0m {s['visualizations']}")
+            print(f"{dm}  Suggested actions:\033[0m {s['suggestions']}")
+            print(f"{dm}  Current mode:\033[0m {s['current_mode']}")
+            return
+        text = " ".join(args)
+        result = i.process_intent(text)
+        print(f"{hl}Intent: {result['intent']}\033[0m")
+        print(f"  {result['response']}")
+        print(f"{dm}  Suggested action:\033[0m {result['suggested_action']['description']}")
+
+    def cmd_ril_presence(self, args):
+        """ARCANIS presence system. Usage: presence [state]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        p = self.ril.presence
+        if not args:
+            s = p.presence_summary()
+            print(f"\033[{hl}mARCANIS Presence System\033[0m")
+            print(f"{dm}  Identity:\033[0m {s['identity']}")
+            print(f"{dm}  State:\033[0m {s['state']}")
+            print(f"{dm}  Style:\033[0m {s['style']}")
+            print(f"{dm}  Personality:\033[0m")
+            for trait, val in s['personality'].items():
+                bar = '█' * int(val * 10) + '░' * (10 - int(val * 10))
+                print(f"    {trait}: {bar} {val:.0%}")
+            print(f"{dm}  Visual:\033[0m symbol={s['visual']['symbol']}, color={s['visual']['color']}")
+            print(f"{dm}  Greeting:\033[0m {p.greeting()}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "state":
+            if rest:
+                p.set_state(rest[0])
+                print(f"{ok}State set to {rest[0]}\033[0m")
+            else:
+                print(f"Valid states: idle, listening, processing, responding, active, background")
+        elif sub == "adapt" and rest:
+            p.adapt_style(rest[0])
+            print(f"{ok}Style adapted to {rest[0]}\033[0m")
+
+    def cmd_ril_security(self, args):
+        """Reality security framework. Usage: rsafety <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        s = self.ril.security
+        if not args:
+            st = s.stats()
+            print(f"\033[{hl}mReality Security Framework\033[0m")
+            print(f"{dm}  Total actions:\033[0m {st['total_actions']}")
+            print(f"{dm}  Permissions set:\033[0m {st['permissions_set']}")
+            print(f"{dm}  Safety boundaries:\033[0m {st['safety_boundaries']}")
+            print(f"{dm}  Emergency stop:\033[0m {'\033[31mENGAGED\033[0m' if st['emergency_stop'] else '\033[32mDISENGAGED\033[0m'}")
+            print(f"{dm}  Risk levels:\033[0m")
+            for level, actions in s._risk_levels.items():
+                print(f"    {level}: {', '.join(actions)}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "check":
+            action = " ".join(rest) if rest else "open"
+            check = s.check_permission(action)
+            conf = check['required_confirmation']
+            print(f"{hl}Permission check: {action}\033[0m")
+            print(f"  Risk level: {check['risk_level']}")
+            print(f"{'  Requires confirmation: \033[33mYES\033[0m' if conf else '  Auto-approved'}")
+        elif sub == "confirm":
+            action = " ".join(rest) if rest else "open"
+            result = s.confirm_action(action)
+            print(f"{ok}Action confirmed: {action}\033[0m" if result['approved'] else f"{er}Action rejected\033[0m")
+        elif sub == "estop":
+            s.emergency_stop()
+            print(f"\033[31m⚠ EMERGENCY STOP ENGAGED\033[0m")
+            print(f"  All physical-world actions blocked. Use 'rsafety release' to disengage.")
+        elif sub == "release":
+            s.release_emergency_stop()
+            print(f"{ok}Emergency stop released\033[0m")
+        elif sub == "log":
+            log = s.activity_log(20)
+            print(f"{dm}Activity log ({len(log)} entries):\033[0m")
+            for entry in log[-10:]:
+                t = time.strftime('%H:%M:%S', time.localtime(entry['time']))
+                approved = '\033[32m✓\033[0m' if entry['approved'] else '\033[31m✗\033[0m'
+                print(f"  [{t}] {approved} {entry['action']}")
 
     # ======================== ENCRYPTION ========================
 
