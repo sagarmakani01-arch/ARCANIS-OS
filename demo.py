@@ -8582,6 +8582,431 @@ class IntelligenceFoundry:
             self.deployer.from_dict(data["deployments"])
 
 
+# ============================================================
+# UNIVERSAL INTELLIGENCE FABRIC (UIF)
+# ============================================================
+
+class IntentEngine:
+    """Intent-First Computing — understand what the user wants, not what app to open."""
+
+    INTENT_PATTERNS = {
+        "research": {"keywords": ["research", "find", "search", "learn", "study", "investigate", "explore"], "agents": ["researcher"]},
+        "build": {"keywords": ["build", "create", "make", "develop", "code", "program", "construct", "implement"], "agents": ["engineer", "coder"]},
+        "design": {"keywords": ["design", "sketch", "prototype", "layout", "wireframe", "ui", "ux"], "agents": ["designer"]},
+        "analyze": {"keywords": ["analyze", "analyze", "examine", "evaluate", "assess", "review", "inspect"], "agents": ["analyst"]},
+        "plan": {"keywords": ["plan", "organize", "schedule", "manage", "timeline", "milestone"], "agents": ["planner"]},
+        "present": {"keywords": ["present", "presentation", "slide", "show", "demonstrate", "pitch"], "agents": ["designer", "analyst"]},
+        "simulate": {"keywords": ["simulate", "simulation", "model", "test", "experiment"], "agents": ["physics_sim", "analyst"]},
+        "automate": {"keywords": ["automate", "workflow", "pipeline", "script", "batch", "schedule"], "agents": ["coder", "planner"]},
+        "secure": {"keywords": ["secure", "protect", "encrypt", "permission", "audit", "threat"], "agents": ["critic", "analyst"]},
+        "teach": {"keywords": ["teach", "learn", "train", "mentor", "guide", "explain", "tutorial"], "agents": ["mentor"]},
+    }
+
+    def __init__(self, core=None):
+        self.core = core
+        self._context_history = []
+        self._active_intents = []
+
+    def detect_intent(self, input_text):
+        text = input_text.lower()
+        scores = {}
+        for intent, pattern in self.INTENT_PATTERNS.items():
+            score = sum(1 for kw in pattern["keywords"] if kw in text)
+            if score > 0:
+                scores[intent] = score
+        if not scores:
+            return {"primary": "general", "confidence": 0.3, "agents": ["researcher"]}
+        primary = max(scores, key=scores.get)
+        confidence = min(1.0, scores[primary] / 3)
+        agents = self.INTENT_PATTERNS[primary]["agents"]
+        self._active_intents.append({"intent": primary, "input": input_text, "confidence": confidence, "time": time.time()})
+        return {"primary": primary, "confidence": confidence, "agents": list(agents)}
+
+    def decompose_goal(self, goal):
+        intent = self.detect_intent(goal)
+        steps = []
+        if intent["primary"] == "research":
+            steps = ["search_knowledge", "gather_sources", "analyze_findings", "synthesize_report"]
+        elif intent["primary"] == "build":
+            steps = ["design_architecture", "implement_solution", "test_quality", "deploy_result"]
+        elif intent["primary"] == "design":
+            steps = ["gather_requirements", "create_concept", "iterate_design", "finalize_spec"]
+        elif intent["primary"] == "analyze":
+            steps = ["collect_data", "process_data", "run_analysis", "generate_insights"]
+        elif intent["primary"] == "plan":
+            steps = ["define_milestones", "assign_resources", "create_timeline", "track_progress"]
+        elif intent["primary"] == "present":
+            steps = ["research_content", "design_slides", "write_script", "rehearse"]
+        elif intent["primary"] == "simulate":
+            steps = ["define_parameters", "build_model", "run_simulation", "analyze_results"]
+        elif intent["primary"] == "automate":
+            steps = ["map_process", "design_pipeline", "implement_automation", "test_workflow"]
+        elif intent["primary"] == "secure":
+            steps = ["audit_system", "identify_threats", "implement_protections", "verify_security"]
+        elif intent["primary"] == "teach":
+            steps = ["assess_level", "create_curriculum", "guide_learning", "evaluate_progress"]
+        else:
+            steps = ["understand_request", "research", "execute", "deliver"]
+        return {"goal": goal, "intent": intent, "steps": steps}
+
+    def process(self, input_text):
+        result = self.decompose_goal(input_text)
+        self._context_history.append(result)
+        return result
+
+
+class AgentOrchestrator:
+    """Master Intelligence Controller — coordinates all agents as one unified team."""
+
+    def __init__(self, core=None):
+        self.core = core
+        self._agents = {}
+        self._teams = {}
+        self._active_missions = []
+        self._task_queue = []
+
+    def register_agent(self, agent):
+        self._agents[agent.id] = agent
+        return agent
+
+    def create_team(self, team_id, name, agent_ids=None):
+        team = {"id": team_id, "name": name, "agents": agent_ids or [], "created": time.time()}
+        self._teams[team_id] = team
+        return team
+
+    def assign_mission(self, mission_goal, required_agents=None):
+        mission_id = f"mission_{int(time.time())}"
+        mission = {"id": mission_id, "goal": mission_goal, "agents": [], "status": "planning", "created": time.time()}
+        if required_agents:
+            for aid in required_agents:
+                if aid in self._agents:
+                    agent = self._agents[aid]
+                    agent.assign_task(mission_goal)
+                    agent.status = "working"
+                    mission["agents"].append(aid)
+        mission["status"] = "in_progress"
+        self._active_missions.append(mission)
+        return mission
+
+    def get_agent(self, agent_id):
+        return self._agents.get(agent_id)
+
+    def list_agents(self, status=None):
+        if status:
+            return [a for a in self._agents.values() if a.status == status]
+        return list(self._agents.values())
+
+    def broadcast(self, message, channel="orchestrator"):
+        for agent in self._agents.values():
+            if hasattr(agent, 'memory'):
+                agent.memory.store_mission(f"[{channel}] {message}", "orchestrator")
+
+    def mission_status(self, mission_id=None):
+        if mission_id:
+            return next((m for m in self._active_missions if m["id"] == mission_id), None)
+        return list(self._active_missions)
+
+    def summary(self):
+        return {"agents": len(self._agents), "teams": len(self._teams), "active_missions": len(self._active_missions)}
+
+
+class SkillRegistry:
+    """Universal Skill System — replace apps with intelligent capabilities."""
+
+    def __init__(self):
+        self._skills = {}
+        self._installed_skills = {}
+        self._init_builtins()
+
+    def _init_builtins(self):
+        builtins = [
+            {"id": "knowledge_search", "name": "Knowledge Search", "category": "intelligence", "version": "1.0.0",
+             "description": "Search personal and public knowledge", "tools": ["search", "query"],
+             "permissions": ["read_memory"], "memory_access": ["knowledge_graph", "documents"]},
+            {"id": "content_generation", "name": "Content Generation", "category": "creation", "version": "1.0.0",
+             "description": "Generate text, reports, presentations", "tools": ["generate", "write"],
+             "permissions": ["read_memory", "write_files"], "memory_access": ["documents"]},
+            {"id": "data_analysis", "name": "Data Analysis", "category": "intelligence", "version": "1.0.0",
+             "description": "Analyze data, find patterns, generate insights", "tools": ["analyze", "visualize"],
+             "permissions": ["read_memory", "read_files"], "memory_access": ["datasets", "documents"]},
+            {"id": "task_automation", "name": "Task Automation", "category": "productivity", "version": "1.0.0",
+             "description": "Automate repetitive workflows", "tools": ["script", "schedule", "trigger"],
+             "permissions": ["execute_actions", "read_memory"], "memory_access": ["workflows"]},
+            {"id": "agent_delegation", "name": "Agent Delegation", "category": "coordination", "version": "1.0.0",
+             "description": "Delegate tasks to AI agents", "tools": ["assign", "monitor", "review"],
+             "permissions": ["manage_agents", "read_memory"], "memory_access": ["agents", "missions"]},
+            {"id": "learning_path", "name": "Learning Path", "category": "education", "version": "1.0.0",
+             "description": "Create personalized learning journeys", "tools": ["assess", "curate", "guide"],
+             "permissions": ["read_memory", "read_knowledge"], "memory_access": ["skills", "knowledge_graph"]},
+        ]
+        for s in builtins:
+            self._skills[s["id"]] = s
+            self._installed_skills[s["id"]] = s
+
+    def install(self, skill_id):
+        if skill_id in self._skills:
+            self._installed_skills[skill_id] = self._skills[skill_id]
+            return True
+        return False
+
+    def create_skill(self, skill_id, name, category, description, tools=None, permissions=None, memory_access=None):
+        skill = {"id": skill_id, "name": name, "category": category, "version": "1.0.0",
+                 "description": description, "tools": tools or [], "permissions": permissions or [],
+                 "memory_access": memory_access or [], "created": time.time()}
+        self._skills[skill_id] = skill
+        return skill
+
+    def search(self, query=None, category=None):
+        results = list(self._skills.values())
+        if query:
+            q = query.lower()
+            results = [s for s in results if q in s["name"].lower() or q in s["description"].lower()]
+        if category:
+            results = [s for s in results if s.get("category") == category]
+        return results
+
+    def get_skill(self, skill_id):
+        return self._skills.get(skill_id)
+
+    def list_installed(self):
+        return list(self._installed_skills.values())
+
+
+class IdentityManager:
+    """Digital Identity — the intelligence belongs to the user, not the device."""
+
+    def __init__(self):
+        self._identities = {}
+        self._active_identity = None
+
+    def create_identity(self, user_id, name, email=""):
+        identity = {
+            "id": user_id, "name": name, "email": email,
+            "preferences": {}, "knowledge_tags": [], "workflows": [],
+            "agent_relationships": {}, "device_history": [],
+            "created": time.time(), "last_active": time.time(),
+        }
+        self._identities[user_id] = identity
+        self._active_identity = user_id
+        return identity
+
+    def activate(self, user_id):
+        if user_id in self._identities:
+            self._active_identity = user_id
+            self._identities[user_id]["last_active"] = time.time()
+            return True
+        return False
+
+    def set_preference(self, key, value):
+        identity = self._identities.get(self._active_identity)
+        if identity:
+            identity["preferences"][key] = value
+            return True
+        return False
+
+    def register_device(self, device_id, device_name, device_type):
+        identity = self._identities.get(self._active_identity)
+        if identity:
+            entry = {"device_id": device_id, "name": device_name, "type": device_type, "registered": time.time()}
+            identity["device_history"].append(entry)
+            return entry
+        return None
+
+    def link_agent(self, agent_id, relationship="assistant"):
+        identity = self._identities.get(self._active_identity)
+        if identity:
+            identity["agent_relationships"][agent_id] = {"relationship": relationship, "since": time.time()}
+            return True
+        return False
+
+    def get_active(self):
+        if self._active_identity:
+            return self._identities.get(self._active_identity)
+        return None
+
+    def summary(self):
+        return {"identities": len(self._identities), "active": self._active_identity is not None}
+
+
+class PermissionController:
+    """Trust and Control Framework — every action verified before execution."""
+
+    CATEGORIES = ["read_data", "modify_data", "execute_actions", "access_devices", "external_communication"]
+
+    def __init__(self):
+        self._policies = {}
+        self._audit_log = []
+        self._approval_queue = []
+
+    def set_policy(self, agent_id, category, allowed=True, requires_approval=False):
+        if category not in self.CATEGORIES:
+            return False
+        if agent_id not in self._policies:
+            self._policies[agent_id] = {c: {"allowed": False, "requires_approval": True} for c in self.CATEGORIES}
+        self._policies[agent_id][category] = {"allowed": allowed, "requires_approval": requires_approval}
+        return True
+
+    def check_permission(self, agent_id, category, action_detail=""):
+        policy = self._policies.get(agent_id, {})
+        cat_policy = policy.get(category, {"allowed": False, "requires_approval": True})
+        entry = {"agent_id": agent_id, "category": category, "action": action_detail, "time": time.time()}
+        if not cat_policy["allowed"]:
+            entry["result"] = "denied"
+            self._audit_log.append(entry)
+            return {"allowed": False, "reason": "Permission denied", "requires_approval": False}
+        if cat_policy["requires_approval"]:
+            entry["result"] = "pending_approval"
+            self._audit_log.append(entry)
+            self._approval_queue.append(entry)
+            return {"allowed": False, "reason": "Requires human approval", "requires_approval": True, "request_id": len(self._approval_queue) - 1}
+        entry["result"] = "allowed"
+        self._audit_log.append(entry)
+        return {"allowed": True, "reason": "Approved"}
+
+    def approve(self, request_id):
+        if 0 <= request_id < len(self._approval_queue):
+            req = self._approval_queue[request_id]
+            req["result"] = "approved"
+            for entry in self._audit_log:
+                if entry.get("request_id") == request_id:
+                    entry["result"] = "approved"
+            return True
+        return False
+
+    def deny(self, request_id):
+        if 0 <= request_id < len(self._approval_queue):
+            req = self._approval_queue[request_id]
+            req["result"] = "denied"
+            return True
+        return False
+
+    def get_audit_log(self, agent_id=None):
+        if agent_id:
+            return [e for e in self._audit_log if e["agent_id"] == agent_id]
+        return list(self._audit_log)
+
+    def get_pending_approvals(self):
+        return [r for r in self._approval_queue if r.get("result") == "pending_approval"]
+
+
+class ARCANISAPI:
+    """Universal API Layer — every module communicates through this protocol."""
+
+    ENDPOINTS = ["/intent", "/memory", "/agent", "/skill", "/device", "/task", "/knowledge", "/security"]
+
+    def __init__(self, core=None):
+        self.core = core
+        self._call_history = []
+
+    def call(self, endpoint, payload=None):
+        if endpoint not in self.ENDPOINTS:
+            return {"error": f"Unknown endpoint: {endpoint}", "valid": self.ENDPOINTS}
+        payload = payload or {}
+        result = {"endpoint": endpoint, "status": "ok", "timestamp": time.time()}
+        if endpoint == "/intent" and self.core:
+            text = payload.get("text", "")
+            result["intent"] = self.core.intent.process(text)
+        elif endpoint == "/memory" and self.core:
+            if payload.get("action") == "store":
+                self.core.knowledge.store(payload.get("category", "general"), payload.get("content", ""))
+                result["memory_id"] = self.core.knowledge.count() - 1
+            elif payload.get("action") == "recall":
+                result["memories"] = self.core.knowledge.recall(payload.get("query"), payload.get("category"), payload.get("limit", 5))
+            elif payload.get("action") == "graph_query":
+                result["concepts"] = self.core.graph.query(payload.get("category"))
+        elif endpoint == "/agent" and self.core:
+            if payload.get("action") == "list":
+                result["agents"] = [a.summary() for a in self.core.orchestrator.list_agents()]
+            elif payload.get("action") == "status":
+                result["missions"] = self.core.orchestrator.mission_status()
+        elif endpoint == "/skill" and self.core:
+            if payload.get("action") == "list":
+                result["skills"] = self.core.skills.list_installed()
+            elif payload.get("action") == "install":
+                result["installed"] = self.core.skills.install(payload.get("skill_id"))
+        elif endpoint == "/security" and self.core:
+            if payload.get("action") == "check":
+                result["permission"] = self.core.permissions.check_permission(payload.get("agent_id"), payload.get("category"), payload.get("action_detail", ""))
+            elif payload.get("action") == "audit":
+                result["log"] = self.core.permissions.get_audit_log(payload.get("agent_id"))
+            elif payload.get("action") == "approve":
+                result["approved"] = self.core.permissions.approve(payload.get("request_id", -1))
+        elif endpoint == "/device" and self.core:
+            identity = self.core.identity.get_active()
+            if identity:
+                did = payload.get("device_id", socket.gethostname())
+                result["device"] = self.core.identity.register_device(did, socket.gethostname(), payload.get("device_type", "unknown"))
+        elif endpoint == "/task":
+            result["info"] = "Task management endpoint"
+        elif endpoint == "/knowledge":
+            result["info"] = "Knowledge management endpoint"
+        self._call_history.append({"endpoint": endpoint, "payload": payload, "time": time.time()})
+        return result
+
+    def history(self):
+        return list(self._call_history)
+
+
+class UniversalIntelligenceCore:
+    """The central nervous system of ARCANIS — connects intent, agents, knowledge, skills, identity, permissions, and self-evolution."""
+
+    def __init__(self):
+        self.intent = IntentEngine(core=self)
+        self.orchestrator = AgentOrchestrator(core=self)
+        self.skills = SkillRegistry()
+        self.identity = IdentityManager()
+        self.permissions = PermissionController()
+        self.api = ARCANISAPI(core=self)
+        self.knowledge = MemorySystem()
+        self.graph = KnowledgeGraph()
+        self._initialized = False
+
+    def initialize(self, user_name="User"):
+        uid = f"user_{int(time.time())}"
+        self.identity.create_identity(uid, user_name)
+        self.intent = IntentEngine(core=self)
+        self._initialized = True
+        return {"status": "initialized", "identity_id": uid}
+
+    def process(self, input_text):
+        intent_result = self.intent.process(input_text)
+        agents_needed = intent_result["intent"]["agents"]
+        available_agents = [aid for aid in agents_needed if aid in self.orchestrator._agents]
+        mission = self.orchestrator.assign_mission(input_text, required_agents=available_agents)
+        return {
+            "input": input_text,
+            "intent": intent_result["intent"],
+            "steps": intent_result["steps"],
+            "mission_id": mission["id"],
+            "agents_assigned": available_agents,
+        }
+
+    def learn_from_experience(self):
+        missions = self.orchestrator.mission_status()
+        for m in missions:
+            self.knowledge.store("mission", f"Mission completed: {m['goal']}", tags=["experience"], source="orchestrator")
+        return {"learned": len(missions)}
+
+    def summary(self):
+        return {
+            "intents_processed": len(self.intent._context_history),
+            "agents_registered": len(self.orchestrator._agents),
+            "skills_available": len(self.skills._skills),
+            "identities": len(self.identity._identities),
+            "permissions_set": sum(len(p) for p in self.permissions._policies.values()),
+            "api_calls": len(self.api._call_history),
+            "knowledge_memories": self.knowledge.count(),
+            "graph_concepts": len(self.graph._nodes),
+        }
+
+    def to_dict(self):
+        return {"intent_history": self.intent._context_history[-10:], "missions": self.orchestrator.mission_status()}
+
+    def from_dict(self, data):
+        if "missions" in data:
+            self.orchestrator._active_missions = data["missions"]
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -9969,6 +10394,12 @@ class Shell:
         self.ecosystem = IntelligenceEcosystem()
         self.ecosystem.init_account(name=socket.gethostname(), tier="creator")
         self.foundry = IntelligenceFoundry()
+        self.uif = UniversalIntelligenceCore()
+        self.uif.initialize(user_name=socket.gethostname())
+        for agent_type in ["researcher", "coder", "designer", "analyst", "planner", "critic", "mentor"]:
+            agent = self.ecosystem.agent_market.spawn(agent_type)
+            if agent:
+                self.uif.orchestrator.register_agent(agent)
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -10012,7 +10443,7 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v4.0.0 — Intelligence Infrastructure\033[0m")
+        print(f"{dm}  Arcanis OS v5.0.0 — Universal Intelligence Fabric\033[0m")
         print(f"{dm}  86 modules | 173 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
@@ -10236,6 +10667,12 @@ class Shell:
             "evaluate": self.cmd_evaluate,
             "deploy": self.cmd_deploy,
             "versions": self.cmd_versions,
+            "uif": self.cmd_uif,
+            "intent": self.cmd_intent,
+            "agents": self.cmd_agents_uif,
+            "skills": self.cmd_skills,
+            "identity": self.cmd_identity,
+            "api": self.cmd_api_uif,
         }
 
         handler = dispatch.get(command)
@@ -11448,6 +11885,152 @@ class Shell:
             for v in versions:
                 t = time.strftime("%H:%M:%S", time.localtime(v["timestamp"]))
                 print(f"  {v['id'][:20]:<22} {v['agent_name']:<18} {v.get('label','')[:20]:<20} {t}")
+
+    # ======================== UIF COMMANDS ========================
+
+    def cmd_uif(self, args):
+        """Universal Intelligence Fabric — intent-driven computing platform."""
+        ic = self._c("info")
+        ok = self._c("ok")
+        if not args:
+            s = self.uif.summary()
+            print(f"{ic}Universal Intelligence Fabric\033[0m")
+            print(f"  {ok}Intents Processed:\033[0m {s['intents_processed']}")
+            print(f"  {ok}Agents Registered:\033[0m {s['agents_registered']}")
+            print(f"  {ok}Skills Available:\033[0m {s['skills_available']}")
+            print(f"  {ok}Identities:\033[0m {s['identities']}")
+            print(f"  {ok}API Calls:\033[0m {s['api_calls']}")
+            print(f"  {ok}Knowledge Memories:\033[0m {s['knowledge_memories']}")
+            print(f"  {ok}Graph Concepts:\033[0m {s['graph_concepts']}")
+            print()
+            print(f"  \033[1;36mCommands:\033[0m")
+            print(f"    uif status                   Show this overview")
+            print(f"    intent <text>                Process intent from natural language")
+            print(f"    agents list                  List all registered agents")
+            print(f"    agents missions              Show active missions")
+            print(f"    skills [query]               List or search skills")
+            print(f"    identity                     Show active identity")
+            print(f"    api call <endpoint> [json]    Call API endpoint")
+            return
+        if args[0] == "status":
+            s = self.uif.summary()
+            print(f"{ic}UIF Status:\033[0m")
+            for k, v in s.items():
+                print(f"  {k.replace('_', ' ').title()}: {v}")
+
+    def cmd_intent(self, args):
+        """Process intent from natural language — the core of intent-first computing."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        if not args:
+            print(f"{er}Usage: intent <what do you want to achieve?>")
+            return
+        text = " ".join(args)
+        result = self.uif.process(text)
+        print(f"{ic}Intent Analysis:\033[0m")
+        print(f"  Input: {result['input']}")
+        print(f"  Detected Intent: \033[1;36m{result['intent']['primary']}\033[0m (confidence: {result['intent']['confidence']:.0%})")
+        print(f"  Steps:")
+        for i, step in enumerate(result['steps'], 1):
+            print(f"    {i}. {step.replace('_', ' ').title()}")
+        print(f"  Mission ID: {result['mission_id']}")
+        if result['agents_assigned']:
+            print(f"  {ok}Agents Assigned:\033[0m {', '.join(result['agents_assigned'])}")
+
+    def cmd_agents_uif(self, args):
+        """Manage UIF agents — list, status, missions."""
+        er = self._c("err")
+        ic = self._c("info")
+        if not args:
+            print(f"{er}Usage: agents <list|missions>\033[0m")
+            return
+        if args[0] == "list":
+            agents = self.uif.orchestrator.list_agents()
+            if not agents:
+                print("No agents registered")
+                return
+            print(f"{ic}Registered Agents:\033[0m")
+            print(f"  {'ID':<24} {'NAME':<20} {'ROLE':<24} {'STATUS':<12} {'TASKS':<8}")
+            for a in agents:
+                print(f"  {a.id:<24} {a.name:<20} {a.role[:22]:<24} {a.status:<12} {a.tasks_completed:<8}")
+        elif args[0] == "missions":
+            missions = self.uif.orchestrator.mission_status()
+            if not missions:
+                print("No active missions")
+                return
+            print(f"{ic}Active Missions:\033[0m")
+            for m in missions:
+                print(f"  {m['id'][:16]:<18} {m['goal'][:40]:<42} {m['status']:<12} {len(m['agents'])} agents")
+
+    def cmd_skills(self, args):
+        """Universal Skill System — browse, install, create skills."""
+        er = self._c("err")
+        ok = self._c("ok")
+        ic = self._c("info")
+        query = " ".join(args) if args else None
+        results = self.uif.skills.search(query=query)
+        if not results:
+            print("No skills found" if not query else f"No skills matching '{query}'")
+            return
+        print(f"{ic}Skills{' matching: ' + query if query else ''}:\033[0m")
+        print(f"  {'ID':<24} {'NAME':<28} {'CATEGORY':<16} {'TOOLS':<20} {'VERSION':<10}")
+        for s in results:
+            mark = " *" if s["id"] in {sk["id"] for sk in self.uif.skills.list_installed()} else "  "
+            print(f"  {s['id']:<24}{s['name'][:26]:<28}{s.get('category',''):<16}{', '.join(s.get('tools',[]))[:18]:<20}{s.get('version',''):<10}{mark}")
+
+    def cmd_identity(self, args):
+        """Show active digital identity."""
+        ic = self._c("info")
+        identity = self.uif.identity.get_active()
+        if not identity:
+            print("No active identity")
+            return
+        print(f"{ic}Active Identity:\033[0m")
+        print(f"  Name: {identity['name']}")
+        print(f"  ID: {identity['id']}")
+        print(f"  Devices: {len(identity.get('device_history', []))}")
+        print(f"  Agent Relationships: {len(identity.get('agent_relationships', {}))}")
+        print(f"  Preferences: {len(identity.get('preferences', {}))}")
+        print(f"  Created: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(identity['created']))}")
+
+    def cmd_api_uif(self, args):
+        """Call ARCANIS Universal API endpoints."""
+        er = self._c("err")
+        ok = self._c("ok")
+        if len(args) < 2:
+            print(f"{er}Usage: api call <endpoint> [json_payload]\033[0m")
+            print(f"  Endpoints: {', '.join(self.uif.api.ENDPOINTS)}")
+            return
+        if args[0] == "call":
+            endpoint = args[1]
+            payload = {}
+            if len(args) > 2:
+                try:
+                    payload = json.loads(" ".join(args[2:]))
+                except Exception:
+                    payload = {"text": " ".join(args[2:])}
+            result = self.uif.api.call(endpoint, payload)
+            if "error" in result:
+                print(f"{er}API Error: {result['error']}\033[0m")
+                return
+            print(f"{ok}API Response ({endpoint}):\033[0m")
+            for k, v in result.items():
+                if k in ("status", "timestamp", "endpoint"):
+                    continue
+                if isinstance(v, list):
+                    print(f"  {k}: {len(v)} items")
+                    for item in v[:3]:
+                        if isinstance(item, dict):
+                            print(f"    - {str(list(item.values())[:2])[:80]}")
+                        else:
+                            print(f"    - {str(item)[:80]}")
+                elif isinstance(v, dict):
+                    print(f"  {k}:")
+                    for sk, sv in v.items():
+                        print(f"    {sk}: {str(sv)[:60]}")
+                else:
+                    print(f"  {k}: {str(v)[:60]}")
 
     # ======================== ENCRYPTION ========================
 

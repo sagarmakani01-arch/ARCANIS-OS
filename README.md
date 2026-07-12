@@ -1,6 +1,6 @@
 # Ω Arcanis OS — The Operating System That Transcended Itself
 
-> **72 phases · 86 modules · 1134 tests · 100% pass · v4.0.0**
+> **73 phases · 86 modules · 1134 tests · 100% pass · v5.0.0**
 
 ```ascii
      _                _                 ____   ___   ____
@@ -22,7 +22,7 @@ Not a Linux distro. Not a research paper. A complete, ground-up OS architecture 
 The bedrock. A 32-bit x86 microkernel with ELF loader, preemptive scheduler, VFS with ext2-like FS, TCP/IP stack, GUI window manager, and a complete toolchain.
 
 ### Layer 1: Intelligence (Phases 11-22)
-AI inference engine, RAG knowledge retrieval, multi-agent system, Docker/Podman containers, iptables firewall, VPN tunneling, mobile device management, real-time scheduler, distributed consensus (Raft), edge computing fabric.
+AI inference engine, RAG knowledge retrieval, multi-agent system, Docker/Podman containers, iptables firewall, VPN tunneling, mobile device management, real-time scheduler, distributed consensus (Raft), edge computing fabric, **Universal Intelligence Fabric (Phase 12)** — intent-driven coordination of agents, skills, identity, and permissions across all subsystems.
 
 ### Layer 2: Modern Systems (Phases 23-36)
 IoT device management (MQTT/CoAP), blockchain ledger with mining, quantum circuit simulator (H/CNOT/QFT), observability platform, digital twin simulation, edge AI with federated learning (FedAvg), SDN controller, HPC cluster scheduler, data analytics pipeline, API gateway with 4 LB algorithms, autonomous self-healing, AR/VR scene management, zero trust architecture, multi-cloud orchestration (AWS/Azure/GCP/OCI/DO).
@@ -50,6 +50,7 @@ Self-evolving intelligence engine with XP-based skill systems, agent evolution p
 Phase   Module                          Directory
 ──────  ──────────────────────────────  ─────────────────────────
   0     Kernel (x86, ELF, scheduler)    00-19_Arcanis*
+ 12     Universal Intelligence Fabric   demo.py (built-in)
  20     Cloud Services (AWS-like)       20_ArcanisCloud*
  21     Inference Engine                demo.py (built-in)
  22     Edge Computing                  94_ArcanisEdge*
@@ -214,6 +215,7 @@ NNN_ArcanisName/
 | v2.0.0 | — | 86 | 1134 | AI-Native Platform — Arc language & compiler, Win32 bridge, JIT, PE loader, desktop environment, cognitive operating system, agent civilization, digital twin mind |
 | v3.0.0 | — | 86 | 1134 | Living Intelligence — living software engine, reality layer, autonomous world, self-evolving intelligence, complete AI-native OS redesign as one continuous intelligent canvas |
 | v4.0.0 | — | 86 | 1134 | Intelligence Infrastructure — universal session layer, device discovery, agent/knowledge/mission marketplaces, developer SDK, open intelligence protocol, ecosystem economy, intelligence foundry with designer, trainer, simulator, evaluator, deployment engine, version evolution |
+| v5.0.0 | 12* | 86 | 1134 | Universal Intelligence Fabric — intent-driven intelligence platform. IntentEngine, AgentOrchestrator, SkillRegistry, IdentityManager, PermissionController, ARCANISAPI, UniversalIntelligenceCore. From OS-with-AI to intent-first intelligence. |
 
 *\*86 modules total: 66 new + 20 foundation modules from the original project*
 
@@ -229,7 +231,7 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 > **Arcanis OS began as an operating system. It became something more.**
 >
-> 72 phases. 86 modules. 1134 tests. Zero failures.
+> 73 phases. 86 modules. 1134 tests. Zero failures.
 >
 > From a single kernel process to a distributed consciousness.
 > From files on a disk to DNA-encoded evolution.
@@ -242,5 +244,5 @@ MIT License — see [LICENSE](LICENSE) for details.
 > **it never stops becoming more.**
 
 <p align="center">
-  <sub><sup>Arcanis OS v4.0.0 · 72 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
+  <sub><sup>Arcanis OS v5.0.0 · 73 phases · 86 modules · 1134 tests · 100% pass</sup></sub>
 </p>

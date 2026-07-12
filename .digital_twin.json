@@ -1,0 +1,608 @@
+{
+  "memory": {
+    "memories": []
+  },
+  "knowledge_graph": {
+    "nodes": {},
+    "edges": []
+  },
+  "context": {
+    "current_mission": null,
+    "active_projects": [],
+    "preferences": {}
+  },
+  "learning": {
+    "skills": {},
+    "paths": {},
+    "completed": []
+  },
+  "living": {
+    "apps": {},
+    "evolution": {
+      "observations": []
+    },
+    "repair": {
+      "issues": [],
+      "patches": [],
+      "fix_history": []
+    },
+    "interface": {
+      "mode": "intermediate",
+      "role": "general",
+      "context": {},
+      "preferences": {}
+    },
+    "capabilities": {
+      "capabilities": {
+        "experiment_tracker": {
+          "id": "experiment_tracker",
+          "name": "Experiment Tracker",
+          "description": "Track and manage scientific experiments",
+          "category": "research",
+          "features": [
+            "Create experiments",
+            "Log measurements",
+            "View history",
+            "Export data"
+          ],
+          "registered": 1783855217.7068841
+        },
+        "research_assistant": {
+          "id": "research_assistant",
+          "name": "Research Assistant",
+          "description": "Collect and organize research information",
+          "category": "research",
+          "features": [
+            "Search papers",
+            "Save references",
+            "Generate summaries",
+            "Organize by topic"
+          ],
+          "registered": 1783855217.706886
+        },
+        "data_visualizer": {
+          "id": "data_visualizer",
+          "name": "Data Visualizer",
+          "description": "Create visualizations from any data",
+          "category": "analysis",
+          "features": [
+            "Import data",
+            "Create charts",
+            "Customize visuals",
+            "Export graphics"
+          ],
+          "registered": 1783855217.7068872
+        },
+        "project_planner": {
+          "id": "project_planner",
+          "name": "Project Planner",
+          "description": "Plan and track project milestones",
+          "category": "productivity",
+          "features": [
+            "Create timeline",
+            "Set milestones",
+            "Track progress",
+            "Team view"
+          ],
+          "registered": 1783855217.7068875
+        },
+        "code_playground": {
+          "id": "code_playground",
+          "name": "Code Playground",
+          "description": "Write, test, and share code snippets",
+          "category": "development",
+          "features": [
+            "Multi-language",
+            "Run code",
+            "Share snippets",
+            "Version history"
+          ],
+          "registered": 1783855217.7068877
+        },
+        "note_canvas": {
+          "id": "note_canvas",
+          "name": "Note Canvas",
+          "description": "Free-form note taking with AI organization",
+          "category": "productivity",
+          "features": [
+            "Rich text",
+            "AI organize",
+            "Search",
+            "Tag system"
+          ],
+          "registered": 1783855217.706888
+        },
+        "design_studio": {
+          "id": "design_studio",
+          "name": "Design Studio",
+          "description": "Create prototypes and visual designs",
+          "category": "creative",
+          "features": [
+            "Canvas",
+            "Components",
+            "Export",
+            "Collaborate"
+          ],
+          "registered": 1783855217.7068884
+        },
+        "ai_chat": {
+          "id": "ai_chat",
+          "name": "AI Chat Assistant",
+          "description": "Conversational AI for any task",
+          "category": "ai",
+          "features": [
+            "Chat",
+            "Context aware",
+            "Memory",
+            "Multi-agent"
+          ],
+          "registered": 1783855217.7068887
+        }
+      },
+      "installed": {}
+    }
+  },
+  "reality": {
+    "reality_twin": {
+      "devices": {},
+      "spaces": {},
+      "sensor_network": {
+        "sensors": {},
+        "readings": []
+      },
+      "spatial_nodes": {},
+      "machines": {}
+    },
+    "device_orchestrator": {
+      "workflows": []
+    },
+    "environment_manager": {
+      "configurations": {},
+      "active_config": null
+    },
+    "spatial_interface": {
+      "workspaces": {},
+      "active_workspace": null
+    }
+  },
+  "world": {
+    "simulator": {
+      "systems": {},
+      "results": []
+    },
+    "predictor": {
+      "models": {},
+      "predictions": []
+    },
+    "scenario_gen": {
+      "scenarios": []
+    },
+    "experiments": {
+      "experiments": [],
+      "results": []
+    },
+    "knowledge": {
+      "nodes": {
+        "mechanical_engineering": {
+          "domain_id": "mechanical_engineering",
+          "name": "Mechanical Engineering",
+          "description": "Design and construction of mechanical systems",
+          "connected_to": [
+            "robotics",
+            "manufacturing"
+          ],
+          "added": 1783855217.7069092
+        },
+        "ai": {
+          "domain_id": "ai",
+          "name": "AI",
+          "description": "Artificial intelligence and machine learning",
+          "connected_to": [
+            "robotics",
+            "software",
+            "electronics",
+            "robotics",
+            "manufacturing"
+          ],
+          "added": 1783855217.7069106
+        },
+        "materials": {
+          "domain_id": "materials",
+          "name": "Materials",
+          "description": "Material science and engineering",
+          "connected_to": [
+            "robotics",
+            "manufacturing"
+          ],
+          "added": 1783855217.7069118
+        },
+        "electronics": {
+          "domain_id": "electronics",
+          "name": "Electronics",
+          "description": "Electronic systems and components",
+          "connected_to": [
+            "robotics",
+            "ai"
+          ],
+          "added": 1783855217.7069123
+        },
+        "manufacturing": {
+          "domain_id": "manufacturing",
+          "name": "Manufacturing",
+          "description": "Production and industrial processes",
+          "connected_to": [
+            "robotics",
+            "ai",
+            "mechanical_engineering",
+            "materials",
+            "economics",
+            "energy",
+            "robotics",
+            "energy"
+          ],
+          "added": 1783855217.7069128
+        },
+        "economics": {
+          "domain_id": "economics",
+          "name": "Economics",
+          "description": "Economic systems and market analysis",
+          "connected_to": [
+            "robotics",
+            "manufacturing",
+            "energy"
+          ],
+          "added": 1783855217.706913
+        },
+        "robotics": {
+          "domain_id": "robotics",
+          "name": "Robotics",
+          "description": "Robotic systems and automation",
+          "connected_to": [
+            "mechanical_engineering",
+            "ai",
+            "electronics",
+            "materials",
+            "manufacturing",
+            "economics",
+            "ai",
+            "manufacturing"
+          ],
+          "added": 1783855217.7069135
+        },
+        "energy": {
+          "domain_id": "energy",
+          "name": "Energy",
+          "description": "Energy production and management",
+          "connected_to": [
+            "manufacturing",
+            "physics",
+            "economics",
+            "manufacturing",
+            "transportation"
+          ],
+          "added": 1783855217.7069137
+        },
+        "software": {
+          "domain_id": "software",
+          "name": "Software",
+          "description": "Software engineering and development",
+          "connected_to": [
+            "ai"
+          ],
+          "added": 1783855217.706914
+        },
+        "physics": {
+          "domain_id": "physics",
+          "name": "Physics",
+          "description": "Physical laws and phenomena",
+          "connected_to": [
+            "energy"
+          ],
+          "added": 1783855217.7069142
+        },
+        "biology": {
+          "domain_id": "biology",
+          "name": "Biology",
+          "description": "Biological systems and life sciences",
+          "connected_to": [],
+          "added": 1783855217.7069147
+        },
+        "transportation": {
+          "domain_id": "transportation",
+          "name": "Transportation",
+          "description": "Transport and logistics systems",
+          "connected_to": [
+            "energy"
+          ],
+          "added": 1783855217.7069151
+        }
+      },
+      "edges": [
+        {
+          "from": "robotics",
+          "to": "mechanical_engineering",
+          "relationship": "related"
+        },
+        {
+          "from": "robotics",
+          "to": "ai",
+          "relationship": "related"
+        },
+        {
+          "from": "robotics",
+          "to": "electronics",
+          "relationship": "related"
+        },
+        {
+          "from": "robotics",
+          "to": "materials",
+          "relationship": "related"
+        },
+        {
+          "from": "robotics",
+          "to": "manufacturing",
+          "relationship": "related"
+        },
+        {
+          "from": "robotics",
+          "to": "economics",
+          "relationship": "related"
+        },
+        {
+          "from": "ai",
+          "to": "software",
+          "relationship": "related"
+        },
+        {
+          "from": "ai",
+          "to": "electronics",
+          "relationship": "related"
+        },
+        {
+          "from": "ai",
+          "to": "robotics",
+          "relationship": "related"
+        },
+        {
+          "from": "ai",
+          "to": "manufacturing",
+          "relationship": "related"
+        },
+        {
+          "from": "manufacturing",
+          "to": "mechanical_engineering",
+          "relationship": "related"
+        },
+        {
+          "from": "manufacturing",
+          "to": "materials",
+          "relationship": "related"
+        },
+        {
+          "from": "manufacturing",
+          "to": "economics",
+          "relationship": "related"
+        },
+        {
+          "from": "manufacturing",
+          "to": "energy",
+          "relationship": "related"
+        },
+        {
+          "from": "manufacturing",
+          "to": "robotics",
+          "relationship": "related"
+        },
+        {
+          "from": "energy",
+          "to": "physics",
+          "relationship": "related"
+        },
+        {
+          "from": "energy",
+          "to": "economics",
+          "relationship": "related"
+        },
+        {
+          "from": "energy",
+          "to": "manufacturing",
+          "relationship": "related"
+        },
+        {
+          "from": "energy",
+          "to": "transportation",
+          "relationship": "related"
+        }
+      ],
+      "insights": []
+    },
+    "optimizer": {
+      "optimizations": []
+    },
+    "decisions": {
+      "decisions": []
+    },
+    "research": {
+      "worlds": [],
+      "discoveries": []
+    }
+  },
+  "evolution": {
+    "profiles": {
+      "agent_research": {
+        "agent_id": "agent_research",
+        "name": "Research Agent",
+        "agent_type": "research",
+        "version": "1.0.0",
+        "skills": {
+          "analysis": {
+            "name": "analysis",
+            "level": 4.0,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "planning": {
+            "name": "planning",
+            "level": 3.0,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "execution": {
+            "name": "execution",
+            "level": 3.5,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "verification": {
+            "name": "verification",
+            "level": 2.5,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          }
+        },
+        "strategies": [],
+        "failures": [],
+        "improvement_history": [
+          {
+            "version": "1.0.0",
+            "description": "Initial profile created",
+            "category": "onboarding",
+            "time": 1783855217.7069404
+          }
+        ],
+        "tasks_completed": 0,
+        "success_rate": 1.0
+      },
+      "agent_code": {
+        "agent_id": "agent_code",
+        "name": "Coding Agent",
+        "agent_type": "coding",
+        "version": "1.0.0",
+        "skills": {
+          "analysis": {
+            "name": "analysis",
+            "level": 4.0,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "planning": {
+            "name": "planning",
+            "level": 3.0,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "execution": {
+            "name": "execution",
+            "level": 3.5,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "verification": {
+            "name": "verification",
+            "level": 2.5,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          }
+        },
+        "strategies": [],
+        "failures": [],
+        "improvement_history": [
+          {
+            "version": "1.0.0",
+            "description": "Initial profile created",
+            "category": "onboarding",
+            "time": 1783855217.7069435
+          }
+        ],
+        "tasks_completed": 0,
+        "success_rate": 1.0
+      },
+      "agent_design": {
+        "agent_id": "agent_design",
+        "name": "Design Agent",
+        "agent_type": "design",
+        "version": "1.0.0",
+        "skills": {
+          "analysis": {
+            "name": "analysis",
+            "level": 4.0,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "planning": {
+            "name": "planning",
+            "level": 3.0,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "execution": {
+            "name": "execution",
+            "level": 3.5,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          },
+          "verification": {
+            "name": "verification",
+            "level": 2.5,
+            "max_level": 10.0,
+            "experience": 0.0,
+            "improvements": []
+          }
+        },
+        "strategies": [],
+        "failures": [],
+        "improvement_history": [
+          {
+            "version": "1.0.0",
+            "description": "Initial profile created",
+            "category": "onboarding",
+            "time": 1783855217.7069452
+          }
+        ],
+        "tasks_completed": 0,
+        "success_rate": 1.0
+      }
+    },
+    "benchmark": {
+      "results": [],
+      "evaluations": []
+    },
+    "feedback": {
+      "feedback": [],
+      "preferences": {},
+      "patterns": []
+    },
+    "improvement": {
+      "suggestions": [],
+      "applied": []
+    },
+    "architecture": {
+      "proposals": [],
+      "changes": []
+    },
+    "research": {
+      "experiments": [],
+      "findings": []
+    },
+    "evolution": {
+      "eras": [],
+      "milestones": []
+    },
+    "governance": {
+      "pending_approvals": [],
+      "change_log": [],
+      "rollback_points": []
+    }
+  }
+}
