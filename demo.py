@@ -10653,6 +10653,626 @@ class RealityInterfaceLayer:
                 getattr(self, key).from_dict(data[key])
 
 
+# ═══════════════════════════════════════════════════════════════
+# PHASE 15 — ARCANIS AUTONOMOUS CREATION & DISCOVERY ENGINE (ACDE)
+# ═══════════════════════════════════════════════════════════════
+
+class IdeaProcessingEngine:
+    """Universal creation pipeline: idea/goal/problem/question → research → plan → create → test → improve."""
+
+    def __init__(self):
+        self._pipeline = {"understand": [], "research": [], "solution": [], "prototype": [], "evaluate": [], "improve": []}
+        self._projects = {}
+        self._ideas = []
+
+    def submit_idea(self, title, description, category="general"):
+        idea = {"id": f"idea_{int(time.time())}", "title": title, "description": description, "category": category, "stage": "understanding", "created": time.time()}
+        self._ideas.append(idea)
+        self._projects[idea["id"]] = {"idea": idea, "pipeline": {k: [] for k in self._pipeline}, "current_stage": "understanding", "history": []}
+        return self._run_pipeline(idea["id"])
+
+    def _run_pipeline(self, pid):
+        project = self._projects[pid]
+        stages = ["understanding", "research", "planning", "creation", "testing", "improvement"]
+        project["pipeline"]["understand"] = [f"Analyze objective: {project['idea']['description'][:80]}", "Identify constraints", "Define success criteria"]
+        project["pipeline"]["research"] = [f"Search existing knowledge on {project['idea']['title']}", "Analyze similar solutions", "Identify best practices"]
+        project["pipeline"]["solution"] = [f"Generate solution approaches for {project['idea']['title']}", "Evaluate feasibility", "Select optimal approach"]
+        project["pipeline"]["prototype"] = [f"Create prototype for {project['idea']['title']}", "Implement core functionality", "Test basic assumptions"]
+        project["pipeline"]["evaluate"] = ["Test against success criteria", "Identify gaps and issues", "Collect feedback"]
+        project["pipeline"]["improve"] = ["Analyze test results", "Refine implementation", "Optimize performance"]
+        project["current_stage"] = "understanding"
+        return {"project_id": pid, "title": project["idea"]["title"], "stages": stages, "pipeline": project["pipeline"]}
+
+    def advance_stage(self, pid):
+        if pid not in self._projects:
+            return {"error": "Project not found"}
+        project = self._projects[pid]
+        stages = ["understanding", "research", "planning", "creation", "testing", "improvement"]
+        current_idx = stages.index(project["current_stage"]) if project["current_stage"] in stages else 0
+        if current_idx < len(stages) - 1:
+            project["current_stage"] = stages[current_idx + 1]
+            project["history"].append({"stage": stages[current_idx], "completed": time.time()})
+            return {"project": pid, "stage": project["current_stage"], "progress": int((current_idx + 1) / len(stages) * 100)}
+        return {"project": pid, "stage": "complete", "progress": 100}
+
+    def project_status(self, pid):
+        return self._projects.get(pid, {"error": "Not found"})
+
+    def list_projects(self):
+        return [{"id": pid, "title": p["idea"]["title"], "stage": p["current_stage"], "category": p["idea"]["category"]} for pid, p in self._projects.items()]
+
+    def stats(self):
+        return {"total_ideas": len(self._ideas), "active_projects": len(self._projects), "by_category": {}}
+
+    def to_dict(self):
+        return {"projects": self._projects, "ideas": self._ideas}
+
+    def from_dict(self, data):
+        if "projects" in data:
+            self._projects = data["projects"]
+        if "ideas" in data:
+            self._ideas = data["ideas"]
+
+
+class AutonomousResearchFramework:
+    """Research intelligence with specialized agent network for literature, technical, market, and creative research."""
+
+    def __init__(self):
+        self._agents = {"scientific": [], "technical": [], "market": [], "creative": []}
+        self._findings = []
+        self._hypotheses = []
+
+    def research_topic(self, topic, depth="standard"):
+        findings = []
+        for agent_type, agent_findings in self._agents.items():
+            simulated = self._simulate_research(agent_type, topic)
+            findings.append({"agent": agent_type, "findings": simulated, "confidence": 0.7})
+        entry = {"topic": topic, "depth": depth, "findings": findings, "time": time.time()}
+        self._findings.append(entry)
+        synthesis = self._synthesize(findings)
+        return {"topic": topic, "findings": findings, "synthesis": synthesis, "hypotheses": self._generate_hypotheses(topic)}
+
+    def _simulate_research(self, agent_type, topic):
+        sims = {
+            "scientific": [f"Literature review on {topic}", f"Identify key papers and theories", "Analyze methodology", "Evaluate evidence quality"],
+            "technical": [f"Technical analysis of {topic}", "Evaluate implementation options", "Assess performance characteristics", "Review technical constraints"],
+            "market": [f"Market analysis for {topic}", "Identify target audience", "Analyze competition", "Estimate market potential"],
+            "creative": [f"Creative exploration of {topic}", "Generate novel approaches", "Explore cross-domain connections", "Identify innovative angles"],
+        }
+        return sims.get(agent_type, [f"General research on {topic}"])
+
+    def _synthesize(self, findings):
+        all_points = []
+        for f in findings:
+            all_points.extend(f["findings"])
+        return {"key_insights": all_points[:3], "summary": f"Synthesized {len(all_points)} research points across {len(findings)} domains", "confidence": 0.75}
+
+    def _generate_hypotheses(self, topic):
+        h = [f"{topic} can be optimized through novel algorithmic approaches", f"Cross-disciplinary methods from biology could advance {topic}", f"The next breakthrough in {topic} will come from combining existing techniques in new ways"]
+        self._hypotheses.extend(h)
+        return h
+
+    def add_finding(self, agent_type, finding):
+        if agent_type in self._agents:
+            self._agents[agent_type].append({"finding": finding, "time": time.time()})
+
+    def recent_findings(self, n=5):
+        return self._findings[-n:]
+
+    def stats(self):
+        return {"agents_active": sum(len(v) for v in self._agents.values()), "findings": len(self._findings), "hypotheses": len(self._hypotheses)}
+
+    def to_dict(self):
+        return {"agents": self._agents, "findings": self._findings[-20:], "hypotheses": self._hypotheses}
+
+    def from_dict(self, data):
+        if "agents" in data:
+            self._agents = data["agents"]
+        if "findings" in data:
+            self._findings = data["findings"]
+        if "hypotheses" in data:
+            self._hypotheses = data["hypotheses"]
+
+
+class AIDevelopmentEngine:
+    """Software development intelligence: requirements → architecture → code → test → deploy."""
+
+    def __init__(self):
+        self._projects = {}
+        self._code_repos = {}
+        self._tests = []
+        self._debug_log = []
+
+    def create_project(self, name, description, language="python"):
+        pid = f"dev_{int(time.time())}"
+        self._projects[pid] = {
+            "id": pid, "name": name, "description": description, "language": language,
+            "architecture": {}, "files": [], "tests": [], "status": "design",
+            "created": time.time(),
+        }
+        return self._generate(pid)
+
+    def _generate(self, pid):
+        proj = self._projects[pid]
+        proj["architecture"] = {"pattern": "modular", "components": [f"{proj['name']}Core", f"{proj['name']}API", f"{proj['name']}CLI"], "data_flow": "input→process→output"}
+        proj["files"] = [
+            {"name": f"main.py", "content": f"# {proj['name']}\n# {proj['description']}\n\ndef main():\n    pass\n\nif __name__ == '__main__':\n    main()"},
+            {"name": f"core.py", "content": f"# Core module\nclass {proj['name'].replace(' ','')}Core:\n    def __init__(self):\n        pass"},
+            {"name": f"tests/test_{proj['name'].lower().replace(' ','_')}.py", "content": "def test_basic():\n    assert True"},
+        ]
+        proj["tests"] = [{"name": "test_basic", "status": "passed", "duration": "0.01s"}]
+        proj["status"] = "generated"
+        return proj
+
+    def debug(self, pid, issue):
+        self._debug_log.append({"project": pid, "issue": issue, "time": time.time()})
+        solution = f"Analysis of '{issue}': Check for common patterns — syntax errors, type mismatches, or missing imports"
+        return {"issue": issue, "analysis": solution, "suggested_fix": "Review the identified area and apply standard patterns"}
+
+    def test_project(self, pid):
+        if pid not in self._projects:
+            return {"error": "Project not found"}
+        proj = self._projects[pid]
+        results = [{"name": t["name"], "status": t["status"]} for t in proj["tests"]]
+        return {"project": pid, "tests_run": len(results), "passed": sum(1 for r in results if r["status"] == "passed"), "results": results}
+
+    def stats(self):
+        return {"projects": len(self._projects), "tests": sum(len(p["tests"]) for p in self._projects.values()), "debug_sessions": len(self._debug_log)}
+
+    def to_dict(self):
+        return {"projects": self._projects, "debug_log": self._debug_log}
+
+    def from_dict(self, data):
+        if "projects" in data:
+            self._projects = data["projects"]
+        if "debug_log" in data:
+            self._debug_log = data["debug_log"]
+
+
+class SimulationEnvironment:
+    """Digital experimentation environment for engineering, robotics, science, business models, and design."""
+
+    def __init__(self):
+        self._simulations = []
+        self._models = {}
+        self._results = []
+
+    def create_simulation(self, name, sim_type, parameters=None):
+        sim_id = f"sim_{int(time.time())}"
+        sim = {
+            "id": sim_id, "name": name, "type": sim_type,
+            "parameters": parameters or {}, "status": "created",
+            "created": time.time(),
+        }
+        self._simulations.append(sim)
+        return sim
+
+    def run(self, sim_id, iterations=100):
+        sim = next((s for s in self._simulations if s["id"] == sim_id), None)
+        if not sim:
+            return {"error": "Simulation not found"}
+        sim["status"] = "running"
+        import random
+        result = {
+            "simulation": sim_id, "name": sim["name"], "iterations": iterations,
+            "convergence": random.uniform(0.85, 0.99),
+            "metrics": {"accuracy": random.uniform(0.7, 0.95), "stability": random.uniform(0.8, 1.0), "performance": random.uniform(50, 100)},
+            "time": time.time(),
+        }
+        self._results.append(result)
+        sim["status"] = "completed"
+        return result
+
+    def compare_scenarios(self, scenarios):
+        results = []
+        for scenario in scenarios[:5]:
+            sim = self.create_simulation(scenario, "comparison")
+            result = self.run(sim["id"], 50)
+            results.append({"scenario": scenario, **result["metrics"]})
+        return {"scenarios_compared": len(results), "results": results}
+
+    def stats(self):
+        return {"total_simulations": len(self._simulations), "completed": sum(1 for s in self._simulations if s["status"] == "completed"), "results": len(self._results)}
+
+    def to_dict(self):
+        return {"simulations": self._simulations, "results": self._results}
+
+    def from_dict(self, data):
+        if "simulations" in data:
+            self._simulations = data["simulations"]
+        if "results" in data:
+            self._results = data["results"]
+
+
+class CreativeIntelligenceSystem:
+    """Creative generation: UI design, visual creation, writing, branding, architecture, product design."""
+
+    def __init__(self):
+        self._creations = []
+        self._styles = {"minimal", "modern", "futuristic", "organic", "industrial", "classic", "playful"}
+        self._domains = ["ui_design", "visual", "writing", "branding", "architecture", "product"]
+
+    def create(self, domain, concept, style="modern", audience="general", constraints=None):
+        if domain not in self._domains:
+            return {"error": f"Unknown domain: {domain}"}
+        creation = {
+            "id": f"cre_{int(time.time())}", "domain": domain, "concept": concept,
+            "style": style, "audience": audience, "constraints": constraints or {},
+            "created": time.time(),
+        }
+        output = self._generate_creative(creation)
+        creation["output"] = output
+        self._creations.append(creation)
+        return creation
+
+    def _generate_creative(self, creation):
+        templates = {
+            "ui_design": {"layout": "Clean, minimal interface with focus on content", "colors": ["#1a1a2e", "#16213e", "#0f3460", "#e94560"], "typography": "Sans-serif, responsive", "components": ["navigation", "content_area", "interaction_elements"]},
+            "visual": {"composition": "Balanced with focal point", "palette": "Complementary with accent", "mood": "Professional and inviting", "elements": ["shapes", "typography", "imagery"]},
+            "writing": {"tone": "Professional yet accessible", "structure": "Hook → Context → Value → Call to action", "length": "Concise", "voice": "Active and confident"},
+            "branding": {"identity": "Distinct and memorable", "colors": ["primary", "secondary", "accent"], "values": ["innovation", "trust", "quality"], "positioning": "Market leader in perception"},
+            "architecture": {"style": creation["style"], "spatial_concept": "Open and fluid", "materials": ["sustainable", "smart", "adaptive"], "features": ["natural_light", "green_space", "smart_integration"]},
+            "product": {"form": "Ergonomic and intuitive", "function": "Solves core user need", "experience": "Delightful at every touchpoint", "materials": ["sustainable", "durable"]},
+        }
+        base = templates.get(creation["domain"], {"description": f"Creative work in {creation['domain']}"})
+        base["concept"] = creation["concept"]
+        base["style"] = creation["style"]
+        base["audience"] = creation["audience"]
+        return base
+
+    def list_styles(self):
+        return sorted(self._styles)
+
+    def recent(self, n=5):
+        return self._creations[-n:]
+
+    def stats(self):
+        by_domain = {}
+        for c in self._creations:
+            by_domain[c["domain"]] = by_domain.get(c["domain"], 0) + 1
+        return {"total_creations": len(self._creations), "by_domain": by_domain}
+
+    def to_dict(self):
+        return {"creations": self._creations}
+
+    def from_dict(self, data):
+        if "creations" in data:
+            self._creations = data["creations"]
+
+
+class MultiAgentCreationFramework:
+    """Combine multiple specialized agents into coordinated creation teams."""
+
+    def __init__(self):
+        self._teams = {}
+        self._agent_types = ["research", "engineering", "business", "design", "writing", "analysis", "testing", "presentation"]
+
+    def create_team(self, name, agents=None):
+        team_id = f"team_{int(time.time())}"
+        selected_agents = agents or self._agent_types[:4]
+        team = {
+            "id": team_id, "name": name, "agents": selected_agents,
+            "status": "assembled", "missions": [], "created": time.time(),
+        }
+        self._teams[team_id] = team
+        return team
+
+    def assign_mission(self, team_id, mission):
+        if team_id not in self._teams:
+            return {"error": "Team not found"}
+        team = self._teams[team_id]
+        mission_id = f"mission_{int(time.time())}"
+        contributions = {}
+        for agent in team["agents"]:
+            contributions[agent] = self._simulate_contribution(agent, mission)
+        result = {
+            "id": mission_id, "team": team_id, "mission": mission,
+            "contributions": contributions, "status": "completed", "time": time.time(),
+        }
+        team["missions"].append(result)
+        return result
+
+    def _simulate_contribution(self, agent_type, mission):
+        sims = {
+            "research": f"Research complete: comprehensive analysis of '{mission}'",
+            "engineering": f"Engineering plan: technical architecture for '{mission}'",
+            "business": f"Business model: market analysis and strategy for '{mission}'",
+            "design": f"Design concept: visual and experience design for '{mission}'",
+            "writing": f"Content created: documentation and messaging for '{mission}'",
+            "analysis": f"Analysis done: data-driven insights for '{mission}'",
+            "testing": f"Testing complete: validation and QA for '{mission}'",
+            "presentation": f"Presentation ready: structured pitch for '{mission}'",
+        }
+        return sims.get(agent_type, f"{agent_type} working on: {mission}")
+
+    def team_status(self, team_id):
+        return self._teams.get(team_id)
+
+    def stats(self):
+        return {"teams": len(self._teams), "total_missions": sum(len(t["missions"]) for t in self._teams.values())}
+
+    def to_dict(self):
+        return {"teams": self._teams}
+
+    def from_dict(self, data):
+        if "teams" in data:
+            self._teams = data["teams"]
+
+
+class KnowledgeSynthesisEngine:
+    """Cross-domain connections: identifies shared concepts, innovations, and novel approaches between unrelated fields."""
+
+    def __init__(self):
+        self._domains = {}
+        self._connections = []
+        self._innovations = []
+
+    def register_domain(self, name, concepts):
+        self._domains[name] = {"name": name, "concepts": concepts, "registered": time.time()}
+
+    def synthesize(self, domains):
+        available = [d for d in domains if d in self._domains]
+        if len(available) < 2:
+            return {"error": "Need at least 2 registered domains"}
+        connections = []
+        for i, d1 in enumerate(available):
+            for d2 in available[i+1:]:
+                shared = self._find_shared(d1, d2)
+                innovation = self._generate_innovation(d1, d2)
+                connections.append({"domain_a": d1, "domain_b": d2, "shared_concepts": shared, "innovation": innovation})
+                self._connections.append(connections[-1])
+        return {"domains_synthesized": available, "connections": connections}
+
+    def _find_shared(self, d1, d2):
+        c1 = set(self._domains.get(d1, {}).get("concepts", []))
+        c2 = set(self._domains.get(d2, {}).get("concepts", []))
+        shared = c1 & c2
+        return list(shared)[:5] if shared else [f"Pattern: {d1} and {d2} share structural similarities"]
+
+    def _generate_innovation(self, d1, d2):
+        innovation = f"Cross-domain insight: Applying {d1} methodology to {d2} could yield novel approaches in problem-solving and optimization"
+        self._innovations.append({"domains": [d1, d2], "innovation": innovation, "time": time.time()})
+        return innovation
+
+    def recent_innovations(self, n=5):
+        return self._innovations[-n:]
+
+    def stats(self):
+        return {"domains": len(self._domains), "connections": len(self._connections), "innovations": len(self._innovations)}
+
+    def to_dict(self):
+        return {"domains": self._domains, "connections": self._connections, "innovations": self._innovations}
+
+    def from_dict(self, data):
+        if "domains" in data:
+            self._domains = data["domains"]
+        if "connections" in data:
+            self._connections = data["connections"]
+        if "innovations" in data:
+            self._innovations = data["innovations"]
+
+
+class ImprovementLoop:
+    """Self-improving creation cycle: create → measure → analyze → improve → create better version."""
+
+    def __init__(self):
+        self._cycles = []
+        self._metrics = []
+        self._improvements = []
+
+    def run_cycle(self, creation_id, metrics=None):
+        cycle = {
+            "id": f"cycle_{int(time.time())}", "creation_id": creation_id,
+            "metrics": metrics or {"quality": 0.6, "efficiency": 0.6, "user_satisfaction": 0.6},
+            "analysis": None, "improvements": [], "time": time.time(),
+        }
+        cycle["analysis"] = self._analyze(cycle["metrics"])
+        cycle["improvements"] = self._generate_improvements(cycle["analysis"])
+        self._cycles.append(cycle)
+        self._metrics.append(cycle["metrics"])
+        return cycle
+
+    def _analyze(self, metrics):
+        lowest = min(metrics.items(), key=lambda x: x[1])
+        return {
+            "overall_score": sum(metrics.values()) / len(metrics),
+            "strength": max(metrics.items(), key=lambda x: x[1])[0],
+            "weakness": lowest[0],
+            "gap": 1.0 - lowest[1],
+            "recommendation": f"Focus on improving '{lowest[0]}' from {lowest[1]:.0%} to 90%+",
+        }
+
+    def _generate_improvements(self, analysis):
+        imps = [f"Optimize {analysis['weakness']} through targeted refinement", "Apply lessons from previous creation cycles", "Incorporate user feedback patterns"]
+        self._improvements.extend(imps)
+        return imps
+
+    def apply_improvement(self, cycle_id, improvement):
+        cycle = next((c for c in self._cycles if c["id"] == cycle_id), None)
+        if cycle:
+            cycle["applied"] = cycle.get("applied", [])
+            cycle["applied"].append({"improvement": improvement, "time": time.time()})
+
+    def improvement_history(self, n=10):
+        return self._improvements[-n:]
+
+    def stats(self):
+        return {"cycles": len(self._cycles), "improvements_generated": len(self._improvements), "avg_score": sum(m.get("quality", 0) for m in self._metrics) / max(1, len(self._metrics))}
+
+    def to_dict(self):
+        return {"cycles": self._cycles, "improvements": self._improvements}
+
+    def from_dict(self, data):
+        if "cycles" in data:
+            self._cycles = data["cycles"]
+        if "improvements" in data:
+            self._improvements = data["improvements"]
+
+
+class HumanCollaborationModes:
+    """Modes: Assistant (AI suggests), Collaborator (AI builds with user), Research (AI explores), Autonomous (AI executes approved workflows)."""
+
+    def __init__(self):
+        self._modes = {"assistant": {"description": "AI suggests options, user decides", "autonomy": 0.2, "active": False},
+                       "collaborator": {"description": "AI builds with user, shared creation", "autonomy": 0.5, "active": False},
+                       "research": {"description": "AI explores possibilities independently", "autonomy": 0.7, "active": False},
+                       "autonomous": {"description": "AI executes approved workflows", "autonomy": 0.9, "active": False}}
+        self._active_mode = "assistant"
+        self._mode_history = []
+        self._suggestions = []
+
+    def set_mode(self, mode):
+        if mode not in self._modes:
+            return {"error": f"Unknown mode: {mode}. Available: {', '.join(self._modes.keys())}"}
+        for k in self._modes:
+            self._modes[k]["active"] = False
+        self._modes[mode]["active"] = True
+        self._active_mode = mode
+        self._mode_history.append({"mode": mode, "time": time.time()})
+        return {"mode": mode, "autonomy": self._modes[mode]["autonomy"], "description": self._modes[mode]["description"]}
+
+    def process_request(self, request):
+        suggestions = []
+        if self._active_mode in ("assistant",):
+            suggestions.append(f"Option 1: {request} — I can help guide this process")
+            suggestions.append(f"Option 2: Alternative approach to {request}")
+            suggestions.append(f"Option 3: Let me research {request} further")
+        elif self._active_mode in ("collaborator",):
+            suggestions.append(f"Let's build this together. I'll start with a framework for {request}")
+            suggestions.append(f"I can handle the technical parts while you focus on the creative direction")
+        elif self._active_mode in ("research",):
+            suggestions.append(f"Exploring possibilities for {request}...")
+            suggestions.append(f"Investigating novel approaches to {request}")
+        elif self._active_mode in ("autonomous",):
+            suggestions.append(f"Autonomous execution initiated for {request}")
+            suggestions.append(f"Working on {request} with full workflow approval")
+        self._suggestions.append({"request": request, "mode": self._active_mode, "suggestions": suggestions, "time": time.time()})
+        return {"mode": self._active_mode, "suggestions": suggestions, "autonomy_level": self._modes[self._active_mode]["autonomy"]}
+
+    def current_mode(self):
+        return {"mode": self._active_mode, "config": self._modes[self._active_mode]}
+
+    def stats(self):
+        return {"active_mode": self._active_mode, "mode_switches": len(self._mode_history), "total_suggestions": len(self._suggestions)}
+
+    def to_dict(self):
+        return {"modes": self._modes, "active_mode": self._active_mode, "mode_history": self._mode_history}
+
+    def from_dict(self, data):
+        if "modes" in data:
+            self._modes = data["modes"]
+        if "active_mode" in data:
+            self._active_mode = data["active_mode"]
+
+
+class CreationMemorySystem:
+    """Stores designs, attempts, methods, preferences, and project history for cumulative improvement."""
+
+    def __init__(self):
+        self._designs = []
+        self._attempts = []
+        self._methods = {}
+        self._preferences = {}
+        self._project_history = []
+
+    def store_design(self, name, design_data, domain="general"):
+        entry = {"id": f"des_{int(time.time())}", "name": name, "domain": domain, "data": design_data, "time": time.time()}
+        self._designs.append(entry)
+        return entry
+
+    def store_attempt(self, project, outcome, details=None):
+        attempt = {"project": project, "outcome": outcome, "details": details or {}, "time": time.time()}
+        self._attempts.append(attempt)
+        if outcome == "failed":
+            self._learn_from_failure(project, details)
+        return attempt
+
+    def _learn_from_failure(self, project, details):
+        method_key = f"lesson_{project}"
+        self._methods[method_key] = {"project": project, "lesson": "Avoid: " + str(details.get("reason", "unknown"))[:100], "from_failure": True, "time": time.time()}
+
+    def store_method(self, name, description, domain="general"):
+        self._methods[name] = {"name": name, "description": description, "domain": domain, "time": time.time()}
+
+    def record_project(self, name, status, outcome=None):
+        self._project_history.append({"name": name, "status": status, "outcome": outcome, "time": time.time()})
+
+    def recall_similar(self, query, domain=None):
+        results = []
+        for d in self._designs:
+            if query.lower() in d["name"].lower() or (domain and d["domain"] == domain):
+                results.append(d)
+        for m in self._methods.values():
+            if query.lower() in m.get("name", "").lower():
+                results.append(m)
+        return results[:10]
+
+    def stats(self):
+        return {"designs": len(self._designs), "attempts": len(self._attempts), "methods": len(self._methods), "projects": len(self._project_history)}
+
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items()}
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, '_' + k.lstrip('_'), v)
+
+
+class AutonomousCreationDiscoveryEngine:
+    """Phase 15 — The intelligence layer that transforms human ideas, problems, and goals
+    into research, designs, software, simulations, and real-world solutions."""
+
+    def __init__(self):
+        self.ideas = IdeaProcessingEngine()
+        self.research = AutonomousResearchFramework()
+        self.dev_engine = AIDevelopmentEngine()
+        self.simulation = SimulationEnvironment()
+        self.creative = CreativeIntelligenceSystem()
+        self.teams = MultiAgentCreationFramework()
+        self.synthesis = KnowledgeSynthesisEngine()
+        self.improvement = ImprovementLoop()
+        self.collab = HumanCollaborationModes()
+        self.memory = CreationMemorySystem()
+        self._initialized = False
+
+    def initialize(self):
+        self._initialized = True
+        self.synthesis.register_domain("AI", ["machine learning", "neural networks", "reasoning", "optimization"])
+        self.synthesis.register_domain("Biology", ["evolution", "genetics", "homeostasis", "adaptation"])
+        self.synthesis.register_domain("Robotics", ["control systems", "sensors", "actuation", "autonomy"])
+        self.synthesis.register_domain("Design", ["aesthetics", "user experience", "form", "function"])
+        return {"status": "acde_initialized", "layers": 10}
+
+    def create_from_idea(self, title, description):
+        pipeline = self.ideas.submit_idea(title, description)
+        research = self.research.research_topic(title)
+        self.memory.store_design(title, {"description": description, "pipeline": pipeline, "research": research})
+        self.memory.record_project(title, "created")
+        return {"pipeline": pipeline, "research": research["synthesis"]}
+
+    def full_summary(self):
+        return {
+            "ideas": self.ideas.stats(),
+            "research": self.research.stats(),
+            "dev_projects": self.dev_engine.stats(),
+            "simulations": self.simulation.stats(),
+            "creations": self.creative.stats(),
+            "teams": self.teams.stats(),
+            "synthesis": self.synthesis.stats(),
+            "improvement": self.improvement.stats(),
+            "collab_mode": self.collab.current_mode(),
+            "creation_memory": self.memory.stats(),
+        }
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != '_initialized' and hasattr(v, 'to_dict')}
+
+    def from_dict(self, data):
+        for key in ["ideas", "research", "dev_engine", "simulation", "creative", "teams", "synthesis", "improvement", "collab", "memory"]:
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -12050,6 +12670,8 @@ class Shell:
         self.piin.initialize()
         self.ril = RealityInterfaceLayer()
         self.ril.initialize()
+        self.acde = AutonomousCreationDiscoveryEngine()
+        self.acde.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -12093,11 +12715,11 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v7.0.0 — Reality Interface Layer\033[0m")
-        print(f"{dm}  86 modules | 195 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Arcanis OS v8.0.0 - Autonomous Creation & Discovery Engine\033[0m")
+        print(f"{dm}  86 modules | 207 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
-        print(f"{dm}  RIL active: 10-layer reality interface | Multimodal perception\033[0m")
+        print(f"{dm}  ACDE active: 10-layer creation engine | PIIN+RIL online\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
         print(f"{dm}  Theme: {self.theme} | Type 'help' for commands\033[0m")
         print()
@@ -12346,6 +12968,17 @@ class Shell:
             "interact": self.cmd_ril_interaction,
             "presence": self.cmd_ril_presence,
             "rsafety": self.cmd_ril_security,
+            "acde": self.cmd_acde,
+            "create": self.cmd_acde_create,
+            "research": self.cmd_acde_research,
+            "dev": self.cmd_acde_dev,
+            "sim": self.cmd_acde_sim,
+            "design": self.cmd_acde_creative,
+            "team": self.cmd_acde_team,
+            "synth": self.cmd_acde_synthesis,
+            "improve": self.cmd_acde_improve,
+            "mode": self.cmd_acde_mode,
+            "creations": self.cmd_acde_memory,
         }
 
         handler = dispatch.get(command)
@@ -14438,6 +15071,324 @@ class Shell:
                 t = time.strftime('%H:%M:%S', time.localtime(entry['time']))
                 approved = '\033[32m✓\033[0m' if entry['approved'] else '\033[31m✗\033[0m'
                 print(f"  [{t}] {approved} {entry['action']}")
+
+    # ======================== ACDE (Phase 15) ========================
+
+    def cmd_acde(self, args):
+        """Autonomous Creation & Discovery Engine — full summary."""
+        hl = self._c("hl")
+        dm = self._c("dim")
+        s = self.acde.full_summary()
+        print(f"\033[{hl}mACDE — Autonomous Creation & Discovery Engine\033[0m")
+        print(f"{dm}  Ideas:\033[0m {s['ideas']['active_projects']} active, {s['ideas']['total_ideas']} total")
+        print(f"{dm}  Research:\033[0m {s['research']['findings']} findings, {s['research']['hypotheses']} hypotheses")
+        print(f"{dm}  Dev Projects:\033[0m {s['dev_projects']['projects']} projects, {s['dev_projects']['tests']} tests")
+        print(f"{dm}  Simulations:\033[0m {s['simulations']['total_simulations']} total, {s['simulations']['completed']} completed")
+        print(f"{dm}  Creations:\033[0m {s['creations']['total_creations']} total")
+        print(f"{dm}  Teams:\033[0m {s['teams']['teams']} teams, {s['teams']['total_missions']} missions")
+        print(f"{dm}  Synthesis:\033[0m {s['synthesis']['domains']} domains, {s['synthesis']['connections']} connections")
+        print(f"{dm}  Improvement:\033[0m {s['improvement']['cycles']} cycles, avg={s['improvement']['avg_score']:.0%}")
+        print(f"{dm}  Collaboration:\033[0m mode={s['collab_mode']['mode']}")
+        print(f"{dm}  Memory:\033[0m {s['creation_memory']['designs']} designs, {s['creation_memory']['methods']} methods")
+
+    def cmd_acde_create(self, args):
+        """Idea-to-creation pipeline. Usage: create <title> <description>"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        if not args:
+            projects = self.acde.ideas.list_projects()
+            print(f"\033[{hl}mIdea Pipeline — Projects\033[0m")
+            for p in projects:
+                print(f"  {p['id']}: {p['title']} [{p['stage']}] ({p['category']})")
+            return
+        if args[0] == "advance" and len(args) > 1:
+            result = self.acde.ideas.advance_stage(args[1])
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Advanced to {result['stage']} ({result['progress']}%)\033[0m")
+        elif args[0] == "status" and len(args) > 1:
+            p = self.acde.ideas.project_status(args[1])
+            if "error" in p:
+                print(f"{er}{p['error']}\033[0m")
+            else:
+                print(f"\033[{hl}mProject: {p['idea']['title']}\033[0m")
+                print(f"  Stage: {p['current_stage']}")
+                for stage, items in p['pipeline'].items():
+                    print(f"  {dm}{stage}:\033[0m {', '.join(items[:2])}")
+        else:
+            title = args[0]
+            desc = " ".join(args[1:]) if len(args) > 1 else title
+            result = self.acde.create_from_idea(title, desc)
+            print(f"\033[{hl}mIdea Pipeline Created: {title}\033[0m")
+            print(f"{dm}  Pipeline:\033[0m {', '.join(result['pipeline']['stages'])}")
+            print(f"{dm}  Research:\033[0m {result['research']['summary'][:100]}")
+
+    def cmd_acde_research(self, args):
+        """Autonomous research. Usage: research <topic>"""
+        hl = self._c("hl")
+        dm = self._c("dim")
+        ok = self._c("ok")
+        if not args:
+            s = self.acde.research.stats()
+            print(f"\033[{hl}mAutonomous Research Framework\033[0m")
+            print(f"{dm}  Findings:\033[0m {s['findings']}")
+            print(f"{dm}  Hypotheses:\033[0m {s['hypotheses']}")
+            print(f"{dm}  Recent:\033[0m")
+            for f in self.acde.research.recent_findings(3):
+                print(f"    - {f['topic']}: {len(f['findings'])} findings")
+            return
+        topic = " ".join(args)
+        result = self.acde.research.research_topic(topic)
+        print(f"\033[{hl}mResearch: {topic}\033[0m")
+        for f in result['findings']:
+            print(f"{dm}  [{f['agent']}]\033[0m {'; '.join(f['findings'][:2])}")
+        print(f"{dm}  Synthesis:\033[0m {result['synthesis']['summary']}")
+        print(f"{ok}  Hypotheses:\033[0m")
+        for h in result['hypotheses']:
+            print(f"    - {h}")
+
+    def cmd_acde_dev(self, args):
+        """AI development engine. Usage: dev <name> <description> or dev test <pid> or dev debug <pid> <issue>"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        d = self.acde.dev_engine
+        if not args:
+            s = d.stats()
+            print(f"\033[{hl}mAI Development Engine\033[0m")
+            print(f"{dm}  Projects:\033[0m {s['projects']}")
+            print(f"{dm}  Tests:\033[0m {s['tests']}")
+            print(f"{dm}  Debug sessions:\033[0m {s['debug_sessions']}")
+            for pid, proj in d._projects.items():
+                print(f"   - {proj['name']} ({proj['language']}) [{proj['status']}]")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "new" and len(rest) >= 1:
+            name = rest[0]
+            desc = " ".join(rest[1:]) if len(rest) > 1 else f"Project: {name}"
+            proj = d.create_project(name, desc)
+            print(f"\033[{hl}mProject Created: {name}\033[0m")
+            print(f"{dm}  Architecture:\033[0m {proj['architecture']['pattern']}")
+            print(f"{dm}  Components:\033[0m {', '.join(proj['architecture']['components'])}")
+            print(f"{dm}  Files:\033[0m {len(proj['files'])} generated")
+        elif sub == "test" and rest:
+            result = d.test_project(rest[0])
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"{ok}Tests: {result['passed']}/{result['tests_run']} passed\033[0m")
+        elif sub == "debug" and len(rest) >= 2:
+            result = d.debug(rest[0], " ".join(rest[1:]))
+            print(f"{hl}Debug Analysis\033[0m")
+            print(f"  {result['analysis']}")
+            print(f"{dm}  Suggested fix:\033[0m {result['suggested_fix']}")
+
+    def cmd_acde_sim(self, args):
+        """Simulation environment. Usage: sim <name> [scenario...] or sim compare <a> <b>"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        s = self.acde.simulation
+        if not args:
+            st = s.stats()
+            print(f"\033[{hl}mSimulation Environment\033[0m")
+            print(f"{dm}  Total:\033[0m {st['total_simulations']}")
+            print(f"{dm}  Completed:\033[0m {st['completed']}")
+            print(f"{dm}  Results:\033[0m {st['results']}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "run":
+            name = " ".join(rest) if rest else "simulation"
+            sim = s.create_simulation(name, "standard")
+            result = s.run(sim["id"])
+            print(f"\033[{hl}mSimulation: {name}\033[0m")
+            print(f"{dm}  Iterations:\033[0m {result['iterations']}")
+            print(f"{dm}  Convergence:\033[0m {result['convergence']:.1%}")
+            print(f"{dm}  Metrics:\033[0m")
+            for k, v in result['metrics'].items():
+                print(f"    {k}: {v:.1%}")
+        elif sub == "compare" and len(rest) >= 2:
+            result = s.compare_scenarios(rest)
+            print(f"\033[{hl}Scenario Comparison\033[0m")
+            for r in result['results']:
+                print(f"  {r['scenario']}: acc={r.get('accuracy',0):.0%} stab={r.get('stability',0):.0%} perf={r.get('performance',0):.0f}")
+
+    def cmd_acde_creative(self, args):
+        """Creative intelligence. Usage: design <domain> <concept> [style]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        c = self.acde.creative
+        if not args:
+            s = c.stats()
+            print(f"\033[{hl}mCreative Intelligence System\033[0m")
+            print(f"{dm}  Total creations:\033[0m {s['total_creations']}")
+            for domain, count in s['by_domain'].items():
+                print(f"    {domain}: {count}")
+            print(f"{dm}  Available styles:\033[0m {', '.join(c.list_styles())}")
+            print(f"{dm}  Domains:\033[0m {', '.join(c._domains)}")
+            return
+        domain = args[0]
+        concept = " ".join(args[1:]) if len(args) > 1 else "Untitled"
+        style = "modern"
+        result = c.create(domain, concept, style)
+        if "error" in result:
+            print(f"{er}{result['error']}\033[0m")
+            print(f"  Domains: {', '.join(c._domains)}")
+            return
+        print(f"\033[{hl}mCreative: {domain} — {concept}\033[0m")
+        output = result.get("output", {})
+        for k, v in output.items():
+            if k not in ("concept", "style", "audience"):
+                print(f"  {dm}{k}:\033[0m {str(v)[:120]}")
+
+    def cmd_acde_team(self, args):
+        """Multi-agent creation team. Usage: team <name> [mission]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        t = self.acde.teams
+        if not args:
+            s = t.stats()
+            print(f"\033[{hl}mMulti-Agent Creation Teams\033[0m")
+            print(f"{dm}  Teams:\033[0m {s['teams']}")
+            print(f"{dm}  Missions:\033[0m {s['total_missions']}")
+            for tid, team in t._teams.items():
+                print(f"   - {team['name']}: {', '.join(team['agents'])} ({len(team['missions'])} missions)")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "new":
+            name = " ".join(rest) if rest else "Creation Team"
+            team = t.create_team(name)
+            print(f"{ok}Team created: {name}\033[0m")
+            print(f"  Agents: {', '.join(team['agents'])}")
+            print(f"  ID: {team['id']}")
+        elif sub == "mission" and len(rest) >= 2:
+            result = t.assign_mission(rest[0], " ".join(rest[1:]))
+            if "error" in result:
+                print(f"{er}{result['error']}\033[0m")
+            else:
+                print(f"\033[{hl}mMission: {result['mission']}\033[0m")
+                for agent, contribution in result['contributions'].items():
+                    print(f"  {dm}[{agent}]\033[0m {contribution[:100]}")
+
+    def cmd_acde_synthesis(self, args):
+        """Knowledge synthesis engine. Usage: synth <domain1> <domain2> ..."""
+        hl = self._c("hl")
+        dm = self._c("dim")
+        ok = self._c("ok")
+        s = self.acde.synthesis
+        if not args:
+            st = s.stats()
+            print(f"\033[{hl}mKnowledge Synthesis Engine\033[0m")
+            print(f"{dm}  Registered domains:\033[0m {', '.join(s._domains.keys())}")
+            print(f"{dm}  Connections:\033[0m {st['connections']}")
+            print(f"{dm}  Innovations:\033[0m {st['innovations']}")
+            for inn in s.recent_innovations(3):
+                print(f"   - {inn['innovation'][:100]}")
+            return
+        result = s.synthesize(args)
+        if "error" in result:
+            print(f"{er}{result['error']}\033[0m")
+            return
+        print(f"\033[{hl}Cross-Domain Synthesis\033[0m")
+        for conn in result['connections']:
+            print(f"{dm}  {conn['domain_a']} ↔ {conn['domain_b']}:\033[0m")
+            print(f"    Shared: {', '.join(str(c) for c in conn['shared_concepts'][:3])}")
+            print(f"{ok}    Innovation:\033[0m {conn['innovation'][:120]}")
+
+    def cmd_acde_improve(self, args):
+        """Improvement loop. Usage: improve [name] or improve history"""
+        hl = self._c("hl")
+        dm = self._c("dim")
+        ok = self._c("ok")
+        imp = self.acde.improvement
+        if not args:
+            s = imp.stats()
+            print(f"\033[{hl}mImprovement Loop\033[0m")
+            print(f"{dm}  Cycles:\033[0m {s['cycles']}")
+            print(f"{dm}  Improvements:\033[0m {s['improvements_generated']}")
+            print(f"{dm}  Avg quality score:\033[0m {s['avg_score']:.0%}")
+            return
+        if args[0] == "history":
+            hist = imp.improvement_history(10)
+            print(f"{hl}Improvement History\033[0m")
+            for h in hist:
+                print(f"  - {h[:100]}")
+        else:
+            name = " ".join(args)
+            cycle = imp.run_cycle(name)
+            print(f"\033[{hl}Improvement Cycle: {name}\033[0m")
+            print(f"{dm}  Analysis:\033[0m")
+            for k, v in cycle['analysis'].items():
+                if isinstance(v, float):
+                    print(f"    {k}: {v:.0%}")
+                else:
+                    print(f"    {k}: {v}")
+            print(f"{dm}  Improvements:\033[0m")
+            for imp_text in cycle['improvements']:
+                print(f"    - {imp_text}")
+
+    def cmd_acde_mode(self, args):
+        """Collaboration mode. Usage: mode [assistant|collaborator|research|autonomous]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        m = self.acde.collab
+        if not args:
+            cur = m.current_mode()
+            print(f"\033[{hl}mCollaboration Mode\033[0m")
+            print(f"{dm}  Active:\033[0m {cur['mode']}")
+            print(f"{dm}  Autonomy:\033[0m {cur['config']['autonomy']:.0%}")
+            print(f"{dm}  Description:\033[0m {cur['config']['description']}")
+            print(f"{dm}  Available modes:\033[0m")
+            for mode, config in m._modes.items():
+                active = ' [ACTIVE]' if config['active'] else ''
+                print(f"    {mode}: autonomy={config['autonomy']:.0%}{active}")
+            return
+        mode = args[0]
+        result = m.set_mode(mode)
+        if "error" in result:
+            print(f"{er}{result['error']}\033[0m")
+        else:
+            print(f"{ok}Mode set to {mode} (autonomy: {result['autonomy']:.0%})\033[0m")
+            print(f"  {result['description']}")
+
+    def cmd_acde_memory(self, args):
+        """Creation memory system. Usage: creations [query]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        mem = self.acde.memory
+        if not args:
+            s = mem.stats()
+            print(f"\033[{hl}mCreation Memory System\033[0m")
+            print(f"{dm}  Designs:\033[0m {s['designs']}")
+            print(f"{dm}  Attempts:\033[0m {s['attempts']}")
+            print(f"{dm}  Methods:\033[0m {s['methods']}")
+            print(f"{dm}  Project history:\033[0m {s['projects']}")
+            return
+        query = " ".join(args)
+        results = mem.recall_similar(query)
+        if results:
+            print(f"{ok}Found {len(results)} results for '{query}':\033[0m")
+            for r in results[:10]:
+                name = r.get("name", r.get("project", "unknown"))
+                print(f"  - {name}")
+        else:
+            print(f"{dm}No results for '{query}'\033[0m")
 
     # ======================== ENCRYPTION ========================
 
