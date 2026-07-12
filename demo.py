@@ -9007,6 +9007,860 @@ class UniversalIntelligenceCore:
             self.orchestrator._active_missions = data["missions"]
 
 
+# ═══════════════════════════════════════════════════════════════
+# PHASE 13 — ARCANIS PERSONAL INTELLIGENCE IDENTITY NETWORK (PIIN)
+# ═══════════════════════════════════════════════════════════════
+
+class PersonalIntelligenceModel:
+    """Dynamic model of the user's learning patterns, working style, preferences, goals, and knowledge."""
+
+    def __init__(self):
+        self.learning_patterns = {"preferred_modality": "", "pace": "moderate", "depth": "balanced"}
+        self.working_style = {"hours": "flexible", "environment": "quiet", "structure": "balanced"}
+        self.communication_preferences = {"verbosity": "balanced", "formality": "neutral", "format": "text"}
+        self.technical_interests = []
+        self.active_projects = {}
+        self.long_term_goals = []
+        self.knowledge_level = {}
+        self.frequently_used_workflows = []
+        self.decision_patterns = []
+        self._observations = []
+        self._update_count = 0
+
+    def record_observation(self, category, data):
+        self._observations.append({"category": category, "data": data, "time": time.time()})
+        self._update_count += 1
+        self._learn()
+
+    def _learn(self):
+        if len(self._observations) < 5:
+            return
+        recent = self._observations[-20:]
+        topics = [o["data"].get("topic", "") for o in recent if isinstance(o["data"], dict)]
+        if topics:
+            freq = {}
+            for t in topics:
+                if t:
+                    freq[t] = freq.get(t, 0) + 1
+            top = sorted(freq.items(), key=lambda x: -x[1])[:5]
+            for t, c in top:
+                if t not in [i["topic"] for i in self.technical_interests]:
+                    self.technical_interests.append({"topic": t, "count": c, "first_seen": time.time()})
+        depths = [o["data"].get("depth", "") for o in recent if isinstance(o["data"], dict) and "depth" in o["data"]]
+        if depths:
+            self.learning_patterns["depth"] = max(set(depths), key=depths.count)
+
+    def profile(self):
+        return {
+            "learning_patterns": self.learning_patterns,
+            "working_style": self.working_style,
+            "communication_preferences": self.communication_preferences,
+            "technical_interests": self.technical_interests[-10:] if self.technical_interests else [],
+            "active_projects": list(self.active_projects.keys()),
+            "long_term_goals": self.long_term_goals,
+            "knowledge_level": self.knowledge_level,
+            "frequently_used_workflows": self.frequently_used_workflows[-5:],
+            "total_observations": self._update_count,
+        }
+
+    def to_dict(self):
+        return self.__dict__
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, k, v)
+
+
+class MultiLayerMemory:
+    """Four-layer memory architecture: Short-Term, Episodic, Semantic, Procedural."""
+
+    def __init__(self, max_short_term=50):
+        self.short_term = []  # Current tasks and conversations
+        self.episodic = []    # Important events, completed projects, decisions, experiences
+        self.semantic = {}    # Knowledge: concept -> {description, related, source, confidence}
+        self.procedural = []  # How the user works, repeated workflows, automation patterns
+        self._max_st = max_short_term
+
+    def store_short_term(self, entry):
+        self.short_term.append({"content": entry, "time": time.time()})
+        if len(self.short_term) > self._max_st:
+            self.short_term = self.short_term[-self._max_st:]
+
+    def store_episodic(self, event_type, description, details=None):
+        self.episodic.append({
+            "type": event_type,
+            "description": description,
+            "details": details or {},
+            "time": time.time(),
+        })
+
+    def store_semantic(self, concept, description, related=None, source="user", confidence=0.5):
+        self.semantic[concept] = {
+            "description": description,
+            "related": related or [],
+            "source": source,
+            "confidence": min(1.0, confidence),
+            "time": time.time(),
+        }
+
+    def store_procedural(self, name, steps, pattern_type="workflow", frequency=1):
+        existing = [p for p in self.procedural if p["name"] == name]
+        if existing:
+            existing[0]["frequency"] += 1
+            existing[0]["last_used"] = time.time()
+        else:
+            self.procedural.append({
+                "name": name,
+                "steps": steps,
+                "type": pattern_type,
+                "frequency": frequency,
+                "created": time.time(),
+                "last_used": time.time(),
+            })
+
+    def recall_short_term(self, query=None):
+        if query:
+            return [e for e in self.short_term if query.lower() in str(e["content"]).lower()]
+        return self.short_term
+
+    def recall_episodic(self, event_type=None):
+        if event_type:
+            return [e for e in self.episodic if e["type"] == event_type]
+        return self.episodic
+
+    def recall_semantic(self, concept=None):
+        if concept:
+            return {concept: self.semantic[concept]} if concept in self.semantic else {}
+        return self.semantic
+
+    def recall_procedural(self, pattern_type=None):
+        if pattern_type:
+            return [p for p in self.procedural if p["type"] == pattern_type]
+        return self.procedural
+
+    def consolidate(self):
+        st_titles = [e["content"][:60] for e in self.short_term if isinstance(e["content"], str)]
+        if st_titles and len(st_titles) > 3:
+            summary = "; ".join(st_titles[-3:])
+            self.store_episodic("session_summary", f"Session topics: {summary[:200]}")
+            self.short_term = self.short_term[-10:]
+        return {"consolidated": True, "short_term_remaining": len(self.short_term)}
+
+    def stats(self):
+        return {
+            "short_term": len(self.short_term),
+            "episodic": len(self.episodic),
+            "semantic": len(self.semantic),
+            "procedural": len(self.procedural),
+        }
+
+    def to_dict(self):
+        return {"short_term": self.short_term[-20:], "episodic": self.episodic[-50:], "semantic": self.semantic, "procedural": self.procedural}
+
+    def from_dict(self, data):
+        for k in ("short_term", "episodic", "semantic", "procedural"):
+            if k in data:
+                setattr(self, k, data[k])
+
+
+class KnowledgeGraphSystem:
+    """Continuously growing knowledge graph of entities and relationships."""
+
+    def __init__(self):
+        self._entities = {}
+        self._relationships = []
+        self._entity_types = {"user", "topic", "project", "skill", "document", "goal", "agent", "experience"}
+
+    def add_entity(self, eid, etype, name, properties=None):
+        if etype not in self._entity_types:
+            return {"error": f"Unknown entity type: {etype}"}
+        self._entities[eid] = {
+            "id": eid, "type": etype, "name": name,
+            "properties": properties or {},
+            "created": time.time(),
+        }
+        return {"status": "created", "id": eid}
+
+    def add_relationship(self, source_id, target_id, rel_type, properties=None):
+        rel = {
+            "source": source_id, "target": target_id,
+            "type": rel_type, "properties": properties or {},
+            "time": time.time(),
+        }
+        self._relationships.append(rel)
+        return rel
+
+    def connect(self, source_id, target_id, rel_type="related_to"):
+        if source_id not in self._entities or target_id not in self._entities:
+            return {"error": "Entity not found"}
+        return self.add_relationship(source_id, target_id, rel_type)
+
+    def get_entity(self, eid):
+        return self._entities.get(eid)
+
+    def query(self, etype=None, name=None):
+        results = list(self._entities.values())
+        if etype:
+            results = [e for e in results if e["type"] == etype]
+        if name:
+            results = [e for e in results if name.lower() in e["name"].lower()]
+        return results
+
+    def get_relationships(self, eid):
+        return [r for r in self._relationships if r["source"] == eid or r["target"] == eid]
+
+    def get_connected(self, eid, max_depth=2):
+        visited = set()
+        connected = []
+
+        def dfs(current, depth):
+            if current in visited or depth > max_depth:
+                return
+            visited.add(current)
+            if current != eid:
+                connected.append(self._entities.get(current))
+            for r in self._relationships:
+                if r["source"] == current and r["target"] not in visited:
+                    dfs(r["target"], depth + 1)
+                if r["target"] == current and r["source"] not in visited:
+                    dfs(r["source"], depth + 1)
+
+        dfs(eid, 0)
+        return [c for c in connected if c]
+
+    def path(self, source_id, target_id):
+        if source_id not in self._entities or target_id not in self._entities:
+            return []
+        queue = [(source_id, [source_id])]
+        visited = {source_id}
+        while queue:
+            current, path = queue.pop(0)
+            for r in self._relationships:
+                nxt = None
+                if r["source"] == current and r["target"] not in visited:
+                    nxt = r["target"]
+                elif r["target"] == current and r["source"] not in visited:
+                    nxt = r["source"]
+                if nxt:
+                    new_path = path + [nxt]
+                    if nxt == target_id:
+                        return new_path
+                    visited.add(nxt)
+                    queue.append((nxt, new_path))
+        return []
+
+    def stats(self):
+        type_counts = {}
+        for e in self._entities.values():
+            type_counts[e["type"]] = type_counts.get(e["type"], 0) + 1
+        return {"entities": len(self._entities), "relationships": len(self._relationships), "by_type": type_counts}
+
+    def to_dict(self):
+        return {"entities": self._entities, "relationships": self._relationships}
+
+    def from_dict(self, data):
+        if "entities" in data:
+            self._entities = data["entities"]
+        if "relationships" in data:
+            self._relationships = data["relationships"]
+
+
+class GoalIntelligenceEngine:
+    """Goal awareness: current goals, progress, obstacles, required skills, suggested actions."""
+
+    def __init__(self):
+        self._goals = {}
+        self._learning_paths = {}
+
+    def add_goal(self, gid, description, category="personal", priority=5):
+        self._goals[gid] = {
+            "id": gid, "description": description, "category": category, "priority": priority,
+            "progress": 0, "obstacles": [], "required_skills": [], "suggested_actions": [],
+            "created": time.time(), "status": "active",
+        }
+        return self._goals[gid]
+
+    def update_progress(self, gid, progress):
+        if gid in self._goals:
+            self._goals[gid]["progress"] = min(100, max(0, progress))
+            if progress >= 100:
+                self._goals[gid]["status"] = "completed"
+            return self._goals[gid]
+
+    def add_obstacle(self, gid, obstacle):
+        if gid in self._goals:
+            self._goals[gid]["obstacles"].append(obstacle)
+
+    def add_required_skill(self, gid, skill):
+        if gid in self._goals:
+            self._goals[gid]["required_skills"].append(skill)
+
+    def suggest_action(self, gid, action):
+        if gid in self._goals:
+            self._goals[gid]["suggested_actions"].append(action)
+
+    def create_learning_path(self, goal_description, steps=None):
+        path_id = f"lp_{int(time.time())}"
+        default_steps = [
+            "Research fundamentals",
+            "Build foundational knowledge",
+            "Practice with small projects",
+            "Deep dive into advanced topics",
+            "Apply to real-world scenarios",
+            "Review and refine",
+        ]
+        self._learning_paths[path_id] = {
+            "id": path_id, "goal": goal_description,
+            "steps": steps or default_steps,
+            "current_step": 0, "resources": [], "projects": [],
+            "progress": 0, "created": time.time(),
+        }
+        return self._learning_paths[path_id]
+
+    def advance_learning_path(self, path_id):
+        if path_id in self._learning_paths:
+            lp = self._learning_paths[path_id]
+            lp["current_step"] = min(lp["current_step"] + 1, len(lp["steps"]) - 1)
+            lp["progress"] = int((lp["current_step"] / len(lp["steps"])) * 100)
+            return lp
+
+    def add_resource(self, path_id, resource):
+        if path_id in self._learning_paths:
+            self._learning_paths[path_id]["resources"].append(resource)
+
+    def add_project(self, path_id, project):
+        if path_id in self._learning_paths:
+            self._learning_paths[path_id]["projects"].append(project)
+
+    def get_goals(self, status=None):
+        if status:
+            return {k: v for k, v in self._goals.items() if v["status"] == status}
+        return self._goals
+
+    def summary(self):
+        active = [g for g in self._goals.values() if g["status"] == "active"]
+        completed = [g for g in self._goals.values() if g["status"] == "completed"]
+        return {
+            "total_goals": len(self._goals), "active": len(active), "completed": len(completed),
+            "learning_paths": len(self._learning_paths),
+            "avg_progress": sum(g["progress"] for g in self._goals.values()) / max(1, len(self._goals)),
+        }
+
+    def to_dict(self):
+        return {"goals": self._goals, "learning_paths": self._learning_paths}
+
+    def from_dict(self, data):
+        if "goals" in data:
+            self._goals = data["goals"]
+        if "learning_paths" in data:
+            self._learning_paths = data["learning_paths"]
+
+
+class AdaptivePersonalizationEngine:
+    """Learns user preferences and automatically adjusts responses and workflows."""
+
+    def __init__(self):
+        self.preferences = {
+            "detail_level": "balanced", "explanation_style": "conceptual",
+            "prefer_visuals": False, "prefer_examples": True,
+            "communication_speed": "normal", "formatting": "structured",
+            "practical_focus": True, "theory_focus": False,
+        }
+        self._history = []
+        self._adjustments = 0
+
+    def record_preference(self, key, value, context=""):
+        if key in self.preferences:
+            old = self.preferences[key]
+            self.preferences[key] = value
+            self._history.append({
+                "key": key, "from": old, "to": value,
+                "context": context, "time": time.time(),
+            })
+            self._adjustments += 1
+
+    def infer_from_feedback(self, feedback_text, rating):
+        if rating >= 4:
+            return
+        if "too simple" in feedback_text.lower():
+            self.preferences["detail_level"] = "advanced"
+        elif "too complex" in feedback_text.lower():
+            self.preferences["detail_level"] = "beginner"
+        elif "show me" in feedback_text.lower():
+            self.preferences["prefer_examples"] = True
+        elif "explain" in feedback_text.lower():
+            self.preferences["explanation_style"] = "detailed"
+        self._history.append({
+            "type": "inferred", "from_feedback": feedback_text[:100],
+            "preferences": dict(self.preferences), "time": time.time(),
+        })
+
+    def adjust_response(self, response):
+        if self.preferences["detail_level"] == "advanced" and len(response) < 100:
+            return response + "\n[AI: Would you like a deeper technical explanation?]"
+        if self.preferences["prefer_examples"] and "example" not in response.lower():
+            return response + "\n[AI: Shall I provide a concrete example?]"
+        return response
+
+    def profile(self):
+        return {
+            "preferences": self.preferences,
+            "adjustments_made": self._adjustments,
+            "last_changes": self._history[-5:] if self._history else [],
+        }
+
+    def to_dict(self):
+        return {"preferences": self.preferences, "history": self._history}
+
+    def from_dict(self, data):
+        if "preferences" in data:
+            self.preferences = data["preferences"]
+        if "history" in data:
+            self._history = data["history"]
+
+
+class AgentRelationshipSystem:
+    """Agents that understand the user's preferences per domain."""
+
+    def __init__(self):
+        self._agent_profiles = {}
+
+    def register_agent_preferences(self, agent_type, preferences):
+        self._agent_profiles[agent_type] = {
+            "type": agent_type, "preferences": preferences,
+            "learned_patterns": [], "updated": time.time(),
+        }
+        return self._agent_profiles[agent_type]
+
+    def update_preference(self, agent_type, key, value):
+        if agent_type in self._agent_profiles:
+            self._agent_profiles[agent_type]["preferences"][key] = value
+            self._agent_profiles[agent_type]["updated"] = time.time()
+
+    def learn_from_interaction(self, agent_type, interaction_data):
+        if agent_type not in self._agent_profiles:
+            return
+        profile = self._agent_profiles[agent_type]
+        profile["learned_patterns"].append({
+            "data": interaction_data, "time": time.time(),
+        })
+        if len(profile["learned_patterns"]) > 50:
+            profile["learned_patterns"] = profile["learned_patterns"][-50:]
+
+    def get_preferences(self, agent_type):
+        return self._agent_profiles.get(agent_type, {}).get("preferences", {})
+
+    def setup_default_agents(self):
+        defaults = {
+            "coder": {"languages": ["python", "javascript"], "style": "clean", "project_structure": "modular"},
+            "researcher": {"sources": ["arxiv", "github"], "depth": "comprehensive", "format": "summary"},
+            "designer": {"visual_style": "minimal", "color_palette": "dark", "complexity": "balanced"},
+            "analyst": {"detail_level": "high", "visualization": True, "focus": "actionable_insights"},
+            "planner": {"timeframe": "monthly", "granularity": "detailed", "adaptability": "high"},
+        }
+        for atype, prefs in defaults.items():
+            self.register_agent_preferences(atype, prefs)
+
+    def summary(self):
+        return {k: {"preferences": v["preferences"], "patterns": len(v["learned_patterns"])} for k, v in self._agent_profiles.items()}
+
+    def to_dict(self):
+        return {"agent_profiles": self._agent_profiles}
+
+    def from_dict(self, data):
+        if "agent_profiles" in data:
+            self._agent_profiles = data["agent_profiles"]
+
+
+class LifeOSFramework:
+    """Unified framework for managing learning, projects, creativity, research, productivity, automation — connected through intelligence."""
+
+    def __init__(self):
+        self.domains = {
+            "learning": {"active": [], "completed": [], "goals": []},
+            "projects": {"active": [], "completed": [], "archived": []},
+            "creativity": {"ideas": [], "works": [], "inspirations": []},
+            "research": {"topics": [], "findings": [], "papers": []},
+            "productivity": {"systems": [], "metrics": {}, "improvements": []},
+            "automation": {"workflows": [], "triggers": [], "efficiency_gains": []},
+        }
+        self._connections = []
+        self._intelligence_log = []
+
+    def add_entry(self, domain, entry_type, data):
+        if domain not in self.domains:
+            return {"error": f"Unknown domain: {domain}"}
+        if entry_type not in self.domains[domain]:
+            return {"error": f"Unknown type in {domain}: {entry_type}"}
+        entry = {"data": data, "time": time.time()}
+        self.domains[domain][entry_type].append(entry)
+        self._intelligence_log.append({"domain": domain, "entry_type": entry_type, "time": time.time()})
+        return entry
+
+    def connect_domains(self, source_domain, target_domain, description):
+        conn = {
+            "source": source_domain, "target": target_domain,
+            "description": description, "time": time.time(),
+        }
+        self._connections.append(conn)
+        return conn
+
+    def suggest_cross_domain(self):
+        suggestions = []
+        if self.domains["research"]["topics"] and not self.domains["projects"]["active"]:
+            suggestions.append("Research findings available — start a new project to apply them.")
+        if self.domains["learning"]["goals"] and self.domains["creativity"]["ideas"]:
+            suggestions.append("Learning goals and creative ideas overlap — consider a creative learning project.")
+        return suggestions
+
+    def stats(self):
+        return {d: {k: len(v) for k, v in subs.items()} for d, subs in self.domains.items()}
+
+    def to_dict(self):
+        return {"domains": self.domains, "connections": self._connections}
+
+    def from_dict(self, data):
+        if "domains" in data:
+            self.domains = data["domains"]
+        if "connections" in data:
+            self._connections = data["connections"]
+
+
+class AutomationLearningSystem:
+    """Observes repeated actions, detects workflow patterns, and suggests automation."""
+
+    def __init__(self):
+        self._action_log = []
+        self._detected_patterns = []
+        self._suggestions = []
+
+    def observe_action(self, action, context=None):
+        self._action_log.append({
+            "action": action, "context": context or {},
+            "time": time.time(),
+        })
+        if len(self._action_log) > 200:
+            self._action_log = self._action_log[-200:]
+        self._detect()
+
+    def _detect(self):
+        if len(self._action_log) < 3:
+            return
+        recent = self._action_log[-10:]
+        action_names = [a["action"] for a in recent]
+        from collections import Counter
+        freq = Counter(action_names)
+        for action, count in freq.most_common(3):
+            if count >= 3:
+                pattern_name = f"repeated_{action}"
+                existing = [p for p in self._detected_patterns if p["pattern"] == pattern_name]
+                if not existing:
+                    self._detected_patterns.append({
+                        "pattern": pattern_name, "action": action,
+                        "frequency": count, "first_detected": time.time(),
+                        "confidence": min(1.0, count / 5),
+                    })
+                    self._suggestions.append({
+                        "message": f"Create an automatic '{action}' workflow?",
+                        "pattern": pattern_name,
+                        "action": action, "confidence": min(1.0, count / 5),
+                        "time": time.time(),
+                    })
+
+    def analyze_workflow_sequence(self, sequence_name, actions):
+        self._action_log.append({
+            "action": f"workflow:{sequence_name}",
+            "context": {"steps": actions}, "time": time.time(),
+        })
+        existing = [p for p in self._detected_patterns if p["pattern"] == f"workflow_{sequence_name}"]
+        if existing:
+            existing[0]["frequency"] += 1
+        else:
+            self._detected_patterns.append({
+                "pattern": f"workflow_{sequence_name}", "action": sequence_name,
+                "steps": actions, "frequency": 1, "first_detected": time.time(),
+                "confidence": 0.3,
+            })
+
+    def patterns(self):
+        return self._detected_patterns
+
+    def suggestions(self, clear=False):
+        result = self._suggestions
+        if clear:
+            self._suggestions = []
+        return result
+
+    def stats(self):
+        return {"total_actions": len(self._action_log), "patterns_detected": len(self._detected_patterns), "pending_suggestions": len(self._suggestions)}
+
+    def to_dict(self):
+        return {"action_log": self._action_log[-50:], "patterns": self._detected_patterns, "suggestions": self._suggestions}
+
+    def from_dict(self, data):
+        if "action_log" in data:
+            self._action_log = data["action_log"]
+        if "patterns" in data:
+            self._detected_patterns = data["patterns"]
+        if "suggestions" in data:
+            self._suggestions = data["suggestions"]
+
+
+class PersonalDataVault:
+    """Privacy-first, local-first, encrypted personal intelligence storage."""
+
+    def __init__(self, vault_path=None):
+        self._vault_path = vault_path or os.path.join(os.path.expanduser("~"), ".arcanis_vault")
+        self._vault = {}
+        self._encryption_key = None
+        self._access_log = []
+        self._ensure_vault_dir()
+
+    def _ensure_vault_dir(self):
+        try:
+            os.makedirs(self._vault_path, exist_ok=True)
+        except Exception:
+            pass
+
+    def _simple_encrypt(self, data, key):
+        if not key:
+            return data
+        result = []
+        for i, ch in enumerate(str(data)):
+            result.append(chr(ord(ch) ^ ord(key[i % len(key)])))
+        return "".join(result)
+
+    def set_key(self, key):
+        self._encryption_key = key
+
+    def store(self, namespace, key, value, encrypt=False):
+        if namespace not in self._vault:
+            self._vault[namespace] = {}
+        payload = value
+        if encrypt and self._encryption_key:
+            payload = self._simple_encrypt(json.dumps(value), self._encryption_key)
+        self._vault[namespace][key] = {
+            "data": payload, "encrypted": encrypt and bool(self._encryption_key),
+            "time": time.time(),
+        }
+        self._access_log.append({"action": "store", "namespace": namespace, "key": key, "time": time.time()})
+        return {"stored": True, "namespace": namespace, "key": key}
+
+    def retrieve(self, namespace, key):
+        self._access_log.append({"action": "retrieve", "namespace": namespace, "key": key, "time": time.time()})
+        if namespace in self._vault and key in self._vault[namespace]:
+            entry = self._vault[namespace][key]
+            if entry["encrypted"] and self._encryption_key:
+                return json.loads(self._simple_encrypt(entry["data"], self._encryption_key))
+            return entry["data"]
+        return None
+
+    def list_namespace(self, namespace):
+        if namespace in self._vault:
+            return list(self._vault[namespace].keys())
+        return []
+
+    def list_namespaces(self):
+        return list(self._vault.keys())
+
+    def delete(self, namespace, key):
+        if namespace in self._vault and key in self._vault[namespace]:
+            del self._vault[namespace][key]
+            return True
+        return False
+
+    def export_all(self):
+        return {ns: {k: v["data"] for k, v in entries.items()} for ns, entries in self._vault.items()}
+
+    def import_all(self, data):
+        for ns, entries in data.items():
+            if ns not in self._vault:
+                self._vault[ns] = {}
+            for k, v in entries.items():
+                self._vault[ns][k] = {"data": v, "encrypted": False, "time": time.time()}
+
+    def stats(self):
+        total = sum(len(v) for v in self._vault.values())
+        return {"namespaces": len(self._vault), "entries": total, "access_log_entries": len(self._access_log)}
+
+    def to_dict(self):
+        return {"vault": self._vault}
+
+    def from_dict(self, data):
+        if "vault" in data:
+            self._vault = data["vault"]
+
+
+class IntelligenceGrowthTimeline:
+    """Tracks knowledge growth, skill development, project history, and generates a personal intelligence timeline."""
+
+    def __init__(self):
+        self._milestones = []
+        self._knowledge_events = []
+        self._skill_events = []
+        self._project_events = []
+        self._agent_improvements = []
+        self._workflow_improvements = []
+
+    def add_milestone(self, title, description, category="knowledge"):
+        milestone = {
+            "title": title, "description": description, "category": category,
+            "time": time.time(),
+        }
+        self._milestones.append(milestone)
+        return milestone
+
+    def record_knowledge(self, topic, level_before, level_after):
+        self._knowledge_events.append({
+            "topic": topic, "before": level_before, "after": level_after,
+            "gain": level_after - level_before, "time": time.time(),
+        })
+
+    def record_skill(self, skill_name, level_before, level_after):
+        self._skill_events.append({
+            "skill": skill_name, "before": level_before, "after": level_after,
+            "gain": level_after - level_before, "time": time.time(),
+        })
+
+    def record_project(self, name, status, outcome=None):
+        self._project_events.append({
+            "name": name, "status": status, "outcome": outcome,
+            "time": time.time(),
+        })
+
+    def record_agent_improvement(self, agent_type, improvement):
+        self._agent_improvements.append({
+            "agent": agent_type, "improvement": improvement, "time": time.time(),
+        })
+
+    def record_workflow_improvement(self, workflow, efficiency_gain):
+        self._workflow_improvements.append({
+            "workflow": workflow, "efficiency_gain": efficiency_gain, "time": time.time(),
+        })
+
+    def timeline(self, max_entries=50):
+        events = []
+        for m in self._milestones:
+            events.append({"type": "milestone", "time": m["time"], "title": m["title"], "description": m["description"]})
+        for k in self._knowledge_events:
+            events.append({"type": "knowledge", "time": k["time"], "topic": k["topic"], "gain": k["gain"]})
+        for s in self._skill_events:
+            events.append({"type": "skill", "time": s["time"], "skill": s["skill"], "gain": s["gain"]})
+        for p in self._project_events:
+            events.append({"type": "project", "time": p["time"], "name": p["name"], "status": p["status"]})
+        events.sort(key=lambda e: e["time"], reverse=True)
+        return events[:max_entries]
+
+    def growth_summary(self):
+        total_knowledge_gain = sum(e["gain"] for e in self._knowledge_events)
+        total_skill_gain = sum(e["gain"] for e in self._skill_events)
+        return {
+            "milestones": len(self._milestones),
+            "knowledge_events": len(self._knowledge_events),
+            "skill_events": len(self._skill_events),
+            "projects": len(self._project_events),
+            "agent_improvements": len(self._agent_improvements),
+            "workflow_improvements": len(self._workflow_improvements),
+            "total_knowledge_gain": total_knowledge_gain,
+            "total_skill_gain": total_skill_gain,
+        }
+
+    def to_dict(self):
+        return {k: v for k, v in self.__dict__.items()}
+
+    def from_dict(self, data):
+        for k, v in data.items():
+            setattr(self, k, v)
+
+
+class PersonalIntelligenceIdentityNetwork:
+    """Phase 13 — The permanent personal intelligence layer that allows ARCANIS to understand,
+    adapt to, and grow with the user throughout their digital life."""
+
+    def __init__(self):
+        self.model = PersonalIntelligenceModel()
+        self.memory = MultiLayerMemory()
+        self.knowledge_graph = KnowledgeGraphSystem()
+        self.goals = GoalIntelligenceEngine()
+        self.personalization = AdaptivePersonalizationEngine()
+        self.agent_relations = AgentRelationshipSystem()
+        self.life_os = LifeOSFramework()
+        self.automation = AutomationLearningSystem()
+        self.vault = PersonalDataVault()
+        self.growth = IntelligenceGrowthTimeline()
+        self._initialized = False
+        self._session_start = time.time()
+
+    def initialize(self):
+        self.agent_relations.setup_default_agents()
+        self.knowledge_graph.add_entity("user", "user", "ARCANIS User", {"type": "human"})
+        self._initialized = True
+        self.growth.add_milestone("PIIN Initialized", "Personal Intelligence Identity Network activated", "system")
+        return {"status": "piin_initialized", "layers": 10}
+
+    def observe_interaction(self, action, context=None):
+        self.automation.observe_action(action, context)
+        self.model.record_observation("action", {"action": action, **(context or {})})
+        self.memory.store_short_term(f"{action}: {json.dumps(context)[:100] if context else ''}")
+
+    def learn_from_feedback(self, feedback, rating):
+        self.personalization.infer_from_feedback(feedback, rating)
+        self.memory.store_episodic("feedback", f"Rating {rating}: {feedback[:200]}")
+
+    def suggest_automations(self):
+        return self.automation.suggestions()
+
+    def user_profile(self):
+        return self.model.profile()
+
+    def memory_stats(self):
+        return self.memory.stats()
+
+    def knowledge_stats(self):
+        return self.knowledge_graph.stats()
+
+    def goal_summary(self):
+        return self.goals.summary()
+
+    def timeline(self):
+        return self.growth.timeline()
+
+    def full_summary(self):
+        return {
+            "initialized": self._initialized,
+            "session_duration": time.time() - self._session_start,
+            "model": {k: v for k, v in self.model.profile().items() if k != "learning_patterns"},
+            "memory": self.memory.stats(),
+            "knowledge_graph": self.knowledge_graph.stats(),
+            "goals": self.goals.summary(),
+            "personalization": self.personalization.profile()["preferences"],
+            "agent_relations": {k: list(v["preferences"].keys()) for k, v in self.agent_relations.summary().items()},
+            "life_os": self.life_os.stats(),
+            "automation": self.automation.stats(),
+            "vault": self.vault.stats(),
+            "growth": self.growth.growth_summary(),
+        }
+
+    def to_dict(self):
+        return {
+            "model": self.model.to_dict(),
+            "memory": self.memory.to_dict(),
+            "knowledge_graph": self.knowledge_graph.to_dict(),
+            "goals": self.goals.to_dict(),
+            "personalization": self.personalization.to_dict(),
+            "agent_relations": self.agent_relations.to_dict(),
+            "life_os": self.life_os.to_dict(),
+            "automation": self.automation.to_dict(),
+            "vault": self.vault.to_dict(),
+            "growth": self.growth.to_dict(),
+        }
+
+    def from_dict(self, data):
+        for key in ("model", "memory", "knowledge_graph", "goals", "personalization", "agent_relations", "life_os", "automation", "vault", "growth"):
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -10400,6 +11254,8 @@ class Shell:
             agent = self.ecosystem.agent_market.spawn(agent_type)
             if agent:
                 self.uif.orchestrator.register_agent(agent)
+        self.piin = PersonalIntelligenceIdentityNetwork()
+        self.piin.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -10443,9 +11299,10 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v5.0.0 — Universal Intelligence Fabric\033[0m")
-        print(f"{dm}  86 modules | 173 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Arcanis OS v6.0.0 — Personal Intelligence Identity Network\033[0m")
+        print(f"{dm}  86 modules | 183 commands | ~/.arcanis/ on disk\033[0m")
         print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
+        print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
         print(f"{dm}  Theme: {self.theme} | Type 'help' for commands\033[0m")
         print()
@@ -10673,6 +11530,16 @@ class Shell:
             "skills": self.cmd_skills,
             "identity": self.cmd_identity,
             "api": self.cmd_api_uif,
+            "piin": self.cmd_piin,
+            "profile": self.cmd_piin_profile,
+            "mem": self.cmd_piin_memory,
+            "know": self.cmd_piin_knowledge,
+            "goal": self.cmd_piin_goal,
+            "prefs": self.cmd_piin_prefs,
+            "agents-learn": self.cmd_piin_agents_learn,
+            "life": self.cmd_piin_life,
+            "vault": self.cmd_piin_vault,
+            "timeline": self.cmd_piin_timeline,
         }
 
         handler = dispatch.get(command)
@@ -12031,6 +12898,360 @@ class Shell:
                         print(f"    {sk}: {str(sv)[:60]}")
                 else:
                     print(f"  {k}: {str(v)[:60]}")
+
+    # ======================== PIIN (Phase 13) ========================
+
+    def cmd_piin(self, args):
+        """Personal Intelligence Identity Network — view full summary."""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        s = self.piin.full_summary()
+        print(f"\033[{hl}mPIIN — Personal Intelligence Identity Network\033[0m")
+        print(f"{dm}  Session Duration:\033[0m {s['session_duration']:.0f}s")
+        print(f"{dm}  Model Observations:\033[0m {s['model']['total_observations']}")
+        print(f"{dm}  Memory:\033[0m ST={s['memory']['short_term']} EP={s['memory']['episodic']} SM={s['memory']['semantic']} PR={s['memory']['procedural']}")
+        print(f"{dm}  Knowledge Graph:\033[0m {s['knowledge_graph']['entities']} entities, {s['knowledge_graph']['relationships']} rels")
+        print(f"{dm}  Goals:\033[0m {s['goals']['active']} active / {s['goals']['completed']} completed")
+        print(f"{dm}  Personalization:\033[0m {s['personalization']}")
+        print(f"{dm}  Agent Relations:\033[0m {len(s['agent_relations'])} agents")
+        life = s['life_os']
+        print(f"{dm}  Life OS:\033[0m " + " | ".join(f"{d}={c}" for d, c in life.items()))
+        print(f"{dm}  Automation:\033[0m {s['automation']['patterns_detected']} patterns, {s['automation']['pending_suggestions']} suggestions")
+        print(f"{dm}  Vault:\033[0m {s['vault']['namespaces']} namespaces, {s['vault']['entries']} entries")
+        print(f"{dm}  Growth:\033[0m {s['growth']['milestones']} milestones | KG={s['growth']['total_knowledge_gain']} SG={s['growth']['total_skill_gain']}")
+
+    def cmd_piin_profile(self, args):
+        """Show the personal intelligence model profile."""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        p = self.piin.user_profile()
+        print(f"\033[{hl}mPersonal Intelligence Model\033[0m")
+        print(f"{dm}  Learning:\033[0m modality={p['learning_patterns'].get('preferred_modality','')} pace={p['learning_patterns']['pace']} depth={p['learning_patterns']['depth']}")
+        print(f"{dm}  Working Style:\033[0m {p['working_style']}")
+        print(f"{dm}  Communication:\033[0m {p['communication_preferences']}")
+        print(f"{dm}  Technical Interests:\033[0m")
+        for i in p['technical_interests'][:5]:
+            print(f"    - {i['topic']} (x{i['count']})")
+        print(f"{dm}  Active Projects:\033[0m {', '.join(p['active_projects'][:5]) or 'none'}")
+        print(f"{dm}  Long-term Goals:\033[0m")
+        for g in p['long_term_goals'][:3]:
+            print(f"    - {g}")
+        print(f"{dm}  Knowledge Level:\033[0m {p['knowledge_level']}")
+        print(f"{dm}  Workflows:\033[0m {len(p['frequently_used_workflows'])} patterns")
+        print(f"{dm}  Total Observations:\033[0m {p['total_observations']}")
+
+    def cmd_piin_memory(self, args):
+        """Access multi-layer memory. Usage: mem <layer> [query]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        if not args:
+            s = self.piin.memory_stats()
+            print(f"{dm}Memory Layers:\033[0m")
+            print(f"  Short-Term: {s['short_term']} entries")
+            print(f"  Episodic:   {s['episodic']} entries")
+            print(f"  Semantic:   {s['semantic']} concepts")
+            print(f"  Procedural: {s['procedural']} patterns")
+            return
+        layer = args[0].lower()
+        query = " ".join(args[1:]) if len(args) > 1 else None
+        if layer in ("st", "short"):
+            results = self.piin.memory.recall_short_term(query)
+            print(f"{dm}Short-Term Memory ({len(results)}):\033[0m")
+            for r in results[-10:]:
+                print(f"  [{time.strftime('%H:%M', time.localtime(r['time']))}] {str(r['content'])[:80]}")
+        elif layer in ("ep", "episodic"):
+            results = self.piin.memory.recall_episodic(query)
+            print(f"{dm}Episodic Memory ({len(results)}):\033[0m")
+            for r in results[-10:]:
+                print(f"  [{r['type']}] {r['description'][:80]}")
+        elif layer in ("sm", "semantic"):
+            results = self.piin.memory.recall_semantic(query)
+            print(f"{dm}Semantic Memory ({len(results)} concepts):\033[0m")
+            for k, v in list(results.items())[:10]:
+                print(f"  {k}: {v['description'][:60]} (conf={v['confidence']:.2f})")
+        elif layer in ("pr", "procedural"):
+            results = self.piin.memory.recall_procedural(query)
+            print(f"{dm}Procedural Memory ({len(results)} patterns):\033[0m")
+            for r in results[-10:]:
+                print(f"  {r['name']} (x{r['frequency']}) - {', '.join(map(str, r['steps'][:3]))}")
+        elif layer == "consolidate":
+            result = self.piin.memory.consolidate()
+            print(f"{ok}Memory consolidated: {result['short_term_remaining']} short-term entries remaining\033[0m")
+        else:
+            print(f"{er}Unknown layer: {layer}\033[0m")
+            print("  Layers: st (short-term), ep (episodic), sm (semantic), pr (procedural), consolidate")
+
+    def cmd_piin_knowledge(self, args):
+        """Knowledge graph operations. Usage: know <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        kg = self.piin.knowledge_graph
+        if not args:
+            s = kg.stats()
+            print(f"\033[{hl}mKnowledge Graph\033[0m")
+            print(f"  {s['entities']} entities, {s['relationships']} relationships")
+            for etype, count in s['by_type'].items():
+                print(f"    {etype}: {count}")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "add":
+            if len(rest) < 3:
+                print(f"{er}Usage: know add <id> <type> <name>\033[0m")
+                return
+            result = kg.add_entity(rest[0], rest[1], " ".join(rest[2:]))
+            print(f"{ok}{result}\033[0m")
+        elif sub == "connect":
+            if len(rest) < 2:
+                print(f"{er}Usage: know connect <id1> <id2> [rel_type]\033[0m")
+                return
+            rel = rest[2] if len(rest) > 2 else "related_to"
+            result = kg.connect(rest[0], rest[1], rel)
+            print(f"{ok}Connected: {rest[0]} --{rel}--> {rest[1]}\033[0m")
+        elif sub == "query":
+            q = " ".join(rest)
+            results = kg.query(name=q) if q else kg.query()
+            print(f"{dm}Entities ({len(results)}):\033[0m")
+            for e in results[:15]:
+                print(f"  [{e['type']}] {e['id']}: {e['name']}")
+        elif sub == "path":
+            if len(rest) < 2:
+                print(f"{er}Usage: know path <id1> <id2>\033[0m")
+                return
+            path = kg.path(rest[0], rest[1])
+            if path:
+                print(f"{ok}Path:\033[0m " + " -> ".join(kg.get_entity(e)["name"] if kg.get_entity(e) else e for e in path))
+            else:
+                print(f"{er}No path found\033[0m")
+        elif sub == "graph":
+            print(f"{dm}Full Knowledge Graph:\033[0m")
+            for eid, ent in kg._entities.items():
+                rels = kg.get_relationships(eid)
+                if rels:
+                    for r in rels[:3]:
+                        target = kg.get_entity(r['target']) if r['source'] == eid else kg.get_entity(r['source'])
+                        tname = target['name'] if target else '?'
+                        print(f"  {ent['name']} --{r['type']}--> {tname}")
+                else:
+                    print(f"  {ent['name']} (isolated)")
+
+    def cmd_piin_goal(self, args):
+        """Goal intelligence engine. Usage: goal <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        g = self.piin.goals
+        if not args:
+            s = g.summary()
+            print(f"\033[{hl}mGoal Intelligence\033[0m")
+            print(f"  Total: {s['total_goals']} | Active: {s['active']} | Completed: {s['completed']}")
+            print(f"  Learning Paths: {s['learning_paths']} | Avg Progress: {s['avg_progress']:.0f}%")
+            goals = g.get_goals()
+            if goals:
+                print(f"{dm}Goals:\033[0m")
+                for gid, info in goals.items():
+                    print(f"  [{info['status']}] {info['description']} ({info['progress']}%)")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "add":
+            desc = " ".join(rest)
+            if not desc:
+                print(f"{er}Usage: goal add <description>\033[0m")
+                return
+            gid = f"g_{int(time.time())}"
+            result = g.add_goal(gid, desc)
+            print(f"{ok}Goal created: {gid} - '{desc}'\033[0m")
+        elif sub == "progress":
+            if len(rest) < 2:
+                print(f"{er}Usage: goal progress <gid> <0-100>\033[0m")
+                return
+            g.update_progress(rest[0], int(rest[1]))
+            print(f"{ok}Progress updated for {rest[0]}: {rest[1]}%\033[0m")
+        elif sub == "path":
+            desc = " ".join(rest)
+            if not desc:
+                print(f"{er}Usage: goal path <goal description>\033[0m")
+                return
+            lp = g.create_learning_path(desc)
+            print(f"{ok}Learning path created: {lp['id']}\033[0m")
+            for i, step in enumerate(lp['steps']):
+                print(f"  {i+1}. {step}")
+        elif sub == "advance":
+            if not rest:
+                print(f"{er}Usage: goal advance <path_id>\033[0m")
+                return
+            result = g.advance_learning_path(rest[0])
+            if result:
+                print(f"{ok}Advanced to step {result['current_step']+1}/{len(result['steps'])} ({result['progress']}%)\033[0m")
+            else:
+                print(f"{er}Path not found\033[0m")
+        elif sub == "obstacle":
+            if len(rest) < 2:
+                print(f"{er}Usage: goal obstacle <gid> <description>\033[0m")
+                return
+            g.add_obstacle(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Obstacle added to {rest[0]}\033[0m")
+
+    def cmd_piin_prefs(self, args):
+        """Adaptive personalization. Usage: prefs [set <key> <value>]"""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        p = self.piin.personalization
+        if not args:
+            prof = p.profile()
+            print(f"\033[{hl}mAdaptive Personalization\033[0m")
+            print(f"{dm}  Preferences:\033[0m")
+            for k, v in prof['preferences'].items():
+                print(f"    {k}: {v}")
+            print(f"{dm}  Adjustments made:\033[0m {prof['adjustments_made']}")
+            if prof['last_changes']:
+                print(f"{dm}  Recent changes:\033[0m")
+                for c in prof['last_changes']:
+                    print(f"    {c.get('key','?')}: {c.get('from','?')} -> {c.get('to','?')}")
+            return
+        if args[0] == "set" and len(args) >= 3:
+            p.record_preference(args[1], " ".join(args[2:]))
+            print(f"{ok}Preference updated: {args[1]} = {' '.join(args[2:])}\033[0m")
+
+    def cmd_piin_agents_learn(self, args):
+        """Agent relationship system. Usage: agents-learn [agent_type]"""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        ar = self.piin.agent_relations
+        if not args:
+            s = ar.summary()
+            print(f"\033[{hl}mAgent Relationship System\033[0m")
+            for atype, info in s.items():
+                print(f"{dm}  {atype}:\033[0m")
+                for k, v in info['preferences'].items():
+                    print(f"    {k}: {v}")
+                print(f"    patterns learned: {info['patterns']}")
+            return
+        atype = args[0]
+        if atype in ar._agent_profiles:
+            prefs = ar.get_preferences(atype)
+            print(f"{hl}{atype} agent preferences:\033[0m")
+            for k, v in prefs.items():
+                print(f"  {k}: {v}")
+            if len(args) > 2 and args[1] == "set":
+                ar.update_preference(atype, args[2], " ".join(args[3:]))
+                print(f"{ok}Updated\033[0m")
+        else:
+            print(f"{er}Unknown agent type: {atype}\033[0m")
+
+    def cmd_piin_life(self, args):
+        """Life OS framework. Usage: life [domain [type data...]]"""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        lo = self.piin.life_os
+        if not args:
+            s = lo.stats()
+            print(f"\033[{hl}mLife OS Framework\033[0m")
+            for domain, counts in s.items():
+                active = ", ".join(f"{k}={v}" for k, v in counts.items())
+                print(f"  {domain}: {active}")
+            cross = lo.suggest_cross_domain()
+            if cross:
+                print(f"{dm}Cross-domain suggestions:\033[0m")
+                for c in cross:
+                    print(f"  * {c}")
+            return
+        if len(args) >= 2:
+            rest = args[2:]
+            entry = lo.add_entry(args[0], args[1], " ".join(rest) if rest else {})
+            if "error" in entry:
+                print(f"{er}{entry['error']}\033[0m")
+            else:
+                print(f"{ok}Added to {args[0]}/{args[1]}\033[0m")
+
+    def cmd_piin_vault(self, args):
+        """Personal data vault. Usage: vault <sub> [args]"""
+        er = self._c("err")
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        v = self.piin.vault
+        if not args:
+            s = v.stats()
+            print(f"\033[{hl}mPersonal Data Vault\033[0m")
+            print(f"  Namespaces: {s['namespaces']}, Entries: {s['entries']}")
+            for ns in v.list_namespaces():
+                print(f"  {ns}: {len(v.list_namespace(ns))} keys")
+            print(f"{dm}Commands: vault store <ns> <key> <data>, vault get <ns> <key>, vault list <ns>, vault export\033[0m")
+            return
+        sub = args[0]
+        rest = args[1:] if len(args) > 1 else []
+        if sub == "store":
+            if len(rest) < 3:
+                print(f"{er}Usage: vault store <namespace> <key> <data>\033[0m")
+                return
+            result = v.store(rest[0], rest[1], " ".join(rest[2:]))
+            print(f"{ok}Stored in {rest[0]}/{rest[1]}\033[0m")
+        elif sub == "get":
+            if len(rest) < 2:
+                print(f"{er}Usage: vault get <namespace> <key>\033[0m")
+                return
+            data = v.retrieve(rest[0], rest[1])
+            if data is not None:
+                print(f"{dm}{rest[0]}/{rest[1]}:\033[0m {str(data)[:200]}")
+            else:
+                print(f"{er}Not found\033[0m")
+        elif sub == "list":
+            ns = rest[0] if rest else None
+            if ns:
+                keys = v.list_namespace(ns)
+                print(f"{dm}{ns} keys ({len(keys)}):\033[0m")
+                for k in keys:
+                    print(f"  - {k}")
+            else:
+                print(f"{dm}Namespaces:\033[0m")
+                for ns in v.list_namespaces():
+                    print(f"  - {ns}")
+        elif sub == "export":
+            data = v.export_all()
+            print(json.dumps(data, indent=2)[:1000])
+        elif sub == "key":
+            v.set_key(" ".join(rest))
+            print(f"{ok}Encryption key set\033[0m")
+
+    def cmd_piin_timeline(self, args):
+        """Intelligence growth timeline. Usage: timeline [events]"""
+        ok = self._c("ok")
+        dm = self._c("dim")
+        hl = self._c("hl")
+        g = self.piin.growth
+        if args and args[0] == "events":
+            tl = g.timeline(30)
+            print(f"\033[{hl}mIntelligence Timeline\033[0m")
+            for e in tl:
+                t = time.strftime('%Y-%m-%d %H:%M', time.localtime(e['time']))
+                if e['type'] == 'milestone':
+                    print(f"  [{t}] \033[1;36m{e['title']}\033[0m: {e['description'][:60]}")
+                elif e['type'] == 'knowledge':
+                    print(f"  [{t}] \033[32mKnowledge\033[0m: {e['topic']} (+{e['gain']})")
+                elif e['type'] == 'skill':
+                    print(f"  [{t}] \033[33mSkill\033[0m: {e['skill']} (+{e['gain']})")
+                elif e['type'] == 'project':
+                    print(f"  [{t}] \033[35mProject\033[0m: {e['name']} ({e['status']})")
+        else:
+            s = g.growth_summary()
+            print(f"\033[{hl}mIntelligence Growth Summary\033[0m")
+            print(f"  Milestones:          {s['milestones']}")
+            print(f"  Knowledge Events:    {s['knowledge_events']} (total gain: {s['total_knowledge_gain']})")
+            print(f"  Skill Events:        {s['skill_events']} (total gain: {s['total_skill_gain']})")
+            print(f"  Projects:            {s['projects']}")
+            print(f"  Agent Improvements:  {s['agent_improvements']}")
+            print(f"  Workflow Improvements: {s['workflow_improvements']}")
 
     # ======================== ENCRYPTION ========================
 
