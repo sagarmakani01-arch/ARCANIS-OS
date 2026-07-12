@@ -3959,21 +3959,25 @@ print "sum(0..9) = " + sum;
 # Agents, knowledge, creation, and collaboration around your mission.
 
 class ArcDesktop:
-    """ARCANIS Mission Space — AI-native OS. Agents collaborate around your intent."""
+    """ARCANIS Creation Engine — The Universal Creation Platform.
+    Phase 8: From operating systems that launch applications
+    to operating systems that create realities."""
 
-    BG = "#08080d"
-    BG2 = "#0c0c14"
-    FG = "#c0c0d0"
-    FG2 = "#8888aa"
-    FG3 = "#606080"
-    ACCENT = "#5a7acc"
-    ACCENT_GREEN = "#44b87a"
-    ACCENT_AMBER = "#c0a040"
-    FONT_SM = ("Segoe UI", 9)
-    FONT_MD = ("Segoe UI", 13)
-    FONT_LG = ("Segoe UI", 28)
-    FONT_XL = ("Segoe UI", 48)
-    FONT_MONO = ("Consolas", 10)
+    BG = "#0d1117"
+    BG2 = "#161b22"
+    FG = "#c9d1d9"
+    FG2 = "#8b949e"
+    FG3 = "#484f58"
+    ACCENT = "#58a6ff"
+    ACCENT2 = "#3fb950"
+    ACCENT3 = "#d29922"
+    SURFACE = "#21262d"
+    BORDER = "#30363d"
+
+    PIPELINE_STAGES = [
+        "Understand", "Research", "Plan", "Prototype",
+        "Build", "Test", "Improve", "Deploy",
+    ]
 
     def __init__(self, digital_twin=None):
         self.root = None
@@ -3983,9 +3987,10 @@ class ArcDesktop:
         self.knowledge_nodes = []
         self.timeline_entries = []
         self.active_agent = None
-        self._mode = "home"
+        self._phase = "prompt"
+        self._pipeline_index = 0
+        self._project_history = []
         self._conversation = []
-        self._conversation_lines = []
         self.twin = digital_twin or DigitalTwinMind()
         self.living = LivingSoftwareEngine()
         self.reality = RealityLayer()
@@ -3993,8 +3998,7 @@ class ArcDesktop:
         self.evolution = SelfEvolvingIntelligence()
         self._permissions_granted = False
         self._permissions_showing = False
-        self._ai_active = False
-    
+
     def available(self):
         return _HAVE_TK
 
@@ -4003,7 +4007,7 @@ class ArcDesktop:
             print("\033[31mArcDesktop requires Tkinter\033[0m")
             return
         self.root = tk.Tk()
-        self.root.title("ARCANIS")
+        self.root.title("ARCANIS Creation Engine")
         self.root.attributes("-fullscreen", True)
         self.root.configure(bg=self.BG)
         self.root.bind("<Escape>", lambda e: self._shutdown())
@@ -4011,8 +4015,7 @@ class ArcDesktop:
         self.canvas = tk.Canvas(self.root, bg=self.BG, highlightthickness=0)
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
-        self._render_first_screen()
-        self._animate_ambient()
+        self._render_prompt()
         self._tick()
         self.root.mainloop()
 
@@ -4020,91 +4023,268 @@ class ArcDesktop:
         return text if len(text) <= n else text[:n-3] + "..."
 
     # ================================================================
-    # WELCOME SCREEN
+    # PHASE 1 — PROMPT: "What do you want to create?"
     # ================================================================
 
-    def _render_first_screen(self):
+    def _render_prompt(self):
         self.canvas.delete("all")
-        self._mode = "home"
-        self._ai_active = False
+        w = self.root.winfo_screenwidth()
+        h = self.root.winfo_screenheight()
+        cx, cy = w // 2, h // 2
+
+        self.canvas.create_rectangle(0, 0, w, h, fill=self.BG, outline="", tags="bg")
+
+        # Top-left branding
+        self.canvas.create_rectangle(24, 24, 56, 56, fill=self.ACCENT, outline="", tags="logo")
+        self.canvas.create_text(40, 40, text="A", fill="#fff",
+                                font=("Segoe UI", 18, "bold"), tags="logo")
+        self.canvas.create_text(64, 32, text="ARCANIS", fill=self.FG,
+                                font=("Segoe UI", 12, "bold"), anchor="w", tags="brand")
+        self.canvas.create_text(64, 50, text="Creation Engine", fill=self.FG3,
+                                font=("Segoe UI", 9), anchor="w", tags="brand")
+
+        # Center prompt
+        self.canvas.create_text(cx, cy - 60, text="What do you want to create?",
+                                fill=self.FG, font=("Segoe UI", 28), tags="prompt_text")
+        self.canvas.create_text(cx, cy - 24, text="Describe your idea. ARCANIS will generate the workspace, agents, and plan.",
+                                fill=self.FG2, font=("Segoe UI", 11), tags="prompt_hint")
+
+        # Input
+        input_y = cy + 20
+        iw = int(w * 0.4)
+        self.canvas.create_rectangle(cx - iw//2, input_y - 20, cx + iw//2, input_y + 20,
+                                     fill=self.BG2, outline=self.BORDER, tags="input_box")
+        self.idea_entry = tk.Entry(self.root, bg=self.BG2, fg=self.FG,
+                                   font=("Segoe UI", 14), insertbackground=self.ACCENT,
+                                   relief=tk.FLAT, bd=0, highlightthickness=0, width=40,
+                                   justify="center")
+        self.idea_entry.place(x=cx - iw//2 + 4, y=input_y - 16, width=iw - 8, height=32)
+        self.idea_entry.insert(0, "")
+        self.idea_entry.bind("<Return>", self._process_idea)
+        self.idea_entry.focus()
+
+        # Examples
+        examples = [
+            "Create a multiplayer strategy game",
+            "Design a robotics control system",
+            "Build a movie recommendation engine",
+            "Plan an architectural project",
+        ]
+        for ei, ex in enumerate(examples):
+            ey = input_y + 50 + ei * 28
+            self.canvas.create_text(cx, ey, text=ex, fill=self.FG3,
+                                    font=("Segoe UI", 9), tags=f"example_{ei}")
+
+    def _process_idea(self, event=None):
+        idea = self.idea_entry.get().strip()
+        if not idea:
+            return
+        self.mission = idea
+        if not self._permissions_granted:
+            self._show_permissions()
+            return
+        self._generate_creation()
+
+    # ================================================================
+    # PHASE 2 — GENERATION: Workspace + Agents + Pipeline
+    # ================================================================
+
+    def _generate_creation(self):
+        self._phase = "generating"
+        self.idea_entry.place_forget()
+        self.twin.remember_mission(self.mission)
+        self.twin.context.track_action("creation_start", self.mission)
+
+        # Detect creation type
+        ml = self.mission.lower()
+        if any(w in ml for w in ["game", "play", "multiplayer"]):
+            ctype = "game"
+        elif any(w in ml for w in ["robot", "hardware", "drone", "mechanical"]):
+            ctype = "robotics"
+        elif any(w in ml for w in ["app", "software", "program", "web"]):
+            ctype = "software"
+        elif any(w in ml for w in ["movie", "film", "video", "media"]):
+            ctype = "media"
+        elif any(w in ml for w in ["architecture", "building", "house", "space"]):
+            ctype = "architecture"
+        elif any(w in ml for w in ["research", "science", "study", "learn"]):
+            ctype = "research"
+        elif any(w in ml for w in ["business", "plan", "startup"]):
+            ctype = "business"
+        elif any(w in ml for w in ["music", "sound", "audio"]):
+            ctype = "music"
+        else:
+            ctype = "software"
+
+        # Generate specialist agents based on type
+        self.civilization = AgentCivilization(digital_twin=self.twin)
+        self.civilization.start_mission(self.mission)
+        self._living_app = self.living.create_app(self.mission)
+        self.reality.understand_goal(self.mission)
+        self.world.analyze_query(self.mission)
+        self.evolution.record_task_result("creation_generated", True)
+        self._init_knowledge()
+        self._init_timeline()
+
+        # Record in project history
+        self._project_history.append({
+            "idea": self.mission,
+            "type": ctype,
+            "agents": len(self.civilization.agents) if self.civilization else 0,
+            "pipeline": list(self.PIPELINE_STAGES),
+        })
+
+        self._phase = "active"
+        self._pipeline_index = 0
+        self._render_creation_view()
+
+    # ================================================================
+    # CREATION VIEW — One adaptive workspace
+    # ================================================================
+
+    def _render_creation_view(self):
+        self.canvas.delete("all")
         w = self.root.winfo_screenwidth()
         h = self.root.winfo_screenheight()
         cx = w // 2
 
-        top_h = 32
-        self.canvas.create_rectangle(0, 0, w, top_h, fill=self.BG2, outline="", tags="topbar")
-        self.canvas.create_text(20, top_h // 2, text="ARCANIS",
-                                fill=self.FG, font=("Segoe UI", 9, "bold"), anchor="w", tags="topbar_logo")
-        self.canvas.create_text(w - 20, top_h // 2, text="System ready",
-                                fill=self.FG3, font=("Segoe UI", 8), anchor="e", tags="topbar_status")
+        self.canvas.create_rectangle(0, 0, w, h, fill=self.BG, outline="", tags="bg")
 
-        cy = h // 2 - 80
-        self.canvas.create_text(cx, cy, text="\u25c9",
-                                fill=self.ACCENT, font=("Segoe UI", 18), tags="core_symbol")
-        self.canvas.create_text(cx, cy + 50, text="What are you building?",
-                                fill=self.FG2, font=("Segoe UI", 11), tags="prompt")
+        # Top bar: back + title + status
+        self.canvas.create_rectangle(0, 0, w, 48, fill=self.BG2, outline="", tags="topbar")
+        self.canvas.create_text(24, 24, text="\u2190", fill=self.FG2,
+                                font=("Segoe UI", 14), tags="back_btn")
+        self.canvas.tag_bind("back_btn", "<Button-1>", lambda e: self._render_prompt())
+        self.canvas.create_text(52, 24, text="ARCANIS", fill=self.FG3,
+                                font=("Segoe UI", 9, "bold"), anchor="w", tags="topbar_brand")
+        self.canvas.create_text(cx, 24, text=self._truncate(self.mission, 60),
+                                fill=self.FG, font=("Segoe UI", 11), tags="topbar_title")
 
-        input_y = cy + 90
-        self.canvas.create_rectangle(cx - 200, input_y - 18, cx + 200, input_y + 18,
-                                     fill=self.BG2, outline="#1a1a2e", tags="input_box")
-        self.intent_entry = tk.Entry(self.root, bg=self.BG2, fg=self.FG,
-                                     font=("Segoe UI", 12), insertbackground=self.ACCENT,
-                                     relief=tk.FLAT, bd=0, highlightthickness=0,
-                                     width=32, justify="center")
-        self.intent_entry.place(x=cx - 196, y=input_y - 14, width=392, height=28)
-        self.intent_entry.insert(0, "")
-        self.intent_entry.bind("<Return>", self._on_intent)
-        self.intent_entry.focus()
+        # Pipeline progress bar
+        bar_y = 60
+        bar_w = int(w * 0.7)
+        bar_x = cx - bar_w // 2
+        step_w = bar_w // len(self.PIPELINE_STAGES)
+        for pi, stage in enumerate(self.PIPELINE_STAGES):
+            sx = bar_x + pi * step_w
+            active = pi <= self._pipeline_index
+            self.canvas.create_rectangle(sx, bar_y, sx + step_w - 2, bar_y + 6,
+                                         fill=self.ACCENT if active else self.SURFACE,
+                                         outline="", tags=f"pipe_{pi}")
+            self.canvas.create_text(sx + step_w // 2, bar_y + 16, text=stage,
+                                    fill=self.FG if active else self.FG3,
+                                    font=("Segoe UI", 7), tags=f"pipe_lbl_{pi}")
 
-        greeting = self.twin.get_personalized_greeting()
-        if greeting["recent_missions"]:
-            ry = input_y + 50
-            self.canvas.create_text(cx, ry, text="Recent",
-                                    fill=self.FG3, font=("Segoe UI", 7, "bold"), tags="recent_label")
-            for i, m in enumerate(greeting["recent_missions"][:3]):
-                self.canvas.create_text(cx, ry + 18 + i * 16, text=self._truncate(m, 50),
-                                        fill="#555577", font=("Segoe UI", 8), tags=f"recent_{i}")
+        # Main workspace area
+        ws_y = 90
+        ws_h = h - ws_y - 20
 
-        nav_h = 36
-        nav_y = h - nav_h
-        self.canvas.create_rectangle(0, nav_y, w, h, fill=self.BG2, outline="", tags="navbar")
-        nav_items = ["Mission", "Knowledge", "Build", "Simulate", "Terminal", "AI"]
-        self._nav_tags = []
-        spacing = w // len(nav_items)
-        for i, item in enumerate(nav_items):
-            nx = spacing * i + spacing // 2
-            tag = f"nav_{item.lower()}"
-            self._nav_tags.append(tag)
-            c = self.ACCENT if item == "Mission" else self.FG3
-            f = ("Segoe UI", 8, "bold") if item == "Mission" else ("Segoe UI", 8)
-            self.canvas.create_text(nx, nav_y + nav_h // 2, text=item,
-                                    fill=c, font=f, tags=tag)
-            self.canvas.tag_bind(tag, "<Button-1>", lambda e, m=item.lower(): self._switch_mode(m))
-            self.canvas.tag_bind(tag, "<Enter>", lambda e, t=tag: self.canvas.itemconfig(t, fill=self.ACCENT))
-            self.canvas.tag_bind(tag, "<Leave>", lambda e, t=tag, c=c: self.canvas.itemconfig(t, fill=c))
+        # Left panel: agents
+        panel_w = int(w * 0.22)
+        self.canvas.create_rectangle(12, ws_y, 12 + panel_w, ws_y + ws_h,
+                                     fill=self.BG2, outline=self.BORDER, tags="agents_panel")
+        self.canvas.create_text(12 + 12, ws_y + 14, text="Team",
+                                fill=self.FG3, font=("Segoe UI", 8, "bold"), anchor="w", tags="agents_title")
+        if self.civilization:
+            pass
+        # Right panel: knowledge / context
+        kw = int(w * 0.22)
+        kx = w - 12 - kw
+        self.canvas.create_rectangle(kx, ws_y, kx + kw, ws_y + ws_h,
+                                     fill=self.BG2, outline=self.BORDER, tags="knowledge_panel")
+        self.canvas.create_text(kx + 12, ws_y + 14, text="Knowledge",
+                                fill=self.FG3, font=("Segoe UI", 8, "bold"), anchor="w", tags="knowledge_title")
 
-    def _animate_ambient(self):
-        try:
-            if self._mode != "home":
-                self.root.after(2000, self._animate_ambient)
-                return
-            import math as _m
-            t = getattr(self, "_ambient_t", 0) + 1
-            self._ambient_t = t
-            r = int(90 + 30 * _m.sin(t * 0.02))
-            g = int(122 + 30 * _m.sin(t * 0.02 + 1))
-            b = int(204 + 30 * _m.sin(t * 0.02 + 2))
-            try:
-                self.canvas.itemconfig("core_symbol", fill=f"#{r:02x}{g:02x}{b:02x}")
-            except Exception:
-                pass
-            self.root.after(40, self._animate_ambient)
-        except Exception:
-            self.root.after(2000, self._animate_ambient)
+        # Center: main canvas
+        cw = w - panel_w - kw - 48
+        cx2 = 12 + panel_w + 12
+        self.canvas.create_rectangle(cx2, ws_y, cx2 + cw, ws_y + ws_h,
+                                     fill=self.BG2, outline=self.BORDER, tags="canvas_area")
+        self.canvas.create_text(cx2 + 16, ws_y + 14, text=self.PIPELINE_STAGES[self._pipeline_index],
+                                fill=self.ACCENT, font=("Segoe UI", 13, "bold"), anchor="w", tags="stage_title")
+        active_stage_desc = {
+            "Understand": "Analyzing your idea and defining goals.",
+            "Research": "Gathering knowledge and exploring possibilities.",
+            "Plan": "Creating architecture and development roadmap.",
+            "Prototype": "Building initial working model.",
+            "Build": "Constructing the full creation.",
+            "Test": "Validating quality and performance.",
+            "Improve": "Optimizing based on results.",
+            "Deploy": "Preparing for launch and distribution.",
+        }
+        self.canvas.create_text(cx2 + 16, ws_y + 38,
+                                text=active_stage_desc.get(self.PIPELINE_STAGES[self._pipeline_index], ""),
+                                fill=self.FG2, font=("Segoe UI", 9), anchor="w", tags="stage_desc")
+
+        # Agent list
+        if self.civilization and self.civilization.agents:
+            agent_list = list(self.civilization.agents.items())
+            for ai, (key, agent) in enumerate(agent_list[:8]):
+                ay = ws_y + 42 + ai * 40
+                dot = {"idle": self.ACCENT2, "working": self.ACCENT3, "blocked": "#f78166"}.get(agent.status, self.FG3)
+                self.canvas.create_oval(panel_w + 12 + 8, ay + 6, panel_w + 12 + 16, ay + 14,
+                                        fill=dot, outline="", tags=f"agent_dot_{key}")
+                self.canvas.create_text(panel_w + 12 + 24, ay + 6, text=agent.name,
+                                        fill=agent.color, font=("Segoe UI", 8, "bold"), anchor="w", tags=f"agent_name_{key}")
+                self.canvas.create_text(panel_w + 12 + 24, ay + 18, text=self._truncate(agent.role, 22),
+                                        fill=self.FG2, font=("Segoe UI", 7), anchor="w", tags=f"agent_role_{key}")
+
+    # ================================================================
+    # INTENT & PERMISSIONS
+    # ================================================================
+
+    def _show_permissions(self):
+        if self._permissions_showing:
+            return
+        self._permissions_showing = True
+        w = self.root.winfo_screenwidth()
+        h = self.root.winfo_screenheight()
+        cx, cy = w // 2, h // 2
+        pw, ph = 360, 240
+        px, py = cx - pw // 2, cy - ph // 2
+        self.canvas.create_rectangle(px, py, px + pw, py + ph,
+                                     fill=self.BG2, outline=self.ACCENT, width=1, tags="perm_bg")
+        self.canvas.create_text(cx, py + 22, text="ARCANIS requires permissions",
+                                fill=self.FG, font=("Segoe UI", 9, "bold"), tags="perm_title")
+        for i, name in enumerate(["Files", "Memory", "Applications", "Devices", "Knowledge"]):
+            self.canvas.create_text(px + 24, py + 50 + i * 26, text=name,
+                                    fill=self.FG2, font=("Segoe UI", 8), anchor="w", tags=f"perm_item_{i}")
+        btn_y = py + ph - 40
+        self.canvas.create_rectangle(px + 24, btn_y, px + 160, btn_y + 26,
+                                     fill=self.ACCENT, outline="", tags="perm_accept")
+        self.canvas.create_text(px + 92, btn_y + 13, text="Accept",
+                                fill="#fff", font=("Segoe UI", 8, "bold"), tags="perm_accept_text")
+        self.canvas.tag_bind("perm_accept", "<Button-1>", lambda e: self._accept_permissions())
+        self.canvas.create_rectangle(px + 172, btn_y, px + pw - 24, btn_y + 26,
+                                     fill="", outline=self.BORDER, tags="perm_decline")
+        self.canvas.create_text(px + 92 + 156, btn_y + 13, text="Decline",
+                                fill=self.FG2, font=("Segoe UI", 8), tags="perm_decline_text")
+        self.canvas.tag_bind("perm_decline", "<Button-1>", lambda e: self._decline_permissions())
+
+    def _accept_permissions(self):
+        self._permissions_granted = True
+        self._permissions_showing = False
+        for t in ["perm_bg", "perm_title"] + [f"perm_item_{i}" for i in range(5)] + \
+                 ["perm_accept", "perm_accept_text", "perm_decline", "perm_decline_text"]:
+            self.canvas.delete(t)
+        self._generate_creation()
+
+    def _decline_permissions(self):
+        self._permissions_showing = False
+        for t in ["perm_bg", "perm_title"] + [f"perm_item_{i}" for i in range(5)] + \
+                 ["perm_accept", "perm_accept_text", "perm_decline", "perm_decline_text"]:
+            self.canvas.delete(t)
+
+    def _start_mission(self):
+        self._generate_creation()
+
+    # ================================================================
+    # BACKGROUND TICK — Pipeline progress
+    # ================================================================
 
     def _tick(self):
         try:
-            if self._mode != "home" and hasattr(self, "civilization") and self.civilization:
+            if self._phase == "active" and self.civilization:
                 for agent in self.civilization.agents.values():
                     if agent.status == "idle" and not agent.current_task:
                         agent.status = "working"
@@ -4119,322 +4299,18 @@ class ArcDesktop:
                     pm.progress = min(1.0, pm.progress + 0.02)
                     if pm.progress >= 1.0:
                         pm.status = "completed"
+                        if self._pipeline_index < len(self.PIPELINE_STAGES) - 1:
+                            self._pipeline_index += 1
+                            pm.progress = 0.0
+                            pm.status = "active"
+                if self._phase == "active":
+                    self._render_creation_view()
             self.root.after(3000, self._tick)
         except Exception:
             self.root.after(5000, self._tick)
 
     # ================================================================
-    # INTENT & PERMISSIONS
-    # ================================================================
-
-    def _on_intent(self, event=None):
-        intent = self.intent_entry.get().strip()
-        if not intent:
-            return
-        self.mission = intent
-        if not self._permissions_granted:
-            self._show_permissions()
-            return
-        self._start_mission()
-
-    def _show_permissions(self):
-        if self._permissions_showing:
-            return
-        self._permissions_showing = True
-        w = self.root.winfo_screenwidth()
-        h = self.root.winfo_screenheight()
-        cx, cy = w // 2, h // 2
-        pw, ph = 400, 260
-        px, py = cx - pw // 2, cy - ph // 2
-
-        self.canvas.create_rectangle(px, py, px + pw, py + ph,
-                                     fill=self.BG2, outline=self.ACCENT, width=1, tags="perm_bg")
-        self.canvas.create_text(cx, py + 24, text="ARCANIS requires permissions",
-                                fill=self.FG, font=("Segoe UI", 10, "bold"), tags="perm_title")
-
-        items = ["Files", "Memory", "Applications", "Devices", "Knowledge"]
-        for i, name in enumerate(items):
-            iy = py + 52 + i * 28
-            self.canvas.create_text(px + 28, iy, text=name,
-                                    fill=self.FG2, font=("Segoe UI", 8), anchor="w", tags=f"perm_item_{i}")
-
-        btn_y = py + ph - 44
-        self.canvas.create_rectangle(px + 28, btn_y, px + 180, btn_y + 28,
-                                     fill=self.ACCENT, outline="", tags="perm_accept")
-        self.canvas.create_text(px + 104, btn_y + 14, text="Accept",
-                                fill="#fff", font=("Segoe UI", 8, "bold"), tags="perm_accept_text")
-        self.canvas.tag_bind("perm_accept", "<Button-1>", lambda e: self._accept_permissions())
-
-        self.canvas.create_rectangle(px + 192, btn_y, px + pw - 28, btn_y + 28,
-                                     fill="", outline="#2a2a44", tags="perm_decline")
-        self.canvas.create_text(px + 104 + 164, btn_y + 14, text="Decline",
-                                fill=self.FG2, font=("Segoe UI", 8), tags="perm_decline_text")
-        self.canvas.tag_bind("perm_decline", "<Button-1>", lambda e: self._decline_permissions())
-
-    def _accept_permissions(self):
-        self._permissions_granted = True
-        self._permissions_showing = False
-        for tag in ["perm_bg", "perm_title"]:
-            self.canvas.delete(tag)
-        for i in range(5):
-            self.canvas.delete(f"perm_item_{i}")
-        for tag in ["perm_accept", "perm_accept_text", "perm_decline", "perm_decline_text"]:
-            self.canvas.delete(tag)
-        self._start_mission()
-
-    def _decline_permissions(self):
-        self._permissions_showing = False
-        for tag in ["perm_bg", "perm_title"]:
-            self.canvas.delete(tag)
-        for i in range(5):
-            self.canvas.delete(f"perm_item_{i}")
-        for tag in ["perm_accept", "perm_accept_text", "perm_decline", "perm_decline_text"]:
-            self.canvas.delete(tag)
-
-    def _start_mission(self):
-        self.twin.remember_mission(self.mission)
-        self.twin.context.track_action("mission_start", self.mission)
-        self.civilization = AgentCivilization(digital_twin=self.twin)
-        self.civilization.start_mission(self.mission)
-        self._living_app = self.living.create_app(self.mission)
-        self.reality.understand_goal(self.mission)
-        self.world.analyze_query(self.mission)
-        self.evolution.record_task_result("agent_research", True)
-        self._init_knowledge()
-        self._init_timeline()
-        self.intent_entry.place_forget()
-        self._switch_mode("mission")
-
-    # ================================================================
-    # MODE SWITCHING
-    # ================================================================
-
-    def _switch_mode(self, mode):
-        self._mode = mode
-        self.canvas.delete("all")
-        w = self.root.winfo_screenwidth()
-        h = self.root.winfo_screenheight()
-
-        top_h = 32
-        self.canvas.create_rectangle(0, 0, w, top_h, fill=self.BG2, outline="", tags="topbar")
-        self.canvas.create_text(20, top_h // 2, text="ARCANIS",
-                                fill=self.FG, font=("Segoe UI", 9, "bold"), anchor="w", tags="topbar_logo")
-        if self.mission and mode != "home":
-            self.canvas.create_text(w // 2, top_h // 2, text=self._truncate(self.mission, 40),
-                                    fill=self.FG2, font=("Segoe UI", 8), tags="topbar_mission")
-        self.canvas.create_text(w - 20, top_h // 2, text=mode.capitalize(),
-                                fill=self.FG3, font=("Segoe UI", 8), anchor="e", tags="topbar_mode")
-
-        if mode == "home":
-            self._render_first_screen()
-            return
-
-        nav_h = 36
-        nav_y = h - nav_h
-        self.canvas.create_rectangle(0, nav_y, w, h, fill=self.BG2, outline="", tags="navbar")
-
-        if mode == "mission":
-            self._render_mission_workspace(w, h, top_h, nav_y)
-        elif mode == "ai":
-            self._render_ai_workspace(w, h, top_h, nav_y)
-        else:
-            self._render_static_workspace(mode, w, h, top_h, nav_y)
-
-        nav_items = ["Mission", "Knowledge", "Build", "Simulate", "Terminal", "AI"]
-        spacing = w // len(nav_items)
-        for i, item in enumerate(nav_items):
-            nx = spacing * i + spacing // 2
-            tag = f"nav_{item.lower()}"
-            active = item.lower() == mode
-            c = self.ACCENT if active else self.FG3
-            f = ("Segoe UI", 8, "bold") if active else ("Segoe UI", 8)
-            self.canvas.create_text(nx, nav_y + nav_h // 2, text=item,
-                                    fill=c, font=f, tags=tag)
-            self.canvas.tag_bind(tag, "<Button-1>", lambda e, m=item.lower(): self._switch_mode(m))
-            self.canvas.tag_bind(tag, "<Enter>", lambda e, t=tag: self.canvas.itemconfig(t, fill=self.ACCENT))
-            self.canvas.tag_bind(tag, "<Leave>", lambda e, t=tag, c=c: self.canvas.itemconfig(t, fill=c))
-
-    # ================================================================
-    # MISSION WORKSPACE
-    # ================================================================
-
-    def _render_mission_workspace(self, w, h, top_h, nav_y):
-        ws_y = top_h + 40
-        ws_h = nav_y - ws_y - 20
-        cx = w // 2
-
-        self.canvas.create_text(cx, ws_y, text=self._truncate(self.mission, 45),
-                                fill=self.FG, font=self.FONT_LG, tags="mission_heading")
-
-        agent_count = len(self.civilization.agents) if self.civilization else 0
-        pm = getattr(self.civilization, "manager", None) if self.civilization else None
-        progress = int(pm.progress * 100) if pm and pm.goal else 0
-        info_y = ws_y + 50
-        info = f"{agent_count} agents  \u00b7  {progress}% complete"
-        if self._twin_suggestions:
-            info += f"  \u00b7  {self._twin_suggestions[0][:35]}"
-        self.canvas.create_text(cx, info_y, text=info,
-                                fill=self.FG2, font=("Segoe UI", 8), tags="mission_info")
-
-        if agent_count > 0:
-            agents_y = info_y + 50
-            self.canvas.create_text(cx, agents_y, text="Agents",
-                                    fill=self.FG3, font=("Segoe UI", 7, "bold"), tags="agents_label")
-            agents_list = list(self.civilization.agents.items())
-            for i, (key, agent) in enumerate(agents_list[:6]):
-                ay = agents_y + 24 + i * 22
-                dot = {"idle": self.ACCENT_GREEN, "working": self.ACCENT_AMBER, "blocked": "#d06060"}.get(agent.status, self.FG3)
-                self.canvas.create_text(cx - 120, ay, text=agent.name,
-                                        fill=agent.color, font=("Segoe UI", 8, "bold"), anchor="w", tags=f"agent_{key}")
-                self.canvas.create_text(cx + 20, ay, text=self._truncate(agent.role, 28),
-                                        fill=self.FG2, font=("Segoe UI", 7), anchor="w", tags=f"agent_role_{key}")
-                task = self._truncate(agent.current_task or "idle", 24)
-                self.canvas.create_text(cx + 200, ay, text=task,
-                                        fill=self.FG3, font=("Segoe UI", 7), anchor="w", tags=f"agent_task_{key}")
-
-    # ================================================================
-    # AI WORKSPACE
-    # ================================================================
-
-    def _render_ai_workspace(self, w, h, top_h, nav_y):
-        self._ai_active = True
-        ws_y = top_h + 40
-        ws_h = nav_y - ws_y - 60
-        cx = w // 2
-
-        self.canvas.create_text(cx, ws_y, text="Intelligence Mode",
-                                fill=self.ACCENT, font=("Segoe UI", 10, "bold"), tags="ai_heading")
-
-        max_lines = max(3, ws_h // 20)
-        if not self._conversation:
-            welcome = f"Agents are ready. Ask about your mission."
-            self._conversation.append(("system", welcome))
-            self._conversation_lines = [welcome]
-
-        display = self._conversation_lines[-max_lines:]
-        for i, line in enumerate(display):
-            ly = ws_y + 40 + i * 20
-            self.canvas.create_text(cx, ly, text=line,
-                                    fill=self.FG2, font=("Segoe UI", 8), tags=f"ai_line_{i}")
-
-        input_y = nav_y - 36
-        self.canvas.create_rectangle(cx - 250, input_y - 16, cx + 250, input_y + 16,
-                                     fill=self.BG2, outline="#1a1a2e", tags="ai_input_box")
-        self.chat_entry = tk.Entry(self.root, bg=self.BG2, fg=self.FG,
-                                   font=("Segoe UI", 10), insertbackground=self.ACCENT,
-                                   relief=tk.FLAT, bd=0, highlightthickness=0,
-                                   width=50, justify="center")
-        self.chat_entry.place(x=cx - 246, y=input_y - 12, width=492, height=24)
-        self.chat_entry.insert(0, "")
-        self.chat_entry.bind("<Return>", self._on_chat)
-        self.chat_entry.focus()
-
-    # ================================================================
-    # STATIC WORKSPACES (Knowledge, Build, Simulate, Terminal)
-    # ================================================================
-
-    def _render_static_workspace(self, mode, w, h, top_h, nav_y):
-        cx = w // 2
-        ws_y = top_h + 40
-
-        headings = {
-            "knowledge": "Knowledge Graph",
-            "build": "Build Environment",
-            "simulate": "Simulation",
-            "terminal": "Terminal",
-        }
-        self.canvas.create_text(cx, ws_y, text=headings.get(mode, mode.capitalize()),
-                                fill=self.FG, font=self.FONT_LG, tags="ws_heading")
-
-        if mode == "knowledge" and hasattr(self, "knowledge_nodes"):
-            ky = ws_y + 60
-            self.canvas.create_text(cx, ky, text="Connections",
-                                    fill=self.FG3, font=("Segoe UI", 7, "bold"), tags="ks_label")
-            for i, node in enumerate(self.knowledge_nodes[:8]):
-                ny = ky + 24 + i * 20
-                indent = "  " * node["level"]
-                self.canvas.create_text(cx - 100, ny, text=f"{indent}{node['label']}",
-                                        fill=self.FG2 if node["level"] < 2 else self.FG3,
-                                        font=("Segoe UI", 8 if node["level"] < 2 else 7),
-                                        anchor="w", tags=f"ks_node_{i}")
-        else:
-            self.canvas.create_text(cx, ws_y + 60, text="No active mission",
-                                    fill=self.FG3, font=("Segoe UI", 8), tags="ws_empty")
-
-    # ================================================================
-    # CHAT
-    # ================================================================
-
-    def _on_chat(self, event=None):
-        msg = self.chat_entry.get().strip()
-        if not msg:
-            return
-
-        target = self.active_agent or "system"
-        self._conversation.append((target, msg))
-        self._conversation_lines.append(f"You: {msg}")
-        if len(self._conversation_lines) > 50:
-            self._conversation_lines = self._conversation_lines[-30:]
-
-        self.twin.memory.store("conversation", msg, tags=[target], source="user_chat")
-
-        if target != "system" and self.civilization and target in self.civilization.agents:
-            agent = self.civilization.agents[target]
-            self.civilization.communicate(target, msg, "user")
-            agent.memory.store_personal(f"User said: {msg}", "chat")
-            response = f"{agent.name}: Processing '{msg}'"
-        else:
-            civ = ""
-            if self.civilization:
-                civ = f" \u00b7 {self.civilization.manager.progress*100:.0f}% complete"
-            suggestions = self.twin.chief.get_suggestions()
-            if suggestions and "continue" in msg.lower():
-                response = f"System: {suggestions[0]}{civ}"
-            else:
-                response = f"System: Working on '{self._truncate(self.mission, 20)}'{civ}"
-
-        self._conversation.append((target, response))
-        self._conversation_lines.append(response)
-        self.chat_entry.delete(0, tk.END)
-        self._switch_mode("ai")
-
-    # ================================================================
-    # AGENT DETAIL
-    # ================================================================
-
-    def _activate_agent(self, key):
-        self.active_agent = key
-        self._conversation_lines.append(f"--- Focused on {key} ---")
-        self._switch_mode("ai")
-
-    def _show_agent_detail(self, key):
-        if not self.civilization or key not in self.civilization.agents:
-            return
-        agent = self.civilization.agents[key]
-        w = self.root.winfo_screenwidth()
-        h = self.root.winfo_screenheight()
-        try:
-            self.canvas.delete("agent_detail")
-            dw, dh = 280, 160
-            dx, dy = w - dw - 30, h // 2 - dh // 2
-            self.canvas.create_rectangle(dx, dy, dx + dw, dy + dh,
-                                         fill=self.BG2, outline=agent.color, tags="agent_detail")
-            self.canvas.create_text(dx + dw // 2, dy + 18, text=agent.name,
-                                    fill=agent.color, font=("Segoe UI", 11, "bold"), tags="agent_detail")
-            self.canvas.create_text(dx + 14, dy + 42, text=agent.role,
-                                    fill=self.FG2, font=("Segoe UI", 8), anchor="w", tags="agent_detail")
-            self.canvas.create_text(dx + 14, dy + 60, text=f"{agent.tasks_completed} tasks",
-                                    fill=self.FG, font=("Segoe UI", 8), anchor="w", tags="agent_detail")
-            status = agent.current_task or "idle"
-            self.canvas.create_text(dx + 14, dy + 80, text=status,
-                                    fill=self.ACCENT_GREEN, font=("Segoe UI", 7), anchor="w", tags="agent_detail")
-            self.canvas.create_text(dx + dw // 2, dy + dh - 14, text="Click to focus chat",
-                                    fill=self.FG3, font=("Segoe UI", 7), tags="agent_detail")
-        except Exception:
-            pass
-
-    # ================================================================
-    # INITIALIZATION
+    # STATE PERSISTENCE
     # ================================================================
 
     def _init_knowledge(self):
@@ -4465,23 +4341,13 @@ class ArcDesktop:
 
     def _init_timeline(self):
         self.timeline_entries = [
-            (0.05, f"Mission: {self._truncate(self.mission, 22)}", True),
+            (0.05, f"Idea: {self._truncate(self.mission, 22)}", True),
             (0.2, "Research & Explore", False),
             (0.38, "Design & Plan", False),
             (0.55, "Build & Create", False),
             (0.72, "Test & Refine", False),
             (0.88, "Launch & Share", False),
         ]
-
-    def _truncate(self, text, n):
-        return text if len(text) <= n else text[:n-3] + "..."
-
-    # ================================================================
-    # AGENTS PANEL — Dynamic Civilization Workforce
-    # ================================================================
-
-    def _render_living_apps(self):
-        pass
 
     def _shutdown(self):
         if self.root:
@@ -4493,6 +4359,7 @@ class ArcDesktop:
                 state["reality"] = self.reality.to_dict()
                 state["world"] = self.world.to_dict()
                 state["evolution"] = self.evolution.to_dict()
+                state["project_history"] = self._project_history
                 import json
                 save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".digital_twin.json")
                 with open(save_path, "w") as f:
@@ -8477,6 +8344,338 @@ class DigitalTwinMind:
         )
 
 
+# ============================================================
+# UNIVERSAL SESSION LAYER
+# ============================================================
+
+class SessionState:
+    """Serializable snapshot of entire ARCANIS state for cross-device transfer."""
+
+    def __init__(self):
+        self.session_id = ""
+        self.device_id = ""
+        self.device_name = ""
+        self.goal = ""
+        self.timestamp = 0.0
+        self.mission = {}
+        self.agents = []
+        self.memories = []
+        self.knowledge_nodes = {}
+        self.knowledge_edges = []
+        self.context = {}
+        self.active_projects = []
+
+    def to_dict(self):
+        return {
+            "session_id": self.session_id,
+            "device_id": self.device_id,
+            "device_name": self.device_name,
+            "goal": self.goal,
+            "timestamp": self.timestamp,
+            "mission": self.mission,
+            "agents": self.agents,
+            "memories": self.memories,
+            "knowledge_nodes": self.knowledge_nodes,
+            "knowledge_edges": self.knowledge_edges,
+            "context": self.context,
+            "active_projects": self.active_projects,
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=2)
+
+    @staticmethod
+    def from_dict(data):
+        state = SessionState()
+        state.session_id = data.get("session_id", "")
+        state.device_id = data.get("device_id", "")
+        state.device_name = data.get("device_name", "")
+        state.goal = data.get("goal", "")
+        state.timestamp = data.get("timestamp", 0.0)
+        state.mission = data.get("mission", {})
+        state.agents = data.get("agents", [])
+        state.memories = data.get("memories", [])
+        state.knowledge_nodes = data.get("knowledge_nodes", {})
+        state.knowledge_edges = data.get("knowledge_edges", [])
+        state.context = data.get("context", {})
+        state.active_projects = data.get("active_projects", [])
+        return state
+
+
+class DiscoveryService:
+    """UDP broadcast-based discovery of ARCANIS instances on the local network."""
+
+    DISCOVERY_PORT = 9877
+    DISCOVERY_MAGIC = b"ARCANIS_DISCOVER"
+    RESPONSE_MAGIC = b"ARCANIS_HERE"
+
+    def __init__(self, device_name="arcanis-device"):
+        self.device_name = device_name
+        self.device_id = hashlib.md5(device_name.encode()).hexdigest()[:12]
+        self._running = False
+        self._thread = None
+        self._server = None
+        self.discovered = {}
+
+    def start(self):
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._listen_loop, daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._running = False
+        if self._server:
+            try:
+                self._server.close()
+            except Exception:
+                pass
+
+    def _listen_loop(self):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.settimeout(2.0)
+            sock.bind(("", self.DISCOVERY_PORT))
+            self._server = sock
+            while self._running:
+                try:
+                    data, addr = sock.recvfrom(1024)
+                    if data.startswith(self.DISCOVERY_MAGIC):
+                        parts = data.decode().split("|")
+                        resp = f"{self.RESPONSE_MAGIC.decode()}|{self.device_id}|{self.device_name}|{socket.gethostname()}"
+                        sock.sendto(resp.encode(), addr)
+                    elif data.startswith(self.RESPONSE_MAGIC):
+                        parts = data.decode().split("|")
+                        if len(parts) >= 4:
+                            dev_id = parts[1]
+                            dev_name = parts[2]
+                            hostname = parts[3]
+                            self.discovered[dev_id] = {
+                                "device_id": dev_id,
+                                "name": dev_name,
+                                "hostname": hostname,
+                                "address": addr[0],
+                                "discovery_port": self.DISCOVERY_PORT,
+                                "last_seen": time.time(),
+                            }
+                except socket.timeout:
+                    continue
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def discover(self, timeout=3.0):
+        self.discovered = {}
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sock.settimeout(timeout)
+            msg = f"{self.DISCOVERY_MAGIC.decode()}|{self.device_id}|{self.device_name}"
+            sock.sendto(msg.encode(), ("255.255.255.255", self.DISCOVERY_PORT))
+            deadline = time.time() + timeout
+            while time.time() < deadline:
+                try:
+                    data, addr = sock.recvfrom(1024)
+                    if data.startswith(self.RESPONSE_MAGIC):
+                        parts = data.decode().split("|")
+                        if len(parts) >= 4:
+                            dev_id = parts[1]
+                            dev_name = parts[2]
+                            hostname = parts[3]
+                            self.discovered[dev_id] = {
+                                "device_id": dev_id,
+                                "name": dev_name,
+                                "hostname": hostname,
+                                "address": addr[0],
+                                "discovery_port": self.DISCOVERY_PORT,
+                                "last_seen": time.time(),
+                            }
+                except socket.timeout:
+                    break
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return list(self.discovered.values())
+
+    def get_devices(self):
+        return list(self.discovered.values())
+
+
+class SessionManager:
+    """Orchestrates session lifecycle: create, suspend, transfer, resume across devices."""
+
+    def __init__(self, shell=None):
+        self.shell = shell
+        self.current_session = None
+        self.saved_sessions = {}
+        self.device_id = hashlib.md5(socket.gethostname().encode()).hexdigest()[:12]
+        self.device_name = socket.gethostname()
+
+    def create_session(self, goal):
+        if not self.shell:
+            return None
+        agent_network = AgentCommunicationNetwork()
+        mission_mgr = MissionManager(communication_network=agent_network)
+        mission_mgr.define_goal(goal)
+        agents = []
+        for role_name, role in [("researcher", "research"), ("builder", "build"), ("reviewer", "quality")]:
+            agent = Agent(f"agent_{role_name}_{int(time.time())}", role_name.capitalize(), role)
+            agents.append(agent)
+        timestamp = time.time()
+        session_id = hashlib.md5(f"{goal}{timestamp}".encode()).hexdigest()[:16]
+        state = SessionState()
+        state.session_id = session_id
+        state.device_id = self.device_id
+        state.device_name = self.device_name
+        state.goal = goal
+        state.timestamp = timestamp
+        state.mission = mission_mgr.to_dict()
+        state.agents = [a.to_dict() for a in agents]
+        if hasattr(self.shell, 'twin') and self.shell.twin:
+            state.memories = self.shell.twin.memory.to_dict().get("memories", [])
+            state.knowledge_nodes = self.shell.twin.knowledge_graph.to_dict().get("nodes", {})
+            state.knowledge_edges = self.shell.twin.knowledge_graph.to_dict().get("edges", [])
+        if hasattr(self.shell, 'twin') and self.shell.twin:
+            ctx = self.shell.twin.context.to_dict()
+            state.context = ctx
+            state.active_projects = ctx.get("active_projects", [])
+        self.current_session = state
+        self.saved_sessions[session_id] = state
+        if self.shell:
+            self.shell.mission = mission_mgr
+            self.shell.agent_network = agent_network
+            self.shell.agents = agents
+            self.shell.mission.define_goal(goal)
+            if not hasattr(self.shell, 'twin') or not self.shell.twin:
+                from dataclasses import dataclass
+                if not hasattr(self.shell, 'twin'):
+                    self.shell.twin = DigitalTwinMind()
+            self.shell.twin.remember_mission(goal)
+        return state
+
+    def suspend_session(self):
+        if not self.current_session:
+            return None
+        state = self.current_session
+        if self.shell and hasattr(self.shell, 'mission') and self.shell.mission:
+            state.mission = self.shell.mission.to_dict()
+        if self.shell and hasattr(self.shell, 'agents'):
+            state.agents = [a.to_dict() for a in self.shell.agents]
+        if self.shell and hasattr(self.shell, 'twin') and self.shell.twin:
+            state.memories = self.shell.twin.memory.to_dict().get("memories", [])
+            kg = self.shell.twin.knowledge_graph.to_dict()
+            state.knowledge_nodes = kg.get("nodes", {})
+            state.knowledge_edges = kg.get("edges", [])
+            ctx = self.shell.twin.context.to_dict()
+            state.context = ctx
+            state.active_projects = ctx.get("active_projects", [])
+        state.timestamp = time.time()
+        self.saved_sessions[state.session_id] = state
+        return state
+
+    def resume_session(self, session_id):
+        if session_id not in self.saved_sessions:
+            return None
+        state = self.saved_sessions[session_id]
+        if not self.shell:
+            return state
+        if state.mission:
+            mission_mgr = MissionManager()
+            mission_mgr.from_dict(state.mission)
+            self.shell.mission = mission_mgr
+            self.shell.agent_network = mission_mgr.network
+        if state.agents:
+            self.shell.agents = []
+            for a_data in state.agents:
+                agent = Agent("", "", "")
+                agent.from_dict(a_data)
+                self.shell.agents.append(agent)
+        if not hasattr(self.shell, 'twin') or not self.shell.twin:
+            self.shell.twin = DigitalTwinMind()
+        twin = self.shell.twin
+        for mem in state.memories:
+            twin.memory.store(mem.get("category", "general"), mem.get("content", ""), tags=mem.get("tags", []), source=mem.get("source"))
+        for nid, ndata in state.knowledge_nodes.items():
+            twin.knowledge_graph.add_concept(nid, ndata.get("label", nid), ndata.get("category", "general"), ndata.get("details"))
+        for edge in state.knowledge_edges:
+            twin.knowledge_graph.relate(edge.get("from"), edge.get("to"), edge.get("relation", "related_to"))
+        if state.context:
+            twin.context.from_dict(state.context)
+        self.current_session = state
+        twin.remember_mission(state.goal)
+        return state
+
+    def export_session(self, session_id=None, filepath=None):
+        if session_id and session_id in self.saved_sessions:
+            state = self.saved_sessions[session_id]
+        elif self.current_session:
+            state = self.suspend_session()
+        else:
+            return None
+        json_str = state.to_json()
+        if filepath:
+            try:
+                with open(filepath, 'w') as f:
+                    f.write(json_str)
+            except Exception:
+                pass
+        return json_str
+
+    def import_session(self, data):
+        if isinstance(data, str):
+            try:
+                data = json.loads(data)
+            except Exception:
+                return None
+        state = SessionState.from_dict(data)
+        self.saved_sessions[state.session_id] = state
+        return state
+
+    def import_session_file(self, filepath):
+        try:
+            with open(filepath) as f:
+                data = json.load(f)
+            return self.import_session(data)
+        except Exception:
+            return None
+
+    def transfer_session(self, sock, session_id=None):
+        json_str = self.export_session(session_id)
+        if not json_str:
+            return False
+        chunk_size = 4096
+        total = len(json_str)
+        try:
+            header = f"SESSION_EXPORT:{total}\n"
+            sock.sendall(header.encode())
+            ack = sock.recv(1024).decode().strip()
+            if ack != "ACK":
+                return False
+            for i in range(0, total, chunk_size):
+                chunk = json_str[i:i+chunk_size]
+                sock.sendall(chunk.encode())
+            return True
+        except Exception:
+            return False
+
+    def receive_session_chunk(self, data):
+        return self.import_session(data)
+
+    def list_sessions(self):
+        return {sid: {
+            "goal": s.goal,
+            "device": s.device_name,
+            "time": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(s.timestamp)),
+            "agents": len(s.agents),
+            "memories": len(s.memories),
+            "active": sid == (self.current_session.session_id if self.current_session else None),
+        } for sid, s in self.saved_sessions.items()}
+
+
 THEMES = {
     "default": {"prompt": "1;32", "info": "1;36", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
     "dark":    {"prompt": "1;33", "info": "1;34", "ok": "32", "err": "31", "warn": "33", "dim": "90", "accent": "1;35"},
@@ -8523,6 +8722,13 @@ class Shell:
         self.arc_ide = ArcIDE(jit=self.jit if self.jit.available() else None)
         self.db = BTreeDB()
         self.fat32_writer = FAT32Writer()
+        self.twin = DigitalTwinMind()
+        self.mission = MissionManager()
+        self.agent_network = AgentCommunicationNetwork()
+        self.agents = []
+        self.session_mgr = SessionManager(shell=self)
+        self.discovery = DiscoveryService(device_name=socket.gethostname())
+        self.discovery.start()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -8566,8 +8772,9 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v6.0.0 — Real FS, Real Compute, Real Crypto\033[0m")
-        print(f"{dm}  86 modules | 170 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Arcanis OS v23.0.0 — Unified Intelligence Fabric\033[0m")
+        print(f"{dm}  86 modules | 173 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  Universal Session Layer active | Device: {self.session_mgr.device_name}\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
         print(f"{dm}  Theme: {self.theme} | Type 'help' for commands\033[0m")
         print()
@@ -8773,6 +8980,9 @@ class Shell:
             "db": self.cmd_db,
             "arcide": self.cmd_arcide,
             "apm": self.cmd_apm,
+            "session": self.cmd_session,
+            "discover": self.cmd_discover,
+            "devices": self.cmd_devices,
         }
 
         handler = dispatch.get(command)
@@ -9184,6 +9394,24 @@ class Shell:
                             pass
                     elif line == "PING":
                         client_sock.sendall(b"PONG\n")
+                    elif line.startswith("SESSION_EXPORT:"):
+                        total_size = int(line[15:])
+                        client_sock.sendall(b"ACK\n")
+                        received = 0
+                        session_data = ""
+                        while received < total_size:
+                            chunk = client_sock.recv(4096).decode()
+                            if not chunk:
+                                break
+                            session_data += chunk
+                            received += len(chunk)
+                        if session_data:
+                            state = self.session_mgr.receive_session_chunk(session_data)
+                            if state:
+                                print(f"\n\033[32m[PEER:{addr[0]}]\033[0m Session received: {state.goal}")
+                                print(f"  Agents: {len(state.agents)} | Memories: {len(state.memories)}")
+                            else:
+                                print(f"\n\033[31m[PEER:{addr[0]}]\033[0m Failed to import session")
         except (ConnectionResetError, BrokenPipeError, OSError):
             pass
         finally:
@@ -9289,6 +9517,146 @@ class Shell:
         for d in dead:
             self.peers.remove(d)
         print(f"\033[32mChain synced with {len(self.peers)} peers\033[0m")
+
+    # ======================== UNIVERSAL SESSION COMMANDS ========================
+
+    def cmd_session(self, args):
+        """Manage universal sessions: create, suspend, resume, list, export, import, transfer."""
+        if not args:
+            ic = self._c("info")
+            print(f"{ic}Session Manager\033[0m")
+            print(f"  Device: {self.session_mgr.device_name} ({self.session_mgr.device_id})")
+            if self.session_mgr.current_session:
+                s = self.session_mgr.current_session
+                print(f"  Active: {s.goal} [{s.session_id[:8]}...]")
+            else:
+                print("  Active: none")
+            print(f"  Saved sessions: {len(self.session_mgr.saved_sessions)}")
+            print()
+            print(f"  \033[1;36mCommands:\033[0m")
+            print(f"    session create <goal>        Start a new mission session")
+            print(f"    session list                 Show all saved sessions")
+            print(f"    session suspend              Snapshot current session")
+            print(f"    session resume <id>          Restore a saved session")
+            print(f"    session export [id] [file]   Export session to JSON")
+            print(f"    session import <file>        Import session from JSON")
+            print(f"    session transfer <id>        Send session to connected peer")
+            return
+        action = args[0]
+        ic = self._c("info")
+        ok = self._c("ok")
+        er = self._c("err")
+
+        if action == "create":
+            goal = " ".join(args[1:]) if len(args) > 1 else "New mission"
+            state = self.session_mgr.create_session(goal)
+            if state:
+                print(f"{ok}Session created: {state.session_id[:16]}...\033[0m")
+                print(f"  Goal: {state.goal}")
+                print(f"  Agents: {', '.join(a.get('name', '?') for a in state.agents)}")
+            else:
+                print(f"{er}Failed to create session\033[0m")
+
+        elif action == "list":
+            sessions = self.session_mgr.list_sessions()
+            if not sessions:
+                print("No saved sessions")
+                return
+            print(f"{ic}Saved Sessions:\033[0m")
+            print(f"  {'ID':<18} {'GOAL':<30} {'DEVICE':<20} {'AGENTS':<8} {'TIME':<20}")
+            for sid, info in sessions.items():
+                marker = " *" if info.get("active") else "  "
+                print(f"  {sid[:16]:<18}{info['goal'][:28]:<30}{info['device']:<20}{info['agents']:<8}{info['time']:<20}{marker}")
+
+        elif action == "suspend":
+            state = self.session_mgr.suspend_session()
+            if state:
+                print(f"{ok}Session suspended: {state.goal}\033[0m")
+            else:
+                print(f"{er}No active session to suspend\033[0m")
+
+        elif action == "resume":
+            if len(args) < 2:
+                print(f"{er}Usage: session resume <session_id>\033[0m")
+                return
+            sid = args[1]
+            state = self.session_mgr.resume_session(sid)
+            if state:
+                print(f"{ok}Session resumed: {state.goal}\033[0m")
+                print(f"  Agents: {len(state.agents)} | Memories: {len(state.memories)}")
+            else:
+                print(f"{er}Session not found: {sid}\033[0m")
+
+        elif action == "export":
+            sid = args[1] if len(args) > 1 else None
+            filepath = args[2] if len(args) > 2 else None
+            json_str = self.session_mgr.export_session(sid, filepath)
+            if json_str:
+                if filepath:
+                    print(f"{ok}Session exported to {filepath}\033[0m")
+                else:
+                    print(json_str[:500])
+                    if len(json_str) > 500:
+                        print("... (truncated)")
+            else:
+                print(f"{er}No session to export\033[0m")
+
+        elif action == "import":
+            if len(args) < 2:
+                print(f"{er}Usage: session import <file>\033[0m")
+                return
+            state = self.session_mgr.import_session_file(args[1])
+            if state:
+                print(f"{ok}Session imported: {state.goal}\033[0m")
+                print(f"  From device: {state.device_name}")
+                print(f"  Agents: {len(state.agents)} | Memories: {len(state.memories)}")
+            else:
+                print(f"{er}Failed to import session\033[0m")
+
+        elif action == "transfer":
+            if len(args) < 2:
+                print(f"{er}Usage: session transfer <session_id> [peer_index]\033[0m")
+                return
+            sid = args[1]
+            peer_idx = int(args[2]) if len(args) > 2 else 0
+            if peer_idx < 0 or peer_idx >= len(self.peers):
+                print(f"{er}Peer index {peer_idx} out of range ({len(self.peers)} peers)\033[0m")
+                return
+            sock = self.peers[peer_idx][0]
+            if self.session_mgr.transfer_session(sock, sid):
+                peer_name = self.peers[peer_idx][2]
+                print(f"{ok}Session transferred to {peer_name}\033[0m")
+            else:
+                print(f"{er}Session transfer failed\033[0m")
+
+        else:
+            print(f"{er}Unknown session action: {action}\033[0m")
+
+    def cmd_discover(self, args):
+        """Discover ARCANIS instances on the local network."""
+        timeout = float(args[0]) if args else 3.0
+        ic = self._c("info")
+        print(f"{ic}Discovering ARCANIS devices on network...\033[0m")
+        devices = self.discovery.discover(timeout=timeout)
+        if not devices:
+            print("  No devices found")
+            return
+        print(f"  Found {len(devices)} device(s):")
+        for d in devices:
+            print(f"    \033[1;36m{d['name']}\033[0m @ {d['address']} ({d['hostname']})")
+
+    def cmd_devices(self, _):
+        """List discovered ARCANIS devices."""
+        devices = self.discovery.get_devices()
+        if not devices:
+            print("No devices discovered. Run 'discover' first.")
+            return
+        ic = self._c("info")
+        print(f"{ic}Known Devices:\033[0m")
+        print(f"  {'NAME':<24} {'ADDRESS':<16} {'HOSTNAME':<24} {'LAST SEEN':<20}")
+        for d in devices:
+            ls = time.strftime("%H:%M:%S", time.localtime(d.get("last_seen", 0)))
+            print(f"  {d['name']:<24} {d['address']:<16} {d['hostname']:<24} {ls:<20}")
 
     # ======================== ENCRYPTION ========================
 
