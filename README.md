@@ -1,6 +1,6 @@
 # ARCANIS Ecosystem Platform
 
-> **v1.0** — Intelligence Surface Environment · Python · PySide6
+> **v1** — Intelligence Surface Environment · Python · PySide6
 
 ```
      _                _                 ____   ___   ____
@@ -92,7 +92,7 @@ experience/
 
 ---
 
-## v1.0 Release Notes
+## v1 Release Notes
 
 - Persistent SQLite database with 8 tables
 - 3 background agents with real thread-based execution
