@@ -5217,6 +5217,433 @@ def test_cin():
     return suite
 
 
+def test_ucr():
+    suite = TestSuite("ARCANIS UCR Runtime Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (UniversalComputingRuntime, UniversalExecutionEngine,
+                      StandardModuleModel, ExecutionLifecycle,
+                      ResourceAbstractionLayer, IntelligentScheduler,
+                      SandboxFramework, EventBus, StateManagement,
+                      Observability, RuntimeSDK)
+
+    ucr = UniversalComputingRuntime()
+    suite.assert_equals(ucr.initialize()["status"], "ucr_initialized", "ucr_init")
+
+    # UniversalExecutionEngine
+    ee = ucr.execution_engine
+    ee.run_agent("agent_1", "research", {"model": "gpt"})
+    ee.run_agent("agent_2", "coding", {"language": "python"})
+    suite.assert_equals(ee.stats()["agents"], 2, "ucr_ee_agents")
+    wf = ee.run_workflow("wf_1", ["design", "implement", "test"], {"project": "new_feature"})
+    suite.assert_equals(wf["status"], "running", "ucr_ee_wf")
+    step1 = ee.advance_workflow("wf_1")
+    suite.assert_equals(step1["status"], "advancing", "ucr_ee_wf_step")
+    for _ in range(3): ee.advance_workflow("wf_1")
+    suite.assert_equals(ee.stats()["workflows"], 1, "ucr_ee_wf_done")
+    svc = ee.run_service("api_svc", "http", "localhost:8080")
+    suite.assert_equals(svc["status"], "running", "ucr_ee_svc")
+    ee.stop_instance("agent_1")
+    suite.assert_equals(ee.stats()["agents"], 2, "ucr_ee_stopped")
+    sd = ee.to_dict()
+    ee2 = UniversalExecutionEngine()
+    ee2.from_dict(sd)
+    suite.assert_equals(len(ee2.instances), 2, "ucr_ee_from_dict")
+
+    # StandardModuleModel
+    mm = ucr.module_model
+    mm.define_module("mod_1", "Logger", "utility", "1.0.0", ["log"], ["filesystem"], [], {"cpu": 0.1}, {}, "sig_1")
+    mm.define_module("mod_2", "Database", "storage", "2.0.0", ["read", "write"], ["storage"], ["mod_1"], {"cpu": 0.5, "memory": 1024}, {}, "")
+    suite.assert_equals(mm.stats()["modules"], 3, "ucr_mm_define")
+    v = mm.validate_module("mod_1")
+    suite.assert_true(v["valid"], "ucr_mm_validate")
+    deps = mm.resolve_dependencies("mod_2")
+    suite.assert_equals(deps["resolved"], ["mod_1"], "ucr_mm_deps")
+    sd = mm.to_dict()
+    mm2 = StandardModuleModel()
+    mm2.from_dict(sd)
+    suite.assert_equals(len(mm2.modules), 3, "ucr_mm_from_dict")
+
+    # ExecutionLifecycle
+    lc = ucr.lifecycle
+    lc.install("inst_1", "mod_1", {"env": "prod"})
+    lc.install("inst_2", "mod_2", {"env": "dev"})
+    suite.assert_equals(lc.stats()["instances"], 2, "ucr_lc_install")
+    lc.initialize("inst_1")
+    lc.run("inst_1")
+    suite.assert_equals(lc.instances["inst_1"]["status"], "running", "ucr_lc_run")
+    lc.suspend("inst_1")
+    suite.assert_equals(lc.instances["inst_1"]["status"], "suspended", "ucr_lc_suspend")
+    lc.resume("inst_1")
+    suite.assert_equals(lc.instances["inst_1"]["status"], "running", "ucr_lc_resume")
+    lc.update("inst_1", {"env": "updated"})
+    suite.assert_equals(lc.instances["inst_1"]["version"], 2, "ucr_lc_update")
+    lc.stop("inst_1")
+    suite.assert_equals(lc.instances["inst_1"]["status"], "stopped", "ucr_lc_stop")
+    lc.remove("inst_1")
+    suite.assert_equals(lc.stats()["instances"], 1, "ucr_lc_remove")
+    sd = lc.to_dict()
+    lc2 = ExecutionLifecycle()
+    lc2.from_dict(sd)
+    suite.assert_equals(len(lc2.instances), 1, "ucr_lc_from_dict")
+
+    # ResourceAbstractionLayer
+    ra = ucr.resource_abstraction
+    r1 = ra.request_capability("agent_1", "cpu", 2.0)
+    suite.assert_true(r1["allocated"], "ucr_ra_alloc")
+    suite.assert_equals(r1["remaining"], 6, "ucr_ra_remaining")
+    r2 = ra.request_capability("agent_1", "gpu", 1.0)
+    suite.assert_true("error" in r2, "ucr_ra_gpu_unavail")
+    ra.detect_hardware({"gpu": {"available": True, "total": 2, "allocated": 0}})
+    r3 = ra.request_capability("agent_2", "gpu", 1.0)
+    suite.assert_true(r3["allocated"], "ucr_ra_gpu_now")
+    avail = ra.get_available("cpu")
+    suite.assert_equals(avail["available"], 6, "ucr_ra_avail")
+    ra.release_capability("agent_1", "cpu", 1.0)
+    suite.assert_equals(ra.stats()["cpu"]["available"], 7, "ucr_ra_release")
+    sd = ra.to_dict()
+    ra2 = ResourceAbstractionLayer()
+    ra2.from_dict(sd)
+    suite.assert_equals(len(ra2.allocations), 2, "ucr_ra_from_dict")
+
+    # IntelligentScheduler
+    sch = ucr.scheduler
+    sch.submit("data_process", "batch", 5, {"cpu": 2})
+    sch.submit("urgent_task", "realtime", 9, {"cpu": 4})
+    sch.submit("cleanup", "maintenance", 2, {"cpu": 1})
+    q = sch.get_queue_status()
+    suite.assert_equals(q["queued"], 3, "ucr_sch_queued")
+    t = sch.schedule_next()
+    suite.assert_equals(t["name"], "urgent_task", "ucr_sch_priority")
+    t2 = sch.schedule_next()
+    suite.assert_equals(t2["name"], "data_process", "ucr_sch_second")
+    sch.complete_task(t["id"], "success")
+    suite.assert_equals(sch.stats()["completed"], 1, "ucr_sch_completed")
+    sd = sch.to_dict()
+    sch2 = IntelligentScheduler()
+    sch2.from_dict(sd)
+    suite.assert_equals(len(sch2.queue), 1, "ucr_sch_from_dict")
+
+    # SandboxFramework
+    sb = ucr.sandbox
+    sb.create_sandbox("sb_1", "alice", ["read", "execute"], {"cpu": 2, "memory": 1024}, ["no_network"])
+    suite.assert_equals(sb.stats()["active"], 1, "ucr_sb_active")
+    p = sb.check_permission("sb_1", "read")
+    suite.assert_true(p["allowed"], "ucr_sb_perm_ok")
+    p2 = sb.check_permission("sb_1", "write")
+    suite.assert_false(p2["allowed"], "ucr_sb_perm_deny")
+    lim = sb.enforce_limits("sb_1", "cpu", 1.0)
+    suite.assert_false(lim["limited"], "ucr_sb_limit_ok")
+    lim2 = sb.enforce_limits("sb_1", "cpu", 5.0)
+    suite.assert_true(lim2["limited"], "ucr_sb_limit_exceed")
+    sb.safe_terminate("sb_1")
+    suite.assert_equals(sb.stats()["active"], 0, "ucr_sb_terminate")
+    sd = sb.to_dict()
+    sb2 = SandboxFramework()
+    sb2.from_dict(sd)
+    suite.assert_equals(len(sb2.sandboxes), 1, "ucr_sb_from_dict")
+
+    # EventBus
+    eb = ucr.event_bus
+    eb.subscribe("module_a", "user.login", "on_user_login")
+    eb.subscribe("module_b", "user.login", "log_login")
+    eb.subscribe("module_c", "system.error", "on_error")
+    ev = eb.publish("user.login", "auth_system", {"user": "alice", "time": "now"})
+    suite.assert_equals(ev["subscribers_notified"], 2, "ucr_eb_pub")
+    login_events = eb.get_events_by_type("user.login")
+    suite.assert_equals(len(login_events), 1, "ucr_eb_by_type")
+    src_events = eb.get_events_by_source("auth_system")
+    suite.assert_equals(len(src_events), 1, "ucr_eb_by_source")
+    suite.assert_equals(eb.stats()["user.login"], 2, "ucr_eb_stats")
+    sd = eb.to_dict()
+    eb2 = EventBus()
+    eb2.from_dict(sd)
+    suite.assert_equals(len(eb2.events), 1, "ucr_eb_from_dict")
+
+    # StateManagement
+    st = ucr.state
+    cp = st.create_checkpoint("agent_1", {"memory": "saved", "context": "active"})
+    suite.assert_equals(cp["type"], "full", "ucr_st_checkpoint")
+    restored = st.restore_checkpoint(cp["id"])
+    suite.assert_equals(restored["restored"], "agent_1", "ucr_st_restore")
+    sess = st.create_session("session_1", {"user": "alice", "mode": "research"})
+    suite.assert_equals(sess["status"], "active", "ucr_st_session")
+    st.end_session("session_1")
+    suite.assert_equals(st.stats()["active_sessions"], 0, "ucr_st_session_end")
+    snap = st.take_snapshot({"all": "good"})
+    suite.assert_true("id" in snap, "ucr_st_snapshot")
+    rb = st.rollback(snap["id"])
+    suite.assert_true(rb["rolled_back"], "ucr_st_rollback")
+    sd = st.to_dict()
+    st2 = StateManagement()
+    st2.from_dict(sd)
+    suite.assert_equals(len(st2.checkpoints), 1, "ucr_st_from_dict")
+
+    # Observability
+    ob = ucr.observability
+    ob.record_metric("cpu_usage", 45.2, "%", {"agent": "agent_1"})
+    ob.record_metric("memory_usage", 1024, "MB")
+    ob.record_metric("error_rate", 0, "")
+    suite.assert_equals(ob.stats()["metrics"], 3, "ucr_ob_metrics")
+    ob.log_execution("agent_1", "inference", 150, True)
+    ob.log_execution("agent_2", "training", 5000, True)
+    suite.assert_equals(ob.stats()["executions"], 2, "ucr_ob_execs")
+    ob.register_dependency("agent_1", "model_server", "calls")
+    ob.register_dependency("agent_1", "database", "queries")
+    g = ob.get_dependency_graph()
+    suite.assert_true("agent_1" in g, "ucr_ob_graph")
+    h = ob.health_check()
+    suite.assert_equals(h["status"], "healthy", "ucr_ob_health")
+    sd = ob.to_dict()
+    ob2 = Observability()
+    ob2.from_dict(sd)
+    suite.assert_equals(len(ob2.metrics), 3, "ucr_ob_from_dict")
+
+    # RuntimeSDK
+    sdk = ucr.sdk
+    sdk.register_sdk("my_app", "1.0.0", ["lifecycle", "event"])
+    sdk.register_sdk("my_agent", "0.5.0", ["agent", "knowledge"])
+    suite.assert_equals(sdk.stats()["sdks"], 2, "ucr_sdk_register")
+    api_list = sdk.get_api_list()
+    suite.assert_true("lifecycle" in api_list, "ucr_sdk_apis")
+    call = sdk.call_api("my_app", "lifecycle")
+    if "error" not in call: suite.assert_true("result" in call, "ucr_sdk_call")
+    sd = sdk.to_dict()
+    sdk2 = RuntimeSDK()
+    sdk2.from_dict(sd)
+    suite.assert_equals(len(sdk2.sdk_versions), 2, "ucr_sdk_from_dict")
+
+    # Coordinator
+    summary = ucr.full_summary()
+    suite.assert_true("execution_engine" in summary, "ucr_summary_ee")
+    suite.assert_true("sdk" in summary, "ucr_summary_sdk")
+    full_data = ucr.to_dict()
+    ucr2 = UniversalComputingRuntime()
+    ucr2.from_dict(full_data)
+    s2 = ucr2.full_summary()
+    suite.assert_equals(s2["lifecycle"]["instances"], 1, "ucr_coord_from_dict")
+
+    return suite
+
+
+def test_vea():
+    suite = TestSuite("ARCANIS VEA Evolution Tests")
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from demo import (VerifiedEvolutionArchitecture, ObservabilityEngine,
+                      ImprovementAnalyzer, ProposalGenerator,
+                      ValidationPipeline, VerificationPipeline,
+                      VeaGovernance, VersionEvolutionGraph,
+                      ChangeSafety, ContinuousLearning, EvolutionDashboard)
+
+    vea = VerifiedEvolutionArchitecture()
+    suite.assert_equals(vea.initialize()["status"], "vea_initialized", "vea_init")
+
+    # ObservabilityEngine
+    ob = vea.observability
+    ob.record("performance", "latency_p50", 0.05, {"agent": "agent_1"})
+    ob.record("performance", "latency_p99", 0.25)
+    ob.record("reliability", "uptime", 0.999)
+    ob.record("error_rates", "crash_rate", 0.001)
+    suite.assert_equals(ob.stats()["performance"], 2, "vea_ob_perf")
+    suite.assert_equals(ob.stats()["error_rates"], 1, "vea_ob_errors")
+    perf_analysis = ob.analyze_performance()
+    suite.assert_equals(perf_analysis["status"], "analyzed", "vea_ob_perf_analysis")
+    rel_analysis = ob.analyze_reliability()
+    suite.assert_equals(rel_analysis["status"], "analyzed", "vea_ob_rel_analysis")
+    sd = ob.to_dict()
+    ob2 = ObservabilityEngine()
+    ob2.from_dict(sd)
+    suite.assert_equals(len(ob2.metrics["performance"]), 2, "vea_ob_from_dict")
+
+    # ImprovementAnalyzer
+    an = vea.analyzer
+    an.detect_bottleneck("database", "slow queries", "high", {"avg_latency": 2.5})
+    an.detect_duplicate("module_a", "module_b", "overlapping functionality", 0.8)
+    an.detect_unused("legacy_module", "no references in 6 months", {"last_used": "2025-01-01"})
+    an.detect_weakness("auth_service", "weak session timeout", "medium", {"timeout": 3600})
+    an.detect_inefficiency("data_pipeline", "redundant transform step", "15% overhead", {"overhead": 0.15})
+    an.detect_inconsistency("schema_v1", "schema_v2", "field type mismatch", {"field": "user_id"})
+    s = an.summary()
+    suite.assert_equals(s["bottlenecks"], 1, "vea_an_bottlenecks")
+    suite.assert_equals(s["duplicates"], 1, "vea_an_duplicates")
+    suite.assert_equals(s["unused"], 1, "vea_an_unused")
+    suite.assert_equals(s["weaknesses"], 1, "vea_an_weaknesses")
+    suite.assert_equals(s["inefficiencies"], 1, "vea_an_inefficiencies")
+    suite.assert_equals(s["inconsistencies"], 1, "vea_an_inconsistencies")
+    sd = an.to_dict()
+    an2 = ImprovementAnalyzer()
+    an2.from_dict(sd)
+    suite.assert_equals(len(an2.findings["bottlenecks"]), 1, "vea_an_from_dict")
+
+    # ProposalGenerator
+    pg = vea.proposal_engine
+    p1 = pg.generate("Database query performance degraded", "Avg latency increased 3x", "Reduce p50 latency by 60%", "Low risk, well-tested change", ["database", "cache_layer"], "Revert to previous query planner")
+    suite.assert_equals(p1["status"], "draft", "vea_pg_draft")
+    p2 = pg.generate("Auth session timeout too long", "Security audit finding #42", "Improve security posture", "Medium - affects all users", ["auth_service"], "Extend timeout to current value")
+    suite.assert_equals(pg.stats()["total"], 2, "vea_pg_total")
+    risk = pg.evaluate_risk(p1["id"])
+    suite.assert_true("risk_score" in risk, "vea_pg_risk")
+    prop = pg.get_proposal(p1["id"])
+    suite.assert_equals(prop["id"], p1["id"], "vea_pg_get")
+    suite.assert_equals(pg.get_proposal("nonexistent")["error"], "not found", "vea_pg_notfound")
+    sd = pg.to_dict()
+    pg2 = ProposalGenerator()
+    pg2.from_dict(sd)
+    suite.assert_equals(len(pg2.proposals), 2, "vea_pg_from_dict")
+
+    # ValidationPipeline
+    vp = vea.validation
+    v1 = vp.run_sandbox(p1["id"], "benchmark_queries")
+    suite.assert_equals(v1["status"], "passed", "vea_vp_sandbox")
+    v2 = vp.run_synthetic_workload(p1["id"], "1000 concurrent queries")
+    suite.assert_equals(v2["status"], "passed", "vea_vp_synthetic")
+    v3 = vp.run_regression(p1["id"], "full_suite")
+    suite.assert_equals(v3["status"], "passed", "vea_vp_regression")
+    v4 = vp.run_compatibility(p1["id"], ["postgres", "mysql"])
+    suite.assert_equals(v4["status"], "passed", "vea_vp_compat")
+    v5 = vp.run_benchmark(p1["id"], "tpch_scale_1")
+    suite.assert_equals(v5["status"], "passed", "vea_vp_bench")
+    suite.assert_equals(vp.stats()["total"], 5, "vea_vp_total")
+    suite.assert_equals(vp.stats()["passed"], 5, "vea_vp_passed")
+    sd = vp.to_dict()
+    vp2 = ValidationPipeline()
+    vp2.from_dict(sd)
+    suite.assert_equals(len(vp2.validations), 5, "vea_vp_from_dict")
+
+    # VerificationPipeline
+    vr = vea.verification
+    vr.run_unit_tests(p1["id"], 50)
+    vr.run_integration_tests(p1["id"], 20)
+    vr.run_security_analysis(p1["id"], [{"severity": "low", "desc": "info leak"}])
+    vr.run_performance_analysis(p1["id"], [{"name": "latency", "regression": False}])
+    vr.run_compatibility_verification(p1["id"], [{"name": "all", "compatible": True}])
+    suite.assert_equals(vr.stats()["total"], 5, "vea_vr_total")
+    full = vr.run_full_pipeline(p2["id"])
+    suite.assert_true(full["all_passed"], "vea_vr_full")
+    suite.assert_equals(len(full["results"]), 5, "vea_vr_full_results")
+    sd = vr.to_dict()
+    vr2 = VerificationPipeline()
+    vr2.from_dict(sd)
+    suite.assert_equals(len(vr2.verifications), 10, "vea_vr_from_dict")
+
+    # VeaGovernance (VEA governance layer)
+    gov = vea.governance
+    gov.submit_for_review(p1, "low")
+    gov.submit_for_review(p2, "medium")
+    suite.assert_equals(gov.stats()["total"], 2, "vea_gov_total")
+    suite.assert_equals(gov.stats()["pending"], 2, "vea_gov_pending")
+    gov.approve("review_1", "admin")
+    suite.assert_equals(gov.stats()["approved"], 1, "vea_gov_approved")
+    summary = gov.generate_summary("review_1")
+    suite.assert_equals(summary["status"], "approved", "vea_gov_summary")
+    gov.reject("review_2", "admin", "needs more analysis")
+    suite.assert_equals(gov.stats()["rejected"], 1, "vea_gov_rejected")
+    suite.assert_equals(len(gov.get_approved()), 1, "vea_gov_approved_list")
+    suite.assert_equals(len(gov.get_pending()), 0, "vea_gov_pending_list")
+    sd = gov.to_dict()
+    gov2 = VeaGovernance()
+    gov2.from_dict(sd)
+    suite.assert_equals(len(gov2.approvals), 2, "vea_gov_from_dict")
+
+    # VersionEvolutionGraph
+    vg = vea.version_graph
+    vg.snapshot("architecture", "v1", {"modules": ["core", "auth"]})
+    vg.snapshot("knowledge", "k1", {"nodes": 100})
+    vg.snapshot("agent", "agent_v2", {"agents": ["worker", "analyst"]})
+    vg.snapshot("module", "mod_v3", {"deps": ["lib_a"]})
+    vg.snapshot("dependency", "dep_v1", {"tree": {}})
+    suite.assert_equals(vg.stats()["architecture"], 1, "vea_vg_arch")
+    suite.assert_equals(vg.stats()["knowledge"], 1, "vea_vg_knowledge")
+    suite.assert_equals(vg.stats()["agent"], 1, "vea_vg_agent")
+    suite.assert_equals(vg.stats()["module"], 1, "vea_vg_module")
+    suite.assert_equals(vg.stats()["dependency"], 1, "vea_vg_dep")
+    v = vg.get_version("architecture", "v1")
+    suite.assert_equals(v["version_id"], "v1", "vea_vg_get")
+    rb = vg.rollback("architecture", "v1")
+    suite.assert_true(rb["rolled_back"], "vea_vg_rollback")
+    lineage = vg.get_lineage("architecture")
+    suite.assert_equals(len(lineage), 1, "vea_vg_lineage")
+    sd = vg.to_dict()
+    vg2 = VersionEvolutionGraph()
+    vg2.from_dict(sd)
+    suite.assert_equals(len(vg2.versions["architecture"]), 1, "vea_vg_from_dict")
+
+    # ChangeSafety
+    cs = vea.change_safety
+    d1 = cs.atomic_update("database", "v1", "v2")
+    suite.assert_equals(d1["status"], "applied", "vea_cs_atomic")
+    rb = cs.auto_rollback(d1["id"])
+    suite.assert_true(rb["rolled_back"], "vea_cs_rollback")
+    rec = cs.handle_failure("cache", "connection timeout", {"retry": 3})
+    suite.assert_true(rec["recovered"], "vea_cs_recovery")
+    integ = cs.verify_integrity("database", "a" * 64)
+    suite.assert_true(integ["valid"], "vea_cs_integrity")
+    integ2 = cs.verify_integrity("database", "invalid")
+    suite.assert_false(integ2["valid"], "vea_cs_integrity_bad")
+    rel = cs.sign_release("database", "2.0.0", "admin")
+    suite.assert_true(rel["verified"], "vea_cs_signed")
+    suite.assert_equals(cs.stats()["releases"], 1, "vea_cs_releases")
+    sd = cs.to_dict()
+    cs2 = ChangeSafety()
+    cs2.from_dict(sd)
+    suite.assert_equals(len(cs2.deployments), 2, "vea_cs_from_dict")
+
+    # ContinuousLearning
+    cl = vea.learning
+    cl.record_success(p1["id"], "latency reduced 55%", 0.85)
+    cl.record_success(p2["id"], "security hardened", 0.7)
+    cl.record_rejection("prop_3", "insufficient evidence", "gather more data")
+    cl.record_performance_impact(p1["id"], "p50_latency", 0.05, 0.02)
+    cl.record_lesson("testing", "always benchmark before/after", "evolution_cycle")
+    suite.assert_equals(cl.stats()["successful"], 2, "vea_cl_success")
+    suite.assert_equals(cl.stats()["rejected"], 1, "vea_cl_rejected")
+    rate = cl.get_success_rate()
+    suite.assert_equals(rate["rate"], 2 / 3, "vea_cl_rate")
+    rec = cl.generate_recommendation()
+    suite.assert_true("recommendation" in rec, "vea_cl_recommend")
+    sd = cl.to_dict()
+    cl2 = ContinuousLearning()
+    cl2.from_dict(sd)
+    suite.assert_equals(len(cl2.records["successful"]), 2, "vea_cl_from_dict")
+
+    # EvolutionDashboard
+    db = vea.dashboard
+    db.record_health({"status": "healthy", "modules": 10, "uptime": 3600})
+    db.record_health({"status": "degraded", "modules": 10, "uptime": 7200, "issues": ["high_memory"]})
+    suite.assert_equals(db.summary()["health_snapshots"], 3, "vea_db_health")
+    db.log_event("evolution_cycle", "Proposal prop_1 approved and deployed")
+    db.log_event("analysis", "Bottleneck detected in database")
+    db.log_event("learning", "New lesson recorded: benchmark before changes")
+    suite.assert_equals(db.summary()["events"], 4, "vea_db_events")
+    current = db.current_health()
+    suite.assert_equals(current["status"], "degraded", "vea_db_current")
+    analysis_events = db.get_history("analysis")
+    suite.assert_equals(len(analysis_events), 1, "vea_db_filter")
+    sd = db.to_dict()
+    db2 = EvolutionDashboard()
+    db2.from_dict(sd)
+    suite.assert_equals(len(db2.history), 4, "vea_db_from_dict")
+
+    # VerifiedEvolutionArchitecture coordinator
+    summary = vea.full_summary()
+    suite.assert_true("observability" in summary, "vea_summary_ob")
+    suite.assert_true("governance" in summary, "vea_summary_gov")
+    full_cycle = vea.full_evolution_cycle(
+        "System performance degraded", "Latency increased 3x in production",
+        "Restore p50 latency under 50ms", "low",
+        ["database", "cache"], "Revert to v1 query planner"
+    )
+    suite.assert_equals(full_cycle["proposal"]["status"], "draft", "vea_cycle_proposal")
+    suite.assert_equals(full_cycle["verification"]["all_passed"], True, "vea_cycle_verified")
+    suite.assert_equals(full_cycle["governance"]["status"], "approved", "vea_cycle_review")
+    full_data = vea.to_dict()
+    vea2 = VerifiedEvolutionArchitecture()
+    vea2.from_dict(full_data)
+    s2 = vea2.full_summary()
+    suite.assert_equals(s2["observability"]["performance"], 3, "vea_coord_from_dict")
+
+    return suite
+
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -5324,6 +5751,8 @@ def main():
         ("Arc v20.0.0 Self-Evolving Intelligence", test_arc_v20),
         ("ARCANIS AIIL Infrastructure", test_aiil),
         ("ARCANIS CIN Collaboration", test_cin),
+        ("ARCANIS UCR Runtime", test_ucr),
+        ("ARCANIS VEA Evolution", test_vea),
     ]
 
     for name, test_func in test_funcs:

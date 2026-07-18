@@ -1,0 +1,37 @@
+# ARCANIS v1.0 — .gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Ecosystem runtime data
+.ecosystem/
+.pa_active
+.workspace/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# .NET build artifacts
+**/bin/
+**/obj/
+*.csproj.user
+*.suo
+*.user
+*.DotSettings
+
+# Environment
+.env
+.env.local
+venv/
+.venv/

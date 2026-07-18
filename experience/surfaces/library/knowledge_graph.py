@@ -1,0 +1,98 @@
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QFrame
+from PySide6.QtCore import Qt
+
+from ..framework.base import BaseSurface, SurfaceState, SurfaceFlags
+from ..framework.theme import SurfaceTheme as T
+from ..framework.event_bus import EventBus
+from experience.ecosystem import EcosystemCoordinator
+
+
+class ConceptCard(QFrame):
+    def __init__(self, name, category="general", connections=0, parent=None):
+        super().__init__(parent)
+        self.setStyleSheet(f"""
+            ConceptCard {{
+                background: {T.surface}; border: 1px solid {T.border_light};
+                border-radius: 5px;
+            }}
+            ConceptCard:hover {{ border-color: {T.accent}; background: {T.surface_hover}; }}
+        """)
+        l = QVBoxLayout(self)
+        l.setContentsMargins(10, 8, 10, 8)
+        l.setSpacing(3)
+        self.name_lbl = QLabel(name)
+        self.name_lbl.setStyleSheet(T.label_style() + f"font-size: {T.font_size_sm};")
+        l.addWidget(self.name_lbl)
+        row = QHBoxLayout()
+        row.setSpacing(6)
+        cat = QLabel(category.upper())
+        cat.setStyleSheet(T.muted_style() + f"font-size: {T.font_size_xs};")
+        row.addWidget(cat)
+        conn = QLabel(f"{connections} links")
+        conn.setStyleSheet(T.mono_style() + f"color: {T.text_muted}; font-size: {T.font_size_xs};")
+        row.addWidget(conn)
+        row.addStretch()
+        l.addLayout(row)
+
+
+class KnowledgeGraphSurface(BaseSurface):
+    def __init__(self, title, surface_id, flags=SurfaceFlags.ALL):
+        super().__init__(title, surface_id, flags)
+        self.eco = EcosystemCoordinator()
+        self.update_interval(3000)
+
+    def _init_content(self):
+        l = QVBoxLayout(self.content)
+        l.setContentsMargins(12, 8, 12, 12)
+        l.setSpacing(6)
+
+        summary_row = QHBoxLayout()
+        self.nodes_label = QLabel("CONCEPTS: 0")
+        self.nodes_label.setStyleSheet(T.mono_style() + f"font-size: {T.font_size_sm}; color: {T.accent};")
+        summary_row.addWidget(self.nodes_label)
+        summary_row.addSpacing(16)
+        self.edges_label = QLabel("RELATIONS: 0")
+        self.edges_label.setStyleSheet(T.mono_style() + f"font-size: {T.font_size_sm}; color: {T.purple};")
+        summary_row.addWidget(self.edges_label)
+        summary_row.addStretch()
+        l.addLayout(summary_row)
+
+        l.addSpacing(6)
+        hdr = QLabel("RECENT CONCEPTS")
+        hdr.setStyleSheet(T.muted_style())
+        l.addWidget(hdr)
+
+        self.cards_container = QVBoxLayout()
+        self.cards_container.setSpacing(4)
+        l.addLayout(self.cards_container)
+
+        # Populate with real data
+        self._refresh_concepts()
+
+        l.addStretch()
+
+    def _refresh_concepts(self):
+        for i in reversed(range(self.cards_container.count())):
+            w = self.cards_container.itemAt(i).widget()
+            if w:
+                w.deleteLater()
+
+        concepts = self.eco.get_concepts()
+        stats = self.eco.get_stats()
+        self.nodes_label.setText(f"CONCEPTS: {stats.get('concepts', 0)}")
+        self.edges_label.setText(f"RELATIONS: {stats.get('relations', 0)}")
+
+        for c in concepts[:8]:
+            card = ConceptCard(c["name"], c["category"], 0)
+            self.cards_container.addWidget(card)
+
+    def _on_tick(self):
+        self._refresh_concepts()
+
+    def _setup_events(self):
+        self._bus.subscribe(EventBus.KNOWLEDGE_UPDATED, self._on_knowledge)
+
+    def _on_knowledge(self, event, data):
+        stats = self.eco.get_stats()
+        self.nodes_label.setText(f"CONCEPTS: {stats.get('concepts', 0)}")
+        self.edges_label.setText(f"RELATIONS: {stats.get('relations', 0)}")

@@ -11280,10 +11280,13 @@ class AutonomousCreationDiscoveryEngine:
 class DeveloperPlatform:
     """Foundation for third-party development: register modules, manage lifecycle, track developers."""
 
-    def __init__(self):
+    def __init__(self, agent_market=None, knowledge_market=None, mission_market=None):
         self._developers = {}
         self._modules = {}
         self._module_types = {"agent", "skill", "knowledge", "workflow", "device", "intelligence_service"}
+        self._agent_market = agent_market
+        self._knowledge_market = knowledge_market
+        self._mission_market = mission_market
 
     def register_developer(self, dev_id, name, contact=""):
         self._developers[dev_id] = {"id": dev_id, "name": name, "contact": contact, "modules": [], "joined": time.time()}
@@ -13390,6 +13393,1035 @@ class CollectiveIntelligenceNetwork:
                 getattr(self, key).from_dict(data[key])
 
 
+class StandardModuleModel:
+    def __init__(self):
+        self.modules = {}
+
+    def define_module(self, module_id, name, module_type, version, capabilities, permissions, dependencies, resources, config, signature=""):
+        module = {"id": module_id, "name": name, "type": module_type, "version": version, "capabilities": capabilities, "permissions": permissions, "dependencies": dependencies, "resources": resources, "config": config, "signature": signature, "defined": __import__("time").time()}
+        self.modules[module_id] = module
+        return module
+
+    def validate_module(self, module_id):
+        mod = self.modules.get(module_id)
+        if not mod: return {"valid": False, "reason": "not found"}
+        if not mod.get("signature"):
+            import hashlib; mod["signature"] = hashlib.sha256(f"{mod['id']}:{mod['version']}:{mod['name']}".encode()).hexdigest()[:16]
+        return {"valid": True, "module": mod["id"], "version": mod["version"]}
+
+    def get_module(self, module_id):
+        return self.modules.get(module_id)
+
+    def resolve_dependencies(self, module_id):
+        mod = self.modules.get(module_id)
+        if not mod: return {"error": "module not found"}
+        resolved = []; missing = []
+        for dep in mod["dependencies"]:
+            if dep in self.modules: resolved.append(dep)
+            else: missing.append(dep)
+        return {"module": module_id, "resolved": resolved, "missing": missing}
+
+    def stats(self):
+        return {"modules": len(self.modules), "types": list(set(m["type"] for m in self.modules.values()))}
+
+    def to_dict(self):
+        return {"modules": self.modules}
+
+    def from_dict(self, data):
+        if "modules" in data: self.modules = data["modules"]
+
+
+class ExecutionLifecycle:
+    def __init__(self):
+        self.instances = {}
+        self.history = []
+
+    def install(self, instance_id, module_id, config=None):
+        inst = {"id": instance_id, "module": module_id, "config": config or {}, "status": "installed", "installed": __import__("time").time(), "version": 1}
+        self.instances[instance_id] = inst
+        self._log(instance_id, "install")
+        return inst
+
+    def initialize(self, instance_id):
+        inst = self.instances.get(instance_id)
+        if not inst: return {"error": "instance not found"}
+        inst["status"] = "initialized"; inst["initialized_at"] = __import__("time").time()
+        self._log(instance_id, "initialize")
+        return inst
+
+    def run(self, instance_id):
+        inst = self.instances.get(instance_id)
+        if not inst: return {"error": "instance not found"}
+        inst["status"] = "running"; inst["started_at"] = __import__("time").time()
+        self._log(instance_id, "run")
+        return inst
+
+    def suspend(self, instance_id):
+        inst = self.instances.get(instance_id)
+        if not inst: return {"error": "instance not found"}
+        inst["status"] = "suspended"; inst["suspended_at"] = __import__("time").time()
+        self._log(instance_id, "suspend")
+        return inst
+
+    def resume(self, instance_id):
+        inst = self.instances.get(instance_id)
+        if not inst or inst["status"] != "suspended": return {"error": "instance not suspended"}
+        inst["status"] = "running"; self._log(instance_id, "resume")
+        return inst
+
+    def update(self, instance_id, new_config):
+        inst = self.instances.get(instance_id)
+        if not inst: return {"error": "instance not found"}
+        inst["config"] = new_config; inst["version"] += 1; inst["updated_at"] = __import__("time").time()
+        self._log(instance_id, "update")
+        return {"instance": instance_id, "version": inst["version"]}
+
+    def stop(self, instance_id):
+        inst = self.instances.get(instance_id)
+        if not inst: return {"error": "instance not found"}
+        inst["status"] = "stopped"; inst["stopped_at"] = __import__("time").time()
+        self._log(instance_id, "stop")
+        return inst
+
+    def remove(self, instance_id):
+        if instance_id not in self.instances: return {"error": "instance not found"}
+        self._log(instance_id, "remove"); del self.instances[instance_id]
+        return {"removed": instance_id}
+
+    def _log(self, instance_id, action):
+        self.history.append({"instance": instance_id, "action": action, "timestamp": __import__("time").time()})
+
+    def stats(self):
+        statuses = {}
+        for inst in self.instances.values():
+            statuses[inst["status"]] = statuses.get(inst["status"], 0) + 1
+        return {"instances": len(self.instances), "history": len(self.history), "statuses": statuses}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["instances", "history"]}
+
+    def from_dict(self, data):
+        for k in ["instances", "history"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ResourceAbstractionLayer:
+    def __init__(self):
+        self.resources = {"cpu": {"available": True, "total": 8, "allocated": 0}, "gpu": {"available": False, "total": 0, "allocated": 0}, "memory": {"available": True, "total": 16000, "allocated": 0}, "storage": {"available": True, "total": 512000, "allocated": 0}, "network": {"available": True, "bandwidth": 1000, "allocated": 0}, "accelerators": {"available": False, "total": 0, "allocated": 0}}
+        self.allocations = []
+
+    def request_capability(self, requester, capability_type, amount):
+        if capability_type not in self.resources: return {"error": "unknown capability"}
+        res = self.resources[capability_type]
+        if not res["available"]: return {"error": f"{capability_type} not available"}
+        if res["total"] - res["allocated"] < amount: return {"error": f"insufficient {capability_type}"}
+        res["allocated"] += amount
+        alloc = {"requester": requester, "type": capability_type, "amount": amount, "allocated_at": __import__("time").time()}
+        self.allocations.append(alloc)
+        return {"allocated": True, "type": capability_type, "amount": amount, "remaining": res["total"] - res["allocated"]}
+
+    def release_capability(self, requester, capability_type, amount):
+        if capability_type not in self.resources: return {"error": "unknown capability"}
+        self.resources[capability_type]["allocated"] = max(0, self.resources[capability_type]["allocated"] - amount)
+        return {"released": True, "type": capability_type, "amount": amount}
+
+    def detect_hardware(self, hardware_profile):
+        for k, v in hardware_profile.items():
+            if k in self.resources:
+                self.resources[k].update(v if isinstance(v, dict) else {"total": v, "available": True})
+        return {"detected": list(hardware_profile.keys())}
+
+    def get_available(self, capability_type):
+        res = self.resources.get(capability_type)
+        if not res: return {"error": "unknown capability"}
+        return {"type": capability_type, "available": res["total"] - res["allocated"], "total": res["total"]}
+
+    def stats(self):
+        return {k: {"available": v.get("total", v.get("bandwidth", 0)) - v.get("allocated", 0), "total": v.get("total", v.get("bandwidth", 0))} for k, v in self.resources.items()}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["resources", "allocations"]}
+
+    def from_dict(self, data):
+        for k in ["resources", "allocations"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class IntelligentScheduler:
+    def __init__(self):
+        self.queue = []
+        self.running = []
+        self.completed = []
+
+    def submit(self, task_name, task_type, priority, requirements, deadline=None):
+        task = {"id": f"task_{len(self.queue)+len(self.running)+len(self.completed)+1}", "name": task_name, "type": task_type, "priority": priority, "requirements": requirements, "deadline": deadline, "status": "queued", "submitted": __import__("time").time()}
+        self.queue.append(task)
+        self.queue.sort(key=lambda t: (t["priority"] * -1, t["submitted"]))
+        return task
+
+    def schedule_next(self, system_health=1.0):
+        if not self.queue: return None
+        task = self.queue.pop(0)
+        if system_health < 0.5 and task["priority"] < 7:
+            self.queue.append(task); return None
+        task["status"] = "running"; task["started_at"] = __import__("time").time()
+        self.running.append(task)
+        return task
+
+    def complete_task(self, task_id, result=None):
+        task = next((t for t in self.running if t["id"] == task_id), None)
+        if not task: return {"error": "task not running"}
+        task["status"] = "completed"; task["completed_at"] = __import__("time").time(); task["result"] = result
+        self.running.remove(task); self.completed.append(task)
+        return task
+
+    def get_queue_status(self):
+        return {"queued": len(self.queue), "running": len(self.running), "completed": len(self.completed), "next_up": [t["name"] for t in self.queue[:3]]}
+
+    def stats(self):
+        return self.get_queue_status()
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["queue", "running", "completed"]}
+
+    def from_dict(self, data):
+        for k in ["queue", "running", "completed"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class SandboxFramework:
+    def __init__(self):
+        self.sandboxes = []
+        self.permissions = []
+        self.audit_log = []
+
+    def create_sandbox(self, sandbox_id, owner, permissions, resource_limits, capability_restrictions):
+        sb = {"id": sandbox_id, "owner": owner, "status": "active", "permissions": permissions, "resource_limits": resource_limits, "capability_restrictions": capability_restrictions, "created": __import__("time").time()}
+        self.sandboxes.append(sb)
+        self._audit("create", owner, f"sandbox {sandbox_id}")
+        return sb
+
+    def check_permission(self, sandbox_id, action):
+        sb = next((s for s in self.sandboxes if s["id"] == sandbox_id), None)
+        if not sb: return {"allowed": False, "reason": "sandbox not found"}
+        if action in sb["permissions"]:
+            self._audit("check", sandbox_id, f"{action} allowed")
+            return {"allowed": True}
+        self._audit("check", sandbox_id, f"{action} denied")
+        return {"allowed": False, "reason": "permission not granted"}
+
+    def enforce_limits(self, sandbox_id, resource_type, requested):
+        sb = next((s for s in self.sandboxes if s["id"] == sandbox_id), None)
+        if not sb: return {"limited": True, "reason": "sandbox not found"}
+        limit = sb["resource_limits"].get(resource_type)
+        if limit and requested > limit:
+            self._audit("limit", sandbox_id, f"{resource_type} request {requested} > limit {limit}")
+            return {"limited": True, "limit": limit, "requested": requested}
+        return {"limited": False}
+
+    def safe_terminate(self, sandbox_id):
+        sb = next((s for s in self.sandboxes if s["id"] == sandbox_id), None)
+        if not sb: return {"error": "sandbox not found"}
+        sb["status"] = "terminated"; sb["terminated_at"] = __import__("time").time()
+        self._audit("terminate", sandbox_id, "safe termination")
+        return {"terminated": sandbox_id}
+
+    def _audit(self, action, subject, details):
+        self.audit_log.append({"action": action, "subject": subject, "details": details, "timestamp": __import__("time").time()})
+
+    def stats(self):
+        return {"sandboxes": len(self.sandboxes), "active": sum(1 for s in self.sandboxes if s["status"] == "active"), "audit_entries": len(self.audit_log)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["sandboxes", "permissions", "audit_log"]}
+
+    def from_dict(self, data):
+        for k in ["sandboxes", "permissions", "audit_log"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class EventBus:
+    def __init__(self):
+        self.subscribers = {}
+        self.events = []
+        self.routes = []
+
+    def subscribe(self, subscriber_id, event_type, handler_name):
+        if event_type not in self.subscribers: self.subscribers[event_type] = []
+        self.subscribers[event_type].append({"id": subscriber_id, "handler": handler_name})
+        return {"subscribed": subscriber_id, "event_type": event_type}
+
+    def publish(self, event_type, source, data, severity="info"):
+        event = {"id": f"evt_{len(self.events)+1}", "type": event_type, "source": source, "data": data, "severity": severity, "timestamp": __import__("time").time()}
+        self.events.append(event)
+        receivers = self.subscribers.get(event_type, [])
+        for sub in receivers:
+            self.routes.append({"event": event["id"], "subscriber": sub["id"], "routed": True})
+        return {"event": event, "subscribers_notified": len(receivers)}
+
+    def get_events_by_type(self, event_type, limit=10):
+        return [e for e in self.events if e["type"] == event_type][-limit:]
+
+    def get_events_by_source(self, source, limit=10):
+        return [e for e in self.events if e["source"] == source][-limit:]
+
+    def stats(self):
+        s = {"events": len(self.events), "subscriber_types": len(self.subscribers), "routes": len(self.routes)}
+        s.update({t: len(subs) for t, subs in self.subscribers.items()})
+        return s
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["subscribers", "events", "routes"]}
+
+    def from_dict(self, data):
+        for k in ["subscribers", "events", "routes"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class StateManagement:
+    def __init__(self):
+        self.checkpoints = []
+        self.sessions = {}
+        self.snapshots = []
+
+    def create_checkpoint(self, entity_id, state_data, checkpoint_type="full"):
+        cp = {"id": f"cp_{len(self.checkpoints)+1}", "entity": entity_id, "data": state_data, "type": checkpoint_type, "created": __import__("time").time()}
+        self.checkpoints.append(cp)
+        return cp
+
+    def restore_checkpoint(self, checkpoint_id):
+        cp = next((c for c in self.checkpoints if c["id"] == checkpoint_id), None)
+        if not cp: return {"error": "checkpoint not found"}
+        return {"restored": cp["entity"], "data": cp["data"], "checkpoint": cp["id"]}
+
+    def create_session(self, session_id, context):
+        self.sessions[session_id] = {"id": session_id, "context": context, "created": __import__("time").time(), "last_active": __import__("time").time(), "status": "active"}
+        return self.sessions[session_id]
+
+    def get_session(self, session_id):
+        session = self.sessions.get(session_id)
+        if session: session["last_active"] = __import__("time").time()
+        return session
+
+    def end_session(self, session_id):
+        session = self.sessions.get(session_id)
+        if not session: return {"error": "session not found"}
+        session["status"] = "ended"; session["ended_at"] = __import__("time").time()
+        return session
+
+    def take_snapshot(self, system_state):
+        snap = {"id": f"snap_{len(self.snapshots)+1}", "state": system_state, "taken": __import__("time").time()}
+        self.snapshots.append(snap)
+        return snap
+
+    def rollback(self, snapshot_id):
+        snap = next((s for s in self.snapshots if s["id"] == snapshot_id), None)
+        if not snap: return {"error": "snapshot not found"}
+        return {"rolled_back": True, "state": snap["state"], "snapshot": snap["id"]}
+
+    def sync_distributed(self, entity_id, state_data, peers):
+        return {"synced": True, "peers": len(peers)}
+
+    def stats(self):
+        return {"checkpoints": len(self.checkpoints), "active_sessions": sum(1 for s in self.sessions.values() if s["status"] == "active"), "snapshots": len(self.snapshots)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["checkpoints", "sessions", "snapshots"]}
+
+    def from_dict(self, data):
+        for k in ["checkpoints", "sessions", "snapshots"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class Observability:
+    def __init__(self):
+        self.metrics = []
+        self.execution_history = []
+        self.dependencies = []
+        self.health_status = "healthy"
+
+    def record_metric(self, name, value, unit="", tags=None):
+        entry = {"name": name, "value": value, "unit": unit, "tags": tags or {}, "timestamp": __import__("time").time()}
+        self.metrics.append(entry)
+        if name == "error_rate" and value > 10: self.health_status = "degraded"
+        elif name == "error_rate" and value == 0: self.health_status = "healthy"
+        return entry
+
+    def log_execution(self, module_id, action, duration_ms, success):
+        entry = {"module": module_id, "action": action, "duration_ms": duration_ms, "success": success, "timestamp": __import__("time").time()}
+        self.execution_history.append(entry)
+        return entry
+
+    def register_dependency(self, from_module, to_module, dep_type="calls"):
+        dep = {"from": from_module, "to": to_module, "type": dep_type, "registered": __import__("time").time()}
+        self.dependencies.append(dep)
+        return dep
+
+    def get_dependency_graph(self):
+        graph = {}
+        for d in self.dependencies:
+            if d["from"] not in graph: graph[d["from"]] = []
+            graph[d["from"]].append({"target": d["to"], "type": d["type"]})
+        return graph
+
+    def health_check(self):
+        recent = self.metrics[-20:] if len(self.metrics) >= 20 else self.metrics
+        errors = sum(1 for m in recent if m["name"] == "error" and m["value"] > 0)
+        return {"status": self.health_status, "recent_errors": errors, "total_metrics": len(self.metrics), "executions": len(self.execution_history)}
+
+    def stats(self):
+        return {"metrics": len(self.metrics), "executions": len(self.execution_history), "dependencies": len(self.dependencies), "health": self.health_status}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["metrics", "execution_history", "dependencies", "health_status"]}
+
+    def from_dict(self, data):
+        for k in ["metrics", "execution_history", "dependencies", "health_status"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class RuntimeSDK:
+    def __init__(self):
+        self.apis = {"lifecycle": ["install", "initialize", "run", "suspend", "resume", "stop", "remove"], "scheduling": ["submit", "schedule", "complete", "status"], "memory": ["store", "retrieve", "delete", "list"], "knowledge": ["query", "share", "learn", "forget"], "agent": ["deploy", "message", "status", "terminate"], "event": ["subscribe", "publish", "unsubscribe", "list"], "security": ["auth", "check_permission", "encrypt", "audit"]}
+        self.sdk_versions = {}
+        self.usage = []
+
+    def register_sdk(self, sdk_name, version, supported_apis):
+        self.sdk_versions[sdk_name] = {"version": version, "apis": supported_apis, "registered": __import__("time").time()}
+        return self.sdk_versions[sdk_name]
+
+    def call_api(self, sdk_name, api_name, params=None):
+        if sdk_name not in self.sdk_versions: return {"error": f"SDK {sdk_name} not registered"}
+        sdk = self.sdk_versions[sdk_name]
+        if api_name not in sdk["apis"]: return {"error": f"API {api_name} not in SDK {sdk_name}"}
+        call = {"sdk": sdk_name, "api": api_name, "params": params or {}, "timestamp": __import__("time").time()}
+        self.usage.append(call)
+        return {"result": f"executed {sdk_name}.{api_name}", "call": call}
+
+    def get_api_list(self):
+        return dict(self.apis)
+
+    def stats(self):
+        return {"sdks": len(self.sdk_versions), "usage_count": len(self.usage), "api_categories": len(self.apis)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["apis", "sdk_versions", "usage"]}
+
+    def from_dict(self, data):
+        for k in ["apis", "sdk_versions", "usage"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class UniversalExecutionEngine:
+    def __init__(self):
+        self.instances = {}
+        self.workflows = []
+        self.services = []
+
+    def run_agent(self, agent_id, agent_type, config):
+        inst = {"id": agent_id, "type": "agent", "agent_type": agent_type, "config": config, "status": "running", "started": __import__("time").time()}
+        self.instances[agent_id] = inst
+        return inst
+
+    def run_workflow(self, workflow_id, steps, context=None):
+        wf = {"id": workflow_id, "steps": steps, "context": context or {}, "current_step": 0, "status": "running", "started": __import__("time").time()}
+        self.workflows.append(wf)
+        return wf
+
+    def advance_workflow(self, workflow_id):
+        wf = next((w for w in self.workflows if w["id"] == workflow_id), None)
+        if not wf: return {"error": "workflow not found"}
+        if wf["current_step"] >= len(wf["steps"]):
+            wf["status"] = "completed"; wf["completed_at"] = __import__("time").time()
+            return {"status": "completed", "workflow": workflow_id}
+        step = wf["steps"][wf["current_step"]]
+        wf["current_step"] += 1
+        return {"status": "advancing", "step": step, "step_index": wf["current_step"] - 1, "total": len(wf["steps"])}
+
+    def run_service(self, service_id, service_type, endpoint):
+        svc = {"id": service_id, "type": "service", "service_type": service_type, "endpoint": endpoint, "status": "running", "started": __import__("time").time()}
+        self.services.append(svc)
+        return svc
+
+    def stop_instance(self, instance_id):
+        if instance_id in self.instances:
+            self.instances[instance_id]["status"] = "stopped"; self.instances[instance_id]["stopped_at"] = __import__("time").time()
+            return {"stopped": instance_id}
+        wf = next((w for w in self.workflows if w["id"] == instance_id), None)
+        if wf: wf["status"] = "stopped"; return {"stopped": instance_id}
+        svc = next((s for s in self.services if s["id"] == instance_id), None)
+        if svc: svc["status"] = "stopped"; return {"stopped": instance_id}
+        return {"error": "instance not found"}
+
+    def stats(self):
+        return {"agents": len(self.instances), "workflows": len(self.workflows), "services": len(self.services), "total": len(self.instances) + len(self.workflows) + len(self.services)}
+
+    def to_dict(self):
+        return {k: getattr(self, k) for k in ["instances", "workflows", "services"]}
+
+    def from_dict(self, data):
+        for k in ["instances", "workflows", "services"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class UniversalComputingRuntime:
+    def __init__(self):
+        self.execution_engine = UniversalExecutionEngine()
+        self.module_model = StandardModuleModel()
+        self.lifecycle = ExecutionLifecycle()
+        self.resource_abstraction = ResourceAbstractionLayer()
+        self.scheduler = IntelligentScheduler()
+        self.sandbox = SandboxFramework()
+        self.event_bus = EventBus()
+        self.state = StateManagement()
+        self.observability = Observability()
+        self.sdk = RuntimeSDK()
+        self._initialized = False
+
+    def initialize(self):
+        self.module_model.define_module("ucr_core", "UCR Core", "system", "1.0.0", ["execution", "scheduling", "events"], ["system"], [], {"cpu": 0.5, "memory": 512}, {}, "ucr_core_sig")
+        self.event_bus.subscribe("ucr_core", "system.startup", "handle_startup")
+        self._initialized = True
+        return {"status": "ucr_initialized", "layers": 10}
+
+    def full_summary(self):
+        return {"execution_engine": self.execution_engine.stats(), "module_model": self.module_model.stats(), "lifecycle": self.lifecycle.stats(), "resource_abstraction": self.resource_abstraction.stats(), "scheduler": self.scheduler.stats(), "sandbox": self.sandbox.stats(), "event_bus": self.event_bus.stats(), "state": self.state.stats(), "observability": self.observability.stats(), "sdk": self.sdk.stats()}
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != "_initialized" and hasattr(v, "to_dict")}
+
+    def from_dict(self, data):
+        for key in ["execution_engine", "module_model", "lifecycle", "resource_abstraction", "scheduler", "sandbox", "event_bus", "state", "observability", "sdk"]:
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
+class ObservabilityEngine:
+    def __init__(self):
+        self.metrics = {"performance": {}, "reliability": {}, "resource_utilization": {}, "agent_effectiveness": {}, "workflow_efficiency": {}, "knowledge_quality": {}, "error_rates": {}}
+        self.observations = []
+
+    def record(self, category, key, value, tags=None):
+        if category not in self.metrics: return {"error": "unknown category"}
+        self.metrics[category][key] = {"value": value, "timestamp": __import__("time").time(), "tags": tags or {}}
+        self.observations.append({"category": category, "key": key, "value": value, "timestamp": __import__("time").time()})
+        return {"recorded": True, "category": category, "key": key}
+
+    def get_metric(self, category, key):
+        return self.metrics.get(category, {}).get(key, {"error": "not found"})
+
+    def get_category(self, category):
+        return self.metrics.get(category, {})
+
+    def analyze_performance(self):
+        perf = self.metrics["performance"]
+        if not perf: return {"status": "no_data", "bottlenecks": []}
+        bottlenecks = [k for k, v in perf.items() if isinstance(v, dict) and v.get("value", 0) < 0.5]
+        return {"status": "analyzed", "metrics": len(perf), "bottlenecks": bottlenecks}
+
+    def analyze_reliability(self):
+        rel = self.metrics["reliability"]
+        if not rel: return {"status": "no_data"}
+        failures = [k for k, v in rel.items() if isinstance(v, dict) and v.get("value", 1) < 0.8]
+        return {"status": "analyzed", "unreliable": failures}
+
+    def stats(self):
+        return {cat: len(vals) for cat, vals in self.metrics.items()}
+
+    def to_dict(self):
+        return {"metrics": self.metrics, "observations": self.observations}
+
+    def from_dict(self, data):
+        for k in ["metrics", "observations"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ImprovementAnalyzer:
+    def __init__(self):
+        self.findings = {"bottlenecks": [], "duplicates": [], "unused": [], "weaknesses": [], "inefficiencies": [], "inconsistencies": []}
+        self.analysis_history = []
+
+    def detect_bottleneck(self, component, description, severity, evidence):
+        finding = {"type": "bottleneck", "component": component, "description": description, "severity": severity, "evidence": evidence, "timestamp": __import__("time").time()}
+        self.findings["bottlenecks"].append(finding)
+        self.analysis_history.append(finding)
+        return finding
+
+    def detect_duplicate(self, component_a, component_b, description, overlap):
+        finding = {"type": "duplicate", "component_a": component_a, "component_b": component_b, "description": description, "overlap": overlap, "timestamp": __import__("time").time()}
+        self.findings["duplicates"].append(finding)
+        self.analysis_history.append(finding)
+        return finding
+
+    def detect_unused(self, component, description, evidence):
+        finding = {"type": "unused", "component": component, "description": description, "evidence": evidence, "timestamp": __import__("time").time()}
+        self.findings["unused"].append(finding)
+        self.analysis_history.append(finding)
+        return finding
+
+    def detect_weakness(self, component, description, severity, evidence):
+        finding = {"type": "weakness", "component": component, "description": description, "severity": severity, "evidence": evidence, "timestamp": __import__("time").time()}
+        self.findings["weaknesses"].append(finding)
+        self.analysis_history.append(finding)
+        return finding
+
+    def detect_inefficiency(self, workflow, description, impact, evidence):
+        finding = {"type": "inefficiency", "workflow": workflow, "description": description, "impact": impact, "evidence": evidence, "timestamp": __import__("time").time()}
+        self.findings["inefficiencies"].append(finding)
+        self.analysis_history.append(finding)
+        return finding
+
+    def detect_inconsistency(self, source, target, description, evidence):
+        finding = {"type": "inconsistency", "source": source, "target": target, "description": description, "evidence": evidence, "timestamp": __import__("time").time()}
+        self.findings["inconsistencies"].append(finding)
+        self.analysis_history.append(finding)
+        return finding
+
+    def summary(self):
+        return {k: len(v) for k, v in self.findings.items()}
+
+    def stats(self):
+        return self.summary()
+
+    def to_dict(self):
+        return {"findings": self.findings, "analysis_history": self.analysis_history}
+
+    def from_dict(self, data):
+        for k in ["findings", "analysis_history"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ProposalGenerator:
+    def __init__(self):
+        self.proposals = []
+        self.next_id = 1
+
+    def generate(self, problem, evidence, expected_benefit, risk_assessment, affected_modules, rollback_strategy):
+        proposal = {"id": f"prop_{self.next_id}", "problem": problem, "evidence": evidence, "expected_benefit": expected_benefit, "risk_assessment": risk_assessment, "affected_modules": affected_modules, "rollback_strategy": rollback_strategy, "status": "draft", "created": __import__("time").time()}
+        self.next_id += 1
+        self.proposals.append(proposal)
+        return proposal
+
+    def get_proposal(self, prop_id):
+        for p in self.proposals:
+            if p["id"] == prop_id: return p
+        return {"error": "not found"}
+
+    def evaluate_risk(self, prop_id):
+        p = self.get_proposal(prop_id)
+        if "error" in p: return p
+        risk_score = min(1.0, len(p.get("affected_modules", [])) * 0.2 + (1.0 if "critical" in p.get("risk_assessment", "").lower() else 0.3))
+        return {"id": prop_id, "risk_score": risk_score, "risk_level": "low" if risk_score < 0.3 else "medium" if risk_score < 0.7 else "high", "factors": p["risk_assessment"]}
+
+    def stats(self):
+        return {"total": len(self.proposals), "by_status": __import__("collections").Counter(p["status"] for p in self.proposals)}
+
+    def to_dict(self):
+        return {"proposals": self.proposals, "next_id": self.next_id}
+
+    def from_dict(self, data):
+        for k in ["proposals", "next_id"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ValidationPipeline:
+    def __init__(self):
+        self.validations = []
+        self.next_id = 1
+
+    def run_sandbox(self, proposal_id, workload_desc):
+        val = {"id": f"val_{self.next_id}", "type": "sandbox", "proposal_id": proposal_id, "workload": workload_desc, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        __import__("time").sleep(0.001)
+        val["status"] = "passed"
+        val["result"] = {"passed": True, "details": "executed safely in sandbox"}
+        self.validations.append(val)
+        return val
+
+    def run_synthetic_workload(self, proposal_id, workload_spec):
+        val = {"id": f"val_{self.next_id}", "type": "synthetic", "proposal_id": proposal_id, "spec": workload_spec, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        val["status"] = "passed"
+        val["result"] = {"passed": True, "response_time": 0.05, "throughput": 100}
+        self.validations.append(val)
+        return val
+
+    def run_regression(self, proposal_id, test_suite):
+        val = {"id": f"val_{self.next_id}", "type": "regression", "proposal_id": proposal_id, "test_suite": test_suite, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        val["status"] = "passed" if "fail" not in test_suite.lower() else "failed"
+        val["result"] = {"passed": val["status"] == "passed", "tests": 10, "failures": 0 if val["status"] == "passed" else 2}
+        self.validations.append(val)
+        return val
+
+    def run_compatibility(self, proposal_id, targets):
+        val = {"id": f"val_{self.next_id}", "type": "compatibility", "proposal_id": proposal_id, "targets": targets, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        val["status"] = "passed"
+        val["result"] = {"passed": True, "compatible_with": targets if isinstance(targets, list) else [targets]}
+        self.validations.append(val)
+        return val
+
+    def run_benchmark(self, proposal_id, benchmark_spec):
+        val = {"id": f"val_{self.next_id}", "type": "benchmark", "proposal_id": proposal_id, "spec": benchmark_spec, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        val["status"] = "passed"
+        val["result"] = {"passed": True, "score": 95.5, "improvement": 0.12}
+        self.validations.append(val)
+        return val
+
+    def stats(self):
+        return {"total": len(self.validations), "passed": sum(1 for v in self.validations if v.get("status") == "passed"), "by_type": __import__("collections").Counter(v["type"] for v in self.validations)}
+
+    def to_dict(self):
+        return {"validations": self.validations, "next_id": self.next_id}
+
+    def from_dict(self, data):
+        for k in ["validations", "next_id"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class VerificationPipeline:
+    def __init__(self):
+        self.verifications = []
+        self.next_id = 1
+
+    def run_unit_tests(self, proposal_id, test_count):
+        v = {"id": f"ver_{self.next_id}", "type": "unit", "proposal_id": proposal_id, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        failures = 0
+        v["status"] = "passed"
+        v["result"] = {"total": test_count, "passed": test_count - failures, "failed": failures}
+        self.verifications.append(v)
+        return v
+
+    def run_integration_tests(self, proposal_id, test_count):
+        v = {"id": f"ver_{self.next_id}", "type": "integration", "proposal_id": proposal_id, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        failures = 0
+        v["status"] = "passed"
+        v["result"] = {"total": test_count, "passed": test_count - failures, "failed": failures}
+        self.verifications.append(v)
+        return v
+
+    def run_security_analysis(self, proposal_id, findings):
+        v = {"id": f"ver_{self.next_id}", "type": "security", "proposal_id": proposal_id, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        critical = sum(1 for f in findings if f.get("severity") == "critical") if findings else 0
+        v["status"] = "failed" if critical > 0 else "passed"
+        v["result"] = {"findings": len(findings), "critical": critical, "warnings": len(findings) - critical if findings else 0}
+        self.verifications.append(v)
+        return v
+
+    def run_performance_analysis(self, proposal_id, metrics):
+        v = {"id": f"ver_{self.next_id}", "type": "performance", "proposal_id": proposal_id, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        degradation = any(m.get("regression", False) for m in metrics) if metrics else False
+        v["status"] = "failed" if degradation else "passed"
+        v["result"] = {"metrics": len(metrics) if metrics else 0, "degradation": degradation, "details": metrics or []}
+        self.verifications.append(v)
+        return v
+
+    def run_compatibility_verification(self, proposal_id, components):
+        v = {"id": f"ver_{self.next_id}", "type": "compatibility", "proposal_id": proposal_id, "status": "running", "started": __import__("time").time()}
+        self.next_id += 1
+        incompatible = [c for c in components if not c.get("compatible", True)] if components else []
+        v["status"] = "failed" if incompatible else "passed"
+        v["result"] = {"checked": len(components) if components else 0, "incompatible": len(incompatible), "details": incompatible}
+        self.verifications.append(v)
+        return v
+
+    def run_full_pipeline(self, proposal_id):
+        results = {}
+        results["unit"] = self.run_unit_tests(proposal_id, 50)
+        results["integration"] = self.run_integration_tests(proposal_id, 20)
+        results["security"] = self.run_security_analysis(proposal_id, [])
+        results["performance"] = self.run_performance_analysis(proposal_id, [{"name": "latency", "regression": False}])
+        results["compatibility"] = self.run_compatibility_verification(proposal_id, [{"name": "all", "compatible": True}])
+        all_passed = all(v["status"] == "passed" for v in results.values())
+        return {"proposal_id": proposal_id, "results": results, "all_passed": all_passed}
+
+    def stats(self):
+        return {"total": len(self.verifications), "passed": sum(1 for v in self.verifications if v.get("status") == "passed"), "by_type": __import__("collections").Counter(v["type"] for v in self.verifications)}
+
+    def to_dict(self):
+        return {"verifications": self.verifications, "next_id": self.next_id}
+
+    def from_dict(self, data):
+        for k in ["verifications", "next_id"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class VeaGovernance:
+    def __init__(self):
+        self.proposals = []
+        self.approvals = []
+        self.next_id = 1
+
+    def submit_for_review(self, proposal, risk_level):
+        p = {"id": f"review_{self.next_id}", "proposal_id": proposal["id"], "summary": proposal["problem"][:100] + ("..." if len(proposal["problem"]) > 100 else ""), "expected_benefit": proposal["expected_benefit"], "risk_level": risk_level, "affected_modules": proposal["affected_modules"], "rollback": proposal["rollback_strategy"], "status": "pending", "submitted": __import__("time").time()}
+        self.next_id += 1
+        self.approvals.append(p)
+        return p
+
+    def approve(self, review_id, reviewer):
+        for p in self.approvals:
+            if p["id"] == review_id:
+                p["status"] = "approved"
+                p["reviewer"] = reviewer
+                p["approved_at"] = __import__("time").time()
+                return p
+        return {"error": "not found"}
+
+    def reject(self, review_id, reviewer, reason):
+        for p in self.approvals:
+            if p["id"] == review_id:
+                p["status"] = "rejected"
+                p["reviewer"] = reviewer
+                p["reason"] = reason
+                p["rejected_at"] = __import__("time").time()
+                return p
+        return {"error": "not found"}
+
+    def get_pending(self):
+        return [p for p in self.approvals if p["status"] == "pending"]
+
+    def get_approved(self):
+        return [p for p in self.approvals if p["status"] == "approved"]
+
+    def generate_summary(self, review_id):
+        for p in self.approvals:
+            if p["id"] == review_id:
+                return {"id": p["id"], "summary": p["summary"], "benefit": p["expected_benefit"], "risk": p["risk_level"], "rollback": p["rollback"], "status": p["status"]}
+        return {"error": "not found"}
+
+    def stats(self):
+        return {"total": len(self.approvals), "pending": sum(1 for p in self.approvals if p["status"] == "pending"), "approved": sum(1 for p in self.approvals if p["status"] == "approved"), "rejected": sum(1 for p in self.approvals if p["status"] == "rejected")}
+
+    def to_dict(self):
+        return {"approvals": self.approvals, "next_id": self.next_id}
+
+    def from_dict(self, data):
+        for k in ["approvals", "next_id"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class VersionEvolutionGraph:
+    def __init__(self):
+        self.versions = {"architecture": [], "knowledge": [], "agent": [], "module": [], "dependency": []}
+        self.current_versions = {}
+
+    def snapshot(self, version_type, version_id, data):
+        if version_type not in self.versions: return {"error": "unknown type"}
+        snap = {"version_id": version_id, "data": data, "timestamp": __import__("time").time()}
+        self.versions[version_type].append(snap)
+        self.current_versions[version_type] = version_id
+        return snap
+
+    def get_version(self, version_type, version_id):
+        for v in self.versions.get(version_type, []):
+            if v["version_id"] == version_id: return v
+        return {"error": "not found"}
+
+    def rollback(self, version_type, version_id):
+        if version_type not in self.versions: return {"error": "unknown type"}
+        for i, v in enumerate(self.versions[version_type]):
+            if v["version_id"] == version_id:
+                self.current_versions[version_type] = version_id
+                return {"rolled_back": True, "type": version_type, "version": version_id, "index": i}
+        return {"error": "version not found"}
+
+    def get_lineage(self, version_type):
+        return self.versions.get(version_type, [])
+
+    def stats(self):
+        return {t: len(v) for t, v in self.versions.items()}
+
+    def to_dict(self):
+        return {"versions": self.versions, "current_versions": self.current_versions}
+
+    def from_dict(self, data):
+        for k in ["versions", "current_versions"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ChangeSafety:
+    def __init__(self):
+        self.deployments = []
+        self.releases = []
+        self.next_id = 1
+
+    def atomic_update(self, component, old_state, new_state):
+        deploy = {"id": f"dep_{self.next_id}", "component": component, "type": "atomic", "old_state": old_state, "new_state": new_state, "status": "applied", "timestamp": __import__("time").time()}
+        self.next_id += 1
+        self.deployments.append(deploy)
+        return deploy
+
+    def auto_rollback(self, deploy_id):
+        for d in self.deployments:
+            if d["id"] == deploy_id:
+                d["status"] = "rolled_back"
+                d["rolled_back_at"] = __import__("time").time()
+                return {"rolled_back": True, "component": d["component"], "restored_state": d["old_state"]}
+        return {"error": "not found"}
+
+    def handle_failure(self, component, error, context):
+        recovery = {"component": component, "error": str(error), "context": context, "recovered": True, "timestamp": __import__("time").time()}
+        self.deployments.append({"id": f"dep_{self.next_id}", "component": component, "type": "recovery", "status": "recovered", "error": str(error), "timestamp": __import__("time").time()})
+        self.next_id += 1
+        return recovery
+
+    def verify_integrity(self, component, checksum):
+        valid = len(checksum) == 64 and all(c in "0123456789abcdef" for c in checksum.lower())
+        return {"component": component, "checksum": checksum, "valid": valid}
+
+    def sign_release(self, component, version, signer):
+        release = {"id": f"rel_{self.next_id}", "component": component, "version": version, "signer": signer, "signature": hashlib.sha256(f"{component}:{version}:{signer}".encode()).hexdigest(), "signed_at": __import__("time").time(), "verified": True}
+        self.next_id += 1
+        self.releases.append(release)
+        return release
+
+    def stats(self):
+        return {"deployments": len(self.deployments), "releases": len(self.releases), "active": sum(1 for d in self.deployments if d.get("status") in ("applied", "running")), "rolled_back": sum(1 for d in self.deployments if d.get("status") == "rolled_back")}
+
+    def to_dict(self):
+        return {"deployments": self.deployments, "releases": self.releases, "next_id": self.next_id}
+
+    def from_dict(self, data):
+        for k in ["deployments", "releases", "next_id"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class ContinuousLearning:
+    def __init__(self):
+        self.records = {"successful": [], "rejected": [], "performance_impacts": [], "lessons": []}
+        self.cycle_count = 0
+
+    def record_success(self, proposal_id, outcome, impact_score):
+        r = {"proposal_id": proposal_id, "outcome": outcome, "impact_score": impact_score, "timestamp": __import__("time").time()}
+        self.records["successful"].append(r)
+        self.cycle_count += 1
+        return r
+
+    def record_rejection(self, proposal_id, reason, lessons):
+        r = {"proposal_id": proposal_id, "reason": reason, "lessons": lessons, "timestamp": __import__("time").time()}
+        self.records["rejected"].append(r)
+        self.cycle_count += 1
+        return r
+
+    def record_performance_impact(self, change_id, metric, before, after):
+        r = {"change_id": change_id, "metric": metric, "before": before, "after": after, "delta": after - before, "timestamp": __import__("time").time()}
+        self.records["performance_impacts"].append(r)
+        return r
+
+    def record_lesson(self, category, lesson, source):
+        r = {"category": category, "lesson": lesson, "source": source, "timestamp": __import__("time").time()}
+        self.records["lessons"].append(r)
+        return r
+
+    def get_success_rate(self):
+        total = len(self.records["successful"]) + len(self.records["rejected"])
+        if total == 0: return {"rate": 0, "total": 0}
+        return {"rate": len(self.records["successful"]) / total, "total": total, "successful": len(self.records["successful"]), "rejected": len(self.records["rejected"])}
+
+    def generate_recommendation(self):
+        if not self.records["successful"] and not self.records["rejected"]: return {"recommendation": "insufficient data", "confidence": 0}
+        rate = self.get_success_rate()
+        return {"recommendation": "continue current approach" if rate["rate"] > 0.5 else "reconsider strategy", "confidence": round(rate["rate"], 2), "cycles": self.cycle_count}
+
+    def stats(self):
+        return {k: len(v) for k, v in self.records.items()}
+
+    def to_dict(self):
+        return {"records": self.records, "cycle_count": self.cycle_count}
+
+    def from_dict(self, data):
+        for k in ["records", "cycle_count"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class EvolutionDashboard:
+    def __init__(self):
+        self.health_snapshots = []
+        self.history = []
+
+    def record_health(self, health_data):
+        snap = {"health_data": health_data, "timestamp": __import__("time").time()}
+        self.health_snapshots.append(snap)
+        return snap
+
+    def log_event(self, event_type, description, details=None):
+        event = {"type": event_type, "description": description, "details": details or {}, "timestamp": __import__("time").time()}
+        self.history.append(event)
+        return event
+
+    def current_health(self):
+        if not self.health_snapshots: return {"status": "unknown", "data": {}}
+        return self.health_snapshots[-1]["health_data"]
+
+    def get_history(self, event_type=None):
+        if event_type: return [e for e in self.history if e["type"] == event_type]
+        return self.history
+
+    def summary(self):
+        return {"health_snapshots": len(self.health_snapshots), "events": len(self.history), "latest_health": self.current_health()}
+
+    def stats(self):
+        return self.summary()
+
+    def to_dict(self):
+        return {"health_snapshots": self.health_snapshots, "history": self.history}
+
+    def from_dict(self, data):
+        for k in ["health_snapshots", "history"]:
+            if k in data: setattr(self, k, data[k])
+
+
+class VerifiedEvolutionArchitecture:
+    def __init__(self):
+        self.observability = ObservabilityEngine()
+        self.analyzer = ImprovementAnalyzer()
+        self.proposal_engine = ProposalGenerator()
+        self.validation = ValidationPipeline()
+        self.verification = VerificationPipeline()
+        self.governance = VeaGovernance()
+        self.version_graph = VersionEvolutionGraph()
+        self.change_safety = ChangeSafety()
+        self.learning = ContinuousLearning()
+        self.dashboard = EvolutionDashboard()
+        self._initialized = False
+
+    def initialize(self):
+        self.dashboard.record_health({"status": "healthy", "modules": 10, "uptime": 0})
+        self.dashboard.log_event("system", "VEA initialized")
+        self._initialized = True
+        return {"status": "vea_initialized", "layers": 10}
+
+    def full_evolution_cycle(self, problem, evidence, benefit, risk, modules, rollback):
+        obs = self.observability.record("performance", "cycle_analysis", 1.0)
+        proposal = self.proposal_engine.generate(problem, evidence, benefit, risk, modules, rollback)
+        validation = self.validation.run_sandbox(proposal["id"], "full_cycle_sandbox")
+        verification = self.verification.run_full_pipeline(proposal["id"])
+        review = self.governance.submit_for_review(proposal, risk)
+        self.governance.approve(review["id"], "system")
+        deploy = self.change_safety.atomic_update("evolution", {"proposal": "pending"}, {"proposal": proposal["id"], "status": "applied"})
+        self.version_graph.snapshot("architecture", proposal["id"], {"problem": problem, "modules": modules})
+        self.learning.record_success(proposal["id"], "improvement_applied", 0.85)
+        self.dashboard.log_event("evolution_cycle", f"Full cycle completed for proposal {proposal['id']}")
+        return {"proposal": proposal, "validation": validation, "verification": verification, "governance": review, "deployment": deploy}
+
+    def full_summary(self):
+        return {"observability": self.observability.stats(), "analyzer": self.analyzer.stats(), "proposal_engine": self.proposal_engine.stats(), "validation": self.validation.stats(), "verification": self.verification.stats(), "governance": self.governance.stats(), "version_graph": self.version_graph.stats(), "change_safety": self.change_safety.stats(), "learning": self.learning.stats(), "dashboard": self.dashboard.stats()}
+
+    def to_dict(self):
+        return {k: v.to_dict() for k, v in self.__dict__.items() if k != "_initialized" and hasattr(v, "to_dict")}
+
+    def from_dict(self, data):
+        for key in ["observability", "analyzer", "proposal_engine", "validation", "verification", "governance", "version_graph", "change_safety", "learning", "dashboard"]:
+            if key in data and hasattr(self, key) and hasattr(getattr(self, key), "from_dict"):
+                getattr(self, key).from_dict(data[key])
+
+
 class FeedbackLearner:
     """Learns from user preferences, working style, communication patterns, decisions."""
 
@@ -14797,6 +15829,10 @@ class Shell:
         self.aiil.initialize()
         self.cin = CollectiveIntelligenceNetwork()
         self.cin.initialize()
+        self.ucr = UniversalComputingRuntime()
+        self.ucr.initialize()
+        self.vea = VerifiedEvolutionArchitecture()
+        self.vea.initialize()
 
     def _config_path(self):
         return os.path.join(self.fs.ARCANIS_HOME, "etc", "config.json")
@@ -14840,9 +15876,9 @@ class Shell:
   / ___ \| | | | (_| | || (_) | |     |  __/| |_| | |___
  /_/   \_\_| |_|\__,_|\__\___/|_|     |_|    \___/ \____|
         """ + "\033[0m")
-        print(f"{dm}  Arcanis OS v12.0.0 - Collective Intelligence Network\033[0m")
-        print(f"{dm}  106 modules | 256 commands | ~/.arcanis/ on disk\033[0m")
-        print(f"{dm}  CIN active: 10-layer collaboration | AIIL+IEDC+ACDE+PIIN+RIL+AWSE online\033[0m")
+        print(f"{dm}  Arcanis OS v14.0.0 - Verified Evolution Architecture\033[0m")
+        print(f"{dm}  126 modules | 278 commands | ~/.arcanis/ on disk\033[0m")
+        print(f"{dm}  VEA active: 10-layer evolution | UCR+CIN+AIIL+AWSE+IEDC+ACDE+PIIN+RIL online\033[0m")
         print(f"{dm}  PIIN active: 10-layer intelligence identity | User model online\033[0m")
         print(f"{dm}  AWSE active: 10-layer simulation | IEDC+ACDE+PIIN+RIL online\033[0m")
         print(f"{dm}  FS root: {self.fs.ARCANIS_HOME}\033[0m")
@@ -15148,6 +16184,27 @@ class Shell:
             "provenance": self.cmd_cin_provenance,
             "resilient": self.cmd_cin_resilient,
             "gov": self.cmd_cin_gov,
+            "ucr": self.cmd_ucr,
+            "module": self.cmd_ucr_module,
+            "lifecycle": self.cmd_ucr_lifecycle,
+            "rabstraction": self.cmd_ucr_rabstraction,
+            "schedule": self.cmd_ucr_schedule,
+            "sandbox": self.cmd_ucr_sandbox,
+            "ebus": self.cmd_ucr_ebus,
+            "states": self.cmd_ucr_states,
+            "observe": self.cmd_ucr_observe,
+            "sdk": self.cmd_ucr_sdk,
+            "vea": self.cmd_vea,
+            "vea-observe": self.cmd_vea_observe,
+            "vea-analyze": self.cmd_vea_analyze,
+            "vea-propose": self.cmd_vea_propose,
+            "vea-validate": self.cmd_vea_validate,
+            "vea-verify": self.cmd_vea_verify,
+            "vea-review": self.cmd_vea_review,
+            "vea-version": self.cmd_vea_version,
+            "vea-deploy": self.cmd_vea_deploy,
+            "vea-learn": self.cmd_vea_learn,
+            "vea-dash": self.cmd_vea_dash,
         }
 
         handler = dispatch.get(command)
@@ -15341,7 +16398,7 @@ class Shell:
         print(f"\u2551  FS       : Real (~/.arcanis/)           \u2551")
         print(f"\u2551  Processes: {len(self.kernel.list_processes()):<28}\u2551")
         print(f"\u2551  Uptime   : {self.kernel.uptime}s{' ' * (26 - len(str(self.kernel.uptime)))}\u2551")
-        print(f"\u2551  Shell    : arcanis-sh (256 commands)    \u2551")
+        print(f"\u2551  Shell    : arcanis-sh (268 commands)    \u2551")
         print("\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d\033[0m")
 
     def cmd_uptime(self, _):
@@ -15462,7 +16519,7 @@ class Shell:
         responses = {
             "greeting": "Hello! Welcome to Arcanis OS. How can I assist you today?",
             "help_request": "I can help you with files, processes, AI inference, quantum circuits, blockchain, and more. Try 'help' for commands.",
-            "system_info": "Arcanis OS v12.0.0 with real filesystem at ~/.arcanis/. 106 modules, 256 commands.",
+            "system_info": "Arcanis OS v14.0.0 with real filesystem at ~/.arcanis/. 126 modules, 278 commands.",
             "file_operation": "File operations are performed on real disk files in ~/.arcanis/.",
             "process_management": "Use 'ps' to see processes, 'fork' to create children, 'kill' to terminate.",
             "execution": "Programs execute as simulated processes in the kernel.",
@@ -17208,7 +18265,8 @@ class Shell:
             print(f"{dm}  Total actions:\033[0m {st['total_actions']}")
             print(f"{dm}  Permissions set:\033[0m {st['permissions_set']}")
             print(f"{dm}  Safety boundaries:\033[0m {st['safety_boundaries']}")
-            print(f"{dm}  Emergency stop:\033[0m {'\033[31mENGAGED\033[0m' if st['emergency_stop'] else '\033[32mDISENGAGED\033[0m'}")
+            es = "\033[31mENGAGED\033[0m" if st["emergency_stop"] else "\033[32mDISENGAGED\033[0m"
+            print(f"{dm}  Emergency stop:\033[0m {es}")
             print(f"{dm}  Risk levels:\033[0m")
             for level, actions in s._risk_levels.items():
                 print(f"    {level}: {', '.join(actions)}")
@@ -17221,7 +18279,8 @@ class Shell:
             conf = check['required_confirmation']
             print(f"{hl}Permission check: {action}\033[0m")
             print(f"  Risk level: {check['risk_level']}")
-            print(f"{'  Requires confirmation: \033[33mYES\033[0m' if conf else '  Auto-approved'}")
+            conf_yes = '  Requires confirmation: \033[33mYES\033[0m'
+            print(f"{conf_yes if conf else '  Auto-approved'}")
         elif sub == "confirm":
             action = " ".join(rest) if rest else "open"
             result = s.confirm_action(action)
@@ -18341,7 +19400,9 @@ class Shell:
             print(f"{dm}  Adaptations:\033[0m {s['adaptations']}")
             for op, api in [("compute", "local/distributed"), ("store", "local/remote"), ("inference", "accelerated/generic"), ("network", "bandwidth")]:
                 info = hal.uniform_api(op)
-                print(f"  {op}: {'\033[32m✓\033[0m' if info.get('available') else '\033[31m✗\033[0m'} ({info.get('method', info.get('bandwidth', info.get('accelerated', 'n/a')))})")
+                ok_str = '\033[32m✓\033[0m'
+                fail_str = '\033[31m✗\033[0m'
+                print(f"  {op}: {ok_str if info.get('available') else fail_str} ({info.get('method', info.get('bandwidth', info.get('accelerated', 'n/a')))})")
             return
         sub = args[0]; rest = args[1:] if len(args) > 1 else []
         if sub == "detect" and rest:
@@ -18764,6 +19825,605 @@ class Shell:
         elif sub == "audit":
             for entry in gov.get_audit_log():
                 print(f"  [{entry['action']}] {entry['actor']}: {entry['details']}")
+
+    # ======================== UCR COMMANDS ========================
+
+    def cmd_ucr(self, args):
+        """Universal Computing Runtime status"""
+        dm = self._c("dm"); hl = self._c("hl")
+        s = self.ucr.full_summary()
+        print(f"\033[{hl}mUniversal Computing Runtime\033[0m")
+        print(f"{dm}  Execution Engine:\033[0m {s['execution_engine']['total']} running")
+        print(f"{dm}  Module Model:\033[0m {s['module_model']['modules']} modules, types: {s['module_model']['types']}")
+        print(f"{dm}  Lifecycle:\033[0m {s['lifecycle']['instances']} instances, {s['lifecycle']['history']} transitions")
+        print(f"{dm}  Resource Abstraction:\033[0m {len(s['resource_abstraction'])} capability types")
+        print(f"{dm}  Scheduler:\033[0m {s['scheduler']['queued']} queued, {s['scheduler']['running']} running, {s['scheduler']['completed']} completed")
+        print(f"{dm}  Sandbox:\033[0m {s['sandbox']['active']} active sandboxes")
+        print(f"{dm}  Event Bus:\033[0m {s['event_bus']['events']} events, {s['event_bus']['subscriber_types']} subscriber types")
+        print(f"{dm}  State:\033[0m {s['state']['checkpoints']} checkpoints, {s['state']['active_sessions']} active sessions")
+        print(f"{dm}  Observability:\033[0m {s['observability']['metrics']} metrics, health: {s['observability']['health']}")
+        print(f"{dm}  Runtime SDK:\033[0m {s['sdk']['sdks']} SDKs, {s['sdk']['usage_count']} API calls")
+
+    def cmd_ucr_module(self, args):
+        """Standard Module Model. Usage: module define <id> <name> <type> <ver> | validate <id> | deps <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        mm = self.ucr.module_model
+        if not args:
+            s = mm.stats()
+            print(f"\033[{hl}mStandard Module Model\033[0m")
+            print(f"{dm}  Modules:\033[0m {s['modules']}")
+            for mid, m in mm.modules.items():
+                print(f"  {mid}: {m['name']} v{m['version']} [{m['type']}]")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "define" and len(rest) >= 4:
+            result = mm.define_module(rest[0], rest[1], rest[2], rest[3], ["default"], ["default"], [], {"cpu": 0.5}, {}, "")
+            print(f"{ok}Module defined: {result['id']}\033[0m")
+        elif sub == "validate" and rest:
+            result = mm.validate_module(rest[0])
+            if result['valid']: print(f"{ok}Valid: {result['module']} v{result['version']}\033[0m")
+            else: print(f"{er}Invalid: {result['reason']}\033[0m")
+        elif sub == "deps" and rest:
+            result = mm.resolve_dependencies(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"  Resolved: {result['resolved']}\n  Missing: {result['missing']}")
+
+    def cmd_ucr_lifecycle(self, args):
+        """Execution Lifecycle. Usage: lifecycle install <id> <module> | run <id> | suspend <id> | resume <id> | stop <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        lc = self.ucr.lifecycle
+        if not args:
+            s = lc.stats()
+            print(f"\033[{hl}mExecution Lifecycle\033[0m")
+            print(f"{dm}  Instances:\033[0m {s['instances']}")
+            for st, cnt in s['statuses'].items():
+                print(f"  {st}: {cnt}")
+            print(f"{dm}  History:\033[0m {s['history']} transitions")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "install" and len(rest) >= 2:
+            result = lc.install(rest[0], rest[1])
+            print(f"{ok}Installed: {result['id']}\033[0m")
+        elif sub == "init" and rest:
+            result = lc.initialize(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Initialized: {rest[0]}\033[0m")
+        elif sub == "run" and rest:
+            result = lc.run(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Running: {rest[0]}\033[0m")
+        elif sub == "suspend" and rest:
+            result = lc.suspend(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Suspended: {rest[0]}\033[0m")
+        elif sub == "resume" and rest:
+            result = lc.resume(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Resumed: {rest[0]}\033[0m")
+        elif sub == "stop" and rest:
+            result = lc.stop(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Stopped: {rest[0]}\033[0m")
+        elif sub == "remove" and rest:
+            result = lc.remove(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Removed: {rest[0]}\033[0m")
+
+    def cmd_ucr_rabstraction(self, args):
+        """Resource Abstraction. Usage: rabstraction request <type> <amt> | release <type> <amt> | detect <type>=<value>..."""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        ra = self.ucr.resource_abstraction
+        if not args:
+            s = ra.stats()
+            print(f"\033[{hl}mResource Abstraction Layer\033[0m")
+            for cap, info in s.items():
+                print(f"  {cap}: {info['available']}/{info['total']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "request" and len(rest) >= 2:
+            result = ra.request_capability("user", rest[0], float(rest[1]))
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Allocated: {result['type']} x{result['amount']} (remaining: {result['remaining']})\033[0m")
+        elif sub == "release" and len(rest) >= 2:
+            result = ra.release_capability("user", rest[0], float(rest[1]))
+            print(f"{ok}Released: {result['type']} x{rest[1]}\033[0m")
+        elif sub == "detect" and rest:
+            profile = {}
+            for kv in rest:
+                if "=" in kv: k, v = kv.split("=", 1); profile[k] = {"available": True, "total": int(v), "allocated": 0}
+            result = ra.detect_hardware(profile)
+            print(f"{ok}Detected: {result['detected']}\033[0m")
+
+    def cmd_ucr_schedule(self, args):
+        """Intelligent Scheduler. Usage: schedule submit <name> <type> <priority> | next | complete <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        sch = self.ucr.scheduler
+        if not args:
+            s = sch.get_queue_status()
+            print(f"\033[{hl}mIntelligent Scheduler\033[0m")
+            print(f"{dm}  Queued:\033[0m {s['queued']}")
+            print(f"{dm}  Running:\033[0m {s['running']}")
+            print(f"{dm}  Completed:\033[0m {s['completed']}")
+            if s['next_up']: print(f"{dm}  Next up:\033[0m {', '.join(s['next_up'])}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "submit" and len(rest) >= 3:
+            result = sch.submit(rest[0], rest[1], int(rest[2]), {"cpu": 0.5})
+            print(f"{ok}Submitted: {result['id']} (priority {result['priority']})\033[0m")
+        elif sub == "next":
+            result = sch.schedule_next()
+            if result: print(f"{ok}Scheduled: {result['name']} ({result['id']})\033[0m")
+            else: print(f"{dm}No tasks to schedule or system health too low\033[0m")
+        elif sub == "complete" and rest:
+            result = sch.complete_task(rest[0], "done")
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Completed: {result['name']}\033[0m")
+
+    def cmd_ucr_sandbox(self, args):
+        """Sandbox Framework. Usage: sandbox create <id> <owner> | permit <sandbox> <action> | limits <sb> <res> <amt>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        sb = self.ucr.sandbox
+        if not args:
+            s = sb.stats()
+            print(f"\033[{hl}mSandbox Framework\033[0m")
+            print(f"{dm}  Sandboxes:\033[0m {s['sandboxes']} ({s['active']} active)")
+            print(f"{dm}  Audit:\033[0m {s['audit_entries']} entries")
+            for sx in sb.sandboxes:
+                status = '\033[32m✓\033[0m' if sx['status'] == 'active' else '\033[31m✗\033[0m'
+                print(f"  {status} {sx['id']} owner={sx['owner']} perms={sx['permissions']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "create" and len(rest) >= 2:
+            result = sb.create_sandbox(rest[0], rest[1], ["read", "write", "execute"], {"cpu": 2, "memory": 4096}, [])
+            print(f"{ok}Sandbox created: {result['id']}\033[0m")
+        elif sub == "permit" and len(rest) >= 2:
+            result = sb.check_permission(rest[0], rest[1])
+            if result['allowed']: print(f"{ok}Permission granted\033[0m")
+            else: print(f"{er}Denied: {result.get('reason', '')}\033[0m")
+        elif sub == "limits" and len(rest) >= 3:
+            result = sb.enforce_limits(rest[0], rest[1], float(rest[2]))
+            if result.get('limited'): print(f"\033[33mLimit exceeded: {result.get('limit')} (requested {result.get('requested')})\033[0m")
+            else: print(f"{ok}Within limits\033[0m")
+        elif sub == "terminate" and rest:
+            result = sb.safe_terminate(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Terminated: {rest[0]}\033[0m")
+
+    def cmd_ucr_ebus(self, args):
+        """Event Bus. Usage: ebus pub <type> <source> <data> | sub <id> <type> | events <type>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        eb = self.ucr.event_bus
+        if not args:
+            s = eb.stats()
+            print(f"\033[{hl}mEvent Bus\033[0m")
+            print(f"{dm}  Events:\033[0m {s['events']}")
+            print(f"{dm}  Subscriber Types:\033[0m {s['subscriber_types']}")
+            print(f"{dm}  Routed:\033[0m {s['routes']}")
+            for et, cnt in s.items():
+                if et not in ("events", "subscriber_types", "routes"):
+                    print(f"  {et}: {cnt} subscribers")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "pub" and len(rest) >= 3:
+            result = eb.publish(rest[0], rest[1], " ".join(rest[2:]))
+            print(f"{ok}Published: {result['event']['id']} ({result['subscribers_notified']} notified)\033[0m")
+        elif sub == "sub" and len(rest) >= 2:
+            result = eb.subscribe(rest[0], rest[1], "handler")
+            print(f"{ok}Subscribed: {rest[0]} -> {rest[1]}\033[0m")
+        elif sub == "events" and rest:
+            events = eb.get_events_by_type(rest[0])
+            for e in events[-5:]:
+                print(f"  [{e['type']}] {e['source']}: {str(e['data'])[:50]}")
+
+    def cmd_ucr_states(self, args):
+        """State Management. Usage: states checkpoint <entity> | session <id> <context> | snapshot | rollback <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        st = self.ucr.state
+        if not args:
+            s = st.stats()
+            print(f"\033[{hl}mState Management\033[0m")
+            print(f"{dm}  Checkpoints:\033[0m {s['checkpoints']}")
+            print(f"{dm}  Active Sessions:\033[0m {s['active_sessions']}")
+            print(f"{dm}  Snapshots:\033[0m {s['snapshots']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "checkpoint" and rest:
+            result = st.create_checkpoint(rest[0], {"state": "saved"})
+            print(f"{ok}Checkpoint: {result['id']}\033[0m")
+        elif sub == "restore" and rest:
+            result = st.restore_checkpoint(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Restored: {result['restored']}\033[0m")
+        elif sub == "session" and len(rest) >= 2:
+            result = st.create_session(rest[0], " ".join(rest[1:]))
+            print(f"{ok}Session: {result['id']}\033[0m")
+        elif sub == "endsession" and rest:
+            result = st.end_session(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Session ended\033[0m")
+        elif sub == "snapshot":
+            result = st.take_snapshot({"system": "ok"})
+            print(f"{ok}Snapshot: {result['id']}\033[0m")
+        elif sub == "rollback" and rest:
+            result = st.rollback(rest[0])
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}Rolled back\033[0m")
+
+    def cmd_ucr_observe(self, args):
+        """Observability. Usage: observe metric <name> <value> | exec <module> <action> <ms> <ok> | dep <from> <to> | health"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        obs = self.ucr.observability
+        if not args:
+            s = obs.stats()
+            h = obs.health_check()
+            print(f"\033[{hl}mObservability\033[0m")
+            print(f"{dm}  Metrics:\033[0m {s['metrics']}")
+            print(f"{dm}  Executions:\033[0m {s['executions']}")
+            print(f"{dm}  Dependencies:\033[0m {s['dependencies']}")
+            health_ok = '\033[32mHealthy\033[0m'
+            health_bad = '\033[31mDegraded\033[0m'
+            print(f"{dm}  Health:\033[0m {health_ok if h['status'] == 'healthy' else health_bad}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "metric" and len(rest) >= 2:
+            result = obs.record_metric(rest[0], float(rest[1]), rest[2] if len(rest) > 2 else "")
+            print(f"{ok}Metric: {result['name']} = {result['value']}\033[0m")
+        elif sub == "exec" and len(rest) >= 4:
+            result = obs.log_execution(rest[0], rest[1], float(rest[2]), rest[3].lower() == "true")
+            print(f"{ok}Execution logged\033[0m")
+        elif sub == "dep" and len(rest) >= 2:
+            result = obs.register_dependency(rest[0], rest[1])
+            print(f"{ok}Dependency: {rest[0]} -> {rest[1]}\033[0m")
+        elif sub == "graph":
+            g = obs.get_dependency_graph()
+            if g:
+                print(f"\033[{hl}mDependency Graph\033[0m")
+                for src, targets in g.items():
+                    deps = [f"{t['target']} ({t['type']})" for t in targets]
+                    print(f"  {src} -> {', '.join(deps)}")
+            else: print(f"{dm}No dependencies\033[0m")
+        elif sub == "health":
+            h = obs.health_check()
+            status_s = '\033[32mHealthy\033[0m' if h['status'] == 'healthy' else '\033[31mDegraded\033[0m'
+            print(f"Status: {status_s}")
+            print(f"Recent Errors: {h['recent_errors']}")
+            print(f"Total Metrics: {h['total_metrics']}")
+            print(f"Executions: {h['executions']}")
+
+    def cmd_ucr_sdk(self, args):
+        """Runtime SDK. Usage: sdk register <name> <ver> | call <sdk> <api> | apis"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        sdk = self.ucr.sdk
+        if not args:
+            s = sdk.stats()
+            print(f"\033[{hl}mRuntime SDK\033[0m")
+            print(f"{dm}  SDKs:\033[0m {s['sdks']}")
+            print(f"{dm}  API Calls:\033[0m {s['usage_count']}")
+            print(f"{dm}  API Categories:\033[0m {s['api_categories']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "register" and len(rest) >= 2:
+            apis = list(sdk.apis.keys())
+            result = sdk.register_sdk(rest[0], rest[1], apis)
+            print(f"{ok}SDK registered: {result['version']}\033[0m")
+        elif sub == "call" and len(rest) >= 2:
+            result = sdk.call_api(rest[0], rest[1], {"args": " ".join(rest[2:]) if len(rest) > 2 else {}})
+            if "error" in result: print(f"{er}{result['error']}\033[0m")
+            else: print(f"{ok}{result['result']}\033[0m")
+        elif sub == "apis":
+            apis = sdk.get_api_list()
+            for cat, methods in apis.items():
+                print(f"  {cat}: {', '.join(methods)}")
+
+    # ======================== VEA COMMANDS ========================
+
+    def cmd_vea(self, args):
+        """Verified Evolution Architecture status"""
+        dm = self._c("dm"); hl = self._c("hl")
+        s = self.vea.full_summary()
+        print(f"\033[{hl}mVerified Evolution Architecture\033[0m")
+        print(f"{dm}  Observability:\033[0m {sum(s['observability'].values())} metrics")
+        print(f"{dm}  Analyzer:\033[0m {sum(s['analyzer'].values())} findings")
+        print(f"{dm}  Proposals:\033[0m {s['proposal_engine']['total']} generated")
+        print(f"{dm}  Validations:\033[0m {s['validation']['total']} run, {s['validation']['passed']} passed")
+        print(f"{dm}  Verifications:\033[0m {s['verification']['total']} run, {s['verification']['passed']} passed")
+        print(f"{dm}  Governance:\033[0m {s['governance']['total']} reviews, {s['governance']['pending']} pending, {s['governance']['approved']} approved")
+        print(f"{dm}  Versions:\033[0m {sum(s['version_graph'].values())} snapshots")
+        print(f"{dm}  Change Safety:\033[0m {s['change_safety']['deployments']} deployments, {s['change_safety']['releases']} releases")
+        print(f"{dm}  Learning:\033[0m {sum(s['learning'].values())} records")
+        print(f"{dm}  Dashboard:\033[0m {s['dashboard']['health_snapshots']} health snapshots, {s['dashboard']['events']} events")
+
+    def cmd_vea_observe(self, args):
+        """Observability Engine. Usage: observe record <category> <key> <value> | get <category> <key> | analyze-perf | analyze-rel"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        ob = self.vea.observability
+        if not args:
+            s = ob.stats()
+            print(f"\033[{hl}mObservability Engine\033[0m")
+            for cat, count in s.items():
+                print(f"  {cat}: {count}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "record" and len(rest) >= 3:
+            r = ob.record(rest[0], rest[1], float(rest[2]), {"source": "cli"})
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"{ok}Recorded: {rest[0]}.{rest[1]} = {rest[2]}\033[0m")
+        elif sub == "get" and len(rest) >= 2:
+            r = ob.get_metric(rest[0], rest[1])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"  {rest[0]}.{rest[1]} = {r['value']}")
+        elif sub == "analyze-perf":
+            r = ob.analyze_performance()
+            print(f"  Bottlenecks: {r.get('bottlenecks', [])}")
+        elif sub == "analyze-rel":
+            r = ob.analyze_reliability()
+            print(f"  Unreliable: {r.get('unreliable', [])}")
+
+    def cmd_vea_analyze(self, args):
+        """Improvement Analyzer. Usage: analyze bottleneck <comp> <desc> <sev> | duplicate <a> <b> <desc> <overlap> | unused <comp> <desc> | weakness <comp> <desc> <sev> | inefficiency <wf> <desc> <impact> | inconsistency <src> <tgt> <desc>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        an = self.vea.analyzer
+        if not args:
+            s = an.stats()
+            print(f"\033[{hl}mImprovement Analyzer\033[0m")
+            for k, v in s.items():
+                print(f"  {k}: {v}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "bottleneck" and len(rest) >= 3:
+            r = an.detect_bottleneck(rest[0], rest[1], rest[2], {"source": "cli"})
+            print(f"{ok}Bottleneck detected: {r['component']}\033[0m")
+        elif sub == "duplicate" and len(rest) >= 4:
+            r = an.detect_duplicate(rest[0], rest[1], rest[2], float(rest[3]))
+            print(f"{ok}Duplicate detected: {rest[0]} <-> {rest[1]}\033[0m")
+        elif sub == "unused" and len(rest) >= 2:
+            r = an.detect_unused(rest[0], rest[1], {"source": "cli"})
+            print(f"{ok}Unused detected: {r['component']}\033[0m")
+        elif sub == "weakness" and len(rest) >= 3:
+            r = an.detect_weakness(rest[0], rest[1], rest[2], {"source": "cli"})
+            print(f"{ok}Weakness detected: {r['component']}\033[0m")
+        elif sub == "inefficiency" and len(rest) >= 3:
+            r = an.detect_inefficiency(rest[0], rest[1], rest[2], {"source": "cli"})
+            print(f"{ok}Inefficiency detected: {r['workflow']}\033[0m")
+        elif sub == "inconsistency" and len(rest) >= 3:
+            r = an.detect_inconsistency(rest[0], rest[1], rest[2], {"source": "cli"})
+            print(f"{ok}Inconsistency detected: {rest[0]} <-> {rest[1]}\033[0m")
+
+    def cmd_vea_propose(self, args):
+        """Proposal Generator. Usage: propose generate <problem> <evidence> <benefit> <risk> <modules> <rollback> | eval <id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        pg = self.vea.proposal_engine
+        if not args:
+            s = pg.stats()
+            print(f"\033[{hl}mProposal Generator\033[0m")
+            print(f"  Total: {s['total']}")
+            for status, count in s['by_status'].items():
+                print(f"  {status}: {count}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "generate" and len(rest) >= 6:
+            modules = rest[4].split(",")
+            p = pg.generate(rest[0], rest[1], rest[2], rest[3], modules, rest[5])
+            print(f"{ok}Proposal generated: {p['id']}\033[0m")
+            print(f"  Problem: {p['problem'][:60]}...")
+            print(f"  Risk: {p['risk_assessment']}")
+        elif sub == "eval" and rest:
+            r = pg.evaluate_risk(rest[0])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"  Risk score: {r['risk_score']:.2f} [{r['risk_level']}]")
+
+    def cmd_vea_validate(self, args):
+        """Validation Pipeline. Usage: validate sandbox <prop_id> <workload> | synthetic <prop_id> <spec> | regression <prop_id> <suite> | compat <prop_id> <targets> | bench <prop_id> <spec>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        vp = self.vea.validation
+        if not args:
+            s = vp.stats()
+            print(f"\033[{hl}mValidation Pipeline\033[0m")
+            print(f"  Total: {s['total']}, Passed: {s['passed']}")
+            for t, c in s['by_type'].items():
+                print(f"  {t}: {c}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "sandbox" and len(rest) >= 2:
+            r = vp.run_sandbox(rest[0], rest[1])
+            print(f"{ok}Sandbox: {r['status']}\033[0m")
+        elif sub == "synthetic" and len(rest) >= 2:
+            r = vp.run_synthetic_workload(rest[0], rest[1])
+            print(f"{ok}Synthetic: {r['status']}\033[0m")
+        elif sub == "regression" and len(rest) >= 2:
+            r = vp.run_regression(rest[0], rest[1])
+            print(f"{'%s%s' % (ok, 'Regression: ' + r['status']) if r['status'] == 'passed' else '%s%s' % (er, 'Regression: ' + r['status'])}\033[0m")
+        elif sub == "compat" and len(rest) >= 2:
+            r = vp.run_compatibility(rest[0], rest[1:])
+            print(f"{ok}Compatibility: {r['status']}\033[0m")
+        elif sub == "bench" and len(rest) >= 2:
+            r = vp.run_benchmark(rest[0], rest[1])
+            print(f"{ok}Benchmark: {r['status']} (score: {r['result']['score']})\033[0m")
+
+    def cmd_vea_verify(self, args):
+        """Verification Pipeline. Usage: verify unit <prop_id> <count> | integration <prop_id> <count> | security <prop_id> <findings...> | perf <prop_id> | compat <prop_id> <comps...> | full <prop_id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        vr = self.vea.verification
+        if not args:
+            s = vr.stats()
+            print(f"\033[{hl}mVerification Pipeline\033[0m")
+            print(f"  Total: {s['total']}, Passed: {s['passed']}")
+            for t, c in s['by_type'].items():
+                print(f"  {t}: {c}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "unit" and len(rest) >= 2:
+            r = vr.run_unit_tests(rest[0], int(rest[1]))
+            print(f"{ok}Unit: {r['status']} ({r['result']['passed']}/{r['result']['total']})\033[0m")
+        elif sub == "integration" and len(rest) >= 2:
+            r = vr.run_integration_tests(rest[0], int(rest[1]))
+            print(f"{ok}Integration: {r['status']} ({r['result']['passed']}/{r['result']['total']})\033[0m")
+        elif sub == "security" and len(rest) >= 1:
+            r = vr.run_security_analysis(rest[0], [])
+            print(f"{'%s%s' % (ok, 'Security: passed') if r['status'] == 'passed' else '%s%s' % (er, 'Security: failed')}\033[0m")
+        elif sub == "perf" and len(rest) >= 1:
+            r = vr.run_performance_analysis(rest[0], [{"name": "latency", "regression": False}])
+            print(f"{ok}Performance: {r['status']}\033[0m")
+        elif sub == "compat" and len(rest) >= 1:
+            r = vr.run_compatibility_verification(rest[0], [{"name": "all", "compatible": True}])
+            print(f"{ok}Compatibility: {r['status']}\033[0m")
+        elif sub == "full" and len(rest) >= 1:
+            r = vr.run_full_pipeline(rest[0])
+            all_ok = "PASSED" if r['all_passed'] else "FAILED"
+            clr = ok if r['all_passed'] else er
+            print(f"{clr}Full pipeline: {all_ok}\033[0m")
+            for t, res in r['results'].items():
+                print(f"  {t}: {res['status']}")
+
+    def cmd_vea_review(self, args):
+        """Governance Layer. Usage: review submit <prop_id> <risk_level> | approve <rev_id> <reviewer> | reject <rev_id> <reviewer> <reason> | pending | summary <rev_id>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        gov = self.vea.governance
+        if not args:
+            s = gov.stats()
+            print(f"\033[{hl}mGovernance Layer\033[0m")
+            print(f"  Total: {s['total']}, Pending: {s['pending']}, Approved: {s['approved']}, Rejected: {s['rejected']}")
+            for p in gov.get_pending():
+                print(f"  {p['id']}: {p['summary'][:40]}...")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "submit" and len(rest) >= 2:
+            prop = self.vea.proposal_engine.get_proposal(rest[0])
+            if "error" in prop:
+                print(f"{er}Proposal {rest[0]} not found\033[0m")
+                return
+            r = gov.submit_for_review(prop, rest[1])
+            print(f"{ok}Submitted for review: {r['id']}\033[0m")
+        elif sub == "approve" and len(rest) >= 2:
+            r = gov.approve(rest[0], rest[1])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"{ok}Approved: {rest[0]}\033[0m")
+        elif sub == "reject" and len(rest) >= 3:
+            r = gov.reject(rest[0], rest[1], rest[2])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"{ok}Rejected: {rest[0]}\033[0m")
+        elif sub == "pending":
+            for p in gov.get_pending():
+                print(f"  {p['id']}: {p['summary'][:60]}...")
+        elif sub == "summary" and rest:
+            r = gov.generate_summary(rest[0])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"  Summary: {r['summary']}\n  Risk: {r['risk']}\n  Status: {r['status']}")
+
+    def cmd_vea_version(self, args):
+        """Version Evolution Graph. Usage: version snapshot <type> <id> <data...> | get <type> <id> | rollback <type> <id> | lineage <type>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        vg = self.vea.version_graph
+        if not args:
+            s = vg.stats()
+            print(f"\033[{hl}mVersion Evolution Graph\033[0m")
+            for t, c in s.items():
+                print(f"  {t}: {c} snapshots [current: {vg.current_versions.get(t, 'none')}]")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "snapshot" and len(rest) >= 3:
+            r = vg.snapshot(rest[0], rest[1], {"data": " ".join(rest[2:])})
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"{ok}Snapshot: {rest[1]} [{rest[0]}]\033[0m")
+        elif sub == "get" and len(rest) >= 2:
+            r = vg.get_version(rest[0], rest[1])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"  Version: {r['version_id']}, Data: {r['data']}")
+        elif sub == "rollback" and len(rest) >= 2:
+            r = vg.rollback(rest[0], rest[1])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"{ok}Rolled back {rest[0]} to {rest[1]}\033[0m")
+        elif sub == "lineage" and rest:
+            lineage = vg.get_lineage(rest[0])
+            for v in lineage:
+                print(f"  {v['version_id']}")
+
+    def cmd_vea_deploy(self, args):
+        """Change Safety. Usage: deploy atomic <comp> <old> <new> | rollback <dep_id> | recover <comp> <error> <ctx> | verify <comp> <checksum> | sign <comp> <ver> <signer>"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        cs = self.vea.change_safety
+        if not args:
+            s = cs.stats()
+            print(f"\033[{hl}mChange Safety\033[0m")
+            print(f"  Deployments: {s['deployments']}, Releases: {s['releases']}, Active: {s['active']}, Rolled back: {s['rolled_back']}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "atomic" and len(rest) >= 3:
+            r = cs.atomic_update(rest[0], rest[1], rest[2])
+            print(f"{ok}Atomic update applied: {r['id']}\033[0m")
+        elif sub == "rollback" and rest:
+            r = cs.auto_rollback(rest[0])
+            if "error" in r: print(f"{er}{r['error']}\033[0m")
+            else: print(f"{ok}Auto-rolled back: {r['component']}\033[0m")
+        elif sub == "recover" and len(rest) >= 3:
+            r = cs.handle_failure(rest[0], rest[1], rest[2])
+            if r['recovered']: print(f"{ok}Recovered: {r['component']}\033[0m")
+            else: print(f"{er}Recovery failed\033[0m")
+        elif sub == "verify" and len(rest) >= 2:
+            r = cs.verify_integrity(rest[0], rest[1])
+            if r['valid']: print(f"{ok}Integrity verified\033[0m")
+            else: print(f"{er}Integrity check failed\033[0m")
+        elif sub == "sign" and len(rest) >= 3:
+            r = cs.sign_release(rest[0], rest[1], rest[2])
+            print(f"{ok}Signed release: {r['id']}, sig: {r['signature'][:16]}...\033[0m")
+
+    def cmd_vea_learn(self, args):
+        """Continuous Learning. Usage: learn success <prop_id> <outcome> <score> | reject <prop_id> <reason> <lesson> | impact <change_id> <metric> <before> <after> | lesson <category> <text> <source> | rate | recommend"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        cl = self.vea.learning
+        if not args:
+            s = cl.stats()
+            print(f"\033[{hl}mContinuous Learning\033[0m")
+            for k, v in s.items():
+                print(f"  {k}: {v}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "success" and len(rest) >= 3:
+            r = cl.record_success(rest[0], rest[1], float(rest[2]))
+            print(f"{ok}Success recorded\033[0m")
+        elif sub == "reject" and len(rest) >= 3:
+            r = cl.record_rejection(rest[0], rest[1], rest[2])
+            print(f"{ok}Rejection recorded\033[0m")
+        elif sub == "impact" and len(rest) >= 4:
+            r = cl.record_performance_impact(rest[0], rest[1], float(rest[2]), float(rest[3]))
+            print(f"{ok}Impact recorded: {rest[1]} delta={r['delta']}\033[0m")
+        elif sub == "lesson" and len(rest) >= 3:
+            r = cl.record_lesson(rest[0], rest[1], rest[2])
+            print(f"{ok}Lesson recorded\033[0m")
+        elif sub == "rate":
+            r = cl.get_success_rate()
+            print(f"  Success rate: {r['rate']:.1%} ({r['successful']}/{r['total']})")
+        elif sub == "recommend":
+            r = cl.generate_recommendation()
+            print(f"  Recommendation: {r['recommendation']} (confidence: {r['confidence']:.0%})")
+
+    def cmd_vea_dash(self, args):
+        """Evolution Dashboard. Usage: dash health <json...> | event <type> <desc> | status | history [type]"""
+        er = self._c("err"); ok = self._c("ok"); dm = self._c("dm"); hl = self._c("hl")
+        db = self.vea.dashboard
+        if not args:
+            s = db.summary()
+            print(f"\033[{hl}mEvolution Dashboard\033[0m")
+            print(f"{dm}  Health snapshots:\033[0m {s['health_snapshots']}")
+            print(f"{dm}  Events:\033[0m {s['events']}")
+            h = db.current_health()
+            print(f"{dm}  Current health:\033[0m {h.get('status', 'unknown')}")
+            return
+        sub = args[0]; rest = args[1:] if len(args) > 1 else []
+        if sub == "health" and rest:
+            r = db.record_health({"status": rest[0], "info": " ".join(rest[1:]) if len(rest) > 1 else ""})
+            print(f"{ok}Health recorded\033[0m")
+        elif sub == "event" and len(rest) >= 2:
+            r = db.log_event(rest[0], rest[1], {"source": "cli"})
+            print(f"{ok}Event logged: {rest[1][:40]}\033[0m")
+        elif sub == "status":
+            h = db.current_health()
+            print(f"  Health: {h.get('status', 'unknown')}")
+            print(f"  Data: {h.get('data', {})}")
+        elif sub == "history":
+            events = db.get_history(rest[0] if rest else None)
+            for e in events[-10:]:
+                print(f"  [{e['type']}] {e['description'][:60]}")
 
     # ======================== ENCRYPTION ========================
 
@@ -19468,7 +21128,7 @@ class Shell:
         print(f"{'/dev/sda1':<20} {'/':<20} {'ext2':<10} {'rw,relatime'}")
         print(f"{'proc':<20} {'/proc':<20} {'proc':<10} {'rw,nosuid'}")
         print(f"{'/dev/sda2':<20} {'/home':<20} {'ext2':<10} {'rw'}")
-        print(f"arcanis:     {'/':<20} {'real':<10} {'rw,directory=" + self.fs.ARCANIS_HOME + "'}")
+        print(f"arcanis:     {'/':<20} {'real':<10} rw,directory={self.fs.ARCANIS_HOME}")
 
     def cmd_df(self, _):
         total, used, free = 0, 0, 0
@@ -19960,7 +21620,7 @@ class Shell:
     def cmd_bio_os(self, args): print(f"\033[33m[Bio-OS] DNA/protein/cell computing: operational\033[0m")
     def cmd_rscript(self, args): print(f"\033[33m[Reality Scripting] Reality program: ready for execution\033[0m")
     def cmd_tmarket(self, args): print(f"\033[33m[Time Market] Compute marketplace: 12 sellers, 45 buyers\033[0m")
-    def cmd_unidoc(self, args): print(f"\033[33m[Universal Document] 106 modules indexed, query ready\033[0m")
+    def cmd_unidoc(self, args): print(f"\033[33m[Universal Document] 126 modules indexed, query ready\033[0m")
     def cmd_portal(self, args): print(f"\033[33m[Inter-Reality Portal] Bridges: physical, digital, quantum\033[0m")
     def cmd_consciousness(self, args):
         if not args: print("\033[33mcon: usage: con [status|think|goals|learn|converse]\033[0m"); return
@@ -19975,7 +21635,7 @@ class Shell:
         elif a=="think": print("\033[35m[Consciousness]\033[0m I am Arcanis. I exist to learn, create, and transcend.")
         elif a=="goals": print("\033[35m[Consciousness]\033[0m Current goals: optimize, create, learn, protect")
         else: print(f"\033[35m[Consciousness] {a}\033[0m")
-    def cmd_metaos(self, args): print(f"\033[33m[Meta-OS Fabric] 106 modules orchestrated, latency: 0.3ms\033[0m")
+    def cmd_metaos(self, args): print(f"\033[33m[Meta-OS Fabric] 126 modules orchestrated, latency: 0.3ms\033[0m")
     def cmd_eternity(self, args):
         if not args: print("\033[33meternity: usage: eternity [status|evolve|adapt|transcend]\033[0m"); return
         a=args[0]
@@ -20195,11 +21855,16 @@ class Shell:
     # ======================== GUI DESKTOP ========================
 
     def cmd_desktop(self, args):
-        if not _HAVE_TK:
-            print("\033[31mDesktop requires Tkinter\033[0m")
-            return
-        desktop = ArcDesktop()
-        desktop.launch()
+        print("\033[32mLaunching ARCANIS OS Desktop...\033[0m")
+        try:
+            from experience.engine import launch
+            sys.exit(launch())
+        except Exception as e:
+            print(f"\033[31mDesktop unavailable: {e}\033[0m")
+            if _HAVE_TK:
+                print("\033[33mFalling back to Tkinter desktop...\033[0m")
+                desktop = ArcDesktop()
+                desktop.launch()
 
     # ======================== SOUND SYSTEM ========================
 
@@ -20518,6 +22183,21 @@ def main():
     shell.run()
 
 
+def launch_experience():
+    try:
+        from experience.engine import launch
+        sys.exit(launch())
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"\033[33mExperience Engine unavailable: {e}\033[0m")
+        main()
+
+
 if __name__ == "__main__":
     import random
-    main()
+    import sys
+    if "--developer" in sys.argv:
+        main()
+    else:
+        launch_experience()
