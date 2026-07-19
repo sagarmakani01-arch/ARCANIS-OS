@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QFrame
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QMouseEvent
 
 from ..framework.base import BaseSurface, SurfaceState, SurfaceFlags
 from ..framework.theme import SurfaceTheme as T
@@ -8,14 +9,19 @@ from experience.ecosystem import EcosystemCoordinator
 
 
 class ConceptCard(QFrame):
+    clicked = Signal(str, str)
+
     def __init__(self, name, category="general", connections=0, parent=None):
         super().__init__(parent)
+        self._concept_name = name
+        self._category = category
+        self.setCursor(Qt.PointingHandCursor)
         self.setStyleSheet(f"""
             ConceptCard {{
                 background: {T.surface}; border: 1px solid {T.border_light};
                 border-radius: 5px;
             }}
-            ConceptCard:hover {{ border-color: {T.accent}; background: {T.surface_hover}; }}
+            ConceptCard:hover {{ border-color: {T.accent}; background: {T.accent_bg}; }}
         """)
         l = QVBoxLayout(self)
         l.setContentsMargins(10, 8, 10, 8)
@@ -34,11 +40,16 @@ class ConceptCard(QFrame):
         row.addStretch()
         l.addLayout(row)
 
+    def mousePressEvent(self, event: QMouseEvent):
+        self.clicked.emit(self._concept_name, self._category)
+        super().mousePressEvent(event)
+
 
 class KnowledgeGraphSurface(BaseSurface):
     def __init__(self, title, surface_id, flags=SurfaceFlags.ALL):
         super().__init__(title, surface_id, flags)
         self.eco = EcosystemCoordinator()
+        self._selected_concept = None
         self.update_interval(3000)
 
     def _init_content(self):
@@ -58,6 +69,12 @@ class KnowledgeGraphSurface(BaseSurface):
         l.addLayout(summary_row)
 
         l.addSpacing(6)
+        self.selected_label = QLabel("")
+        self.selected_label.setStyleSheet(T.label_style() + f"font-size: {T.font_size_sm}; color: {T.accent};")
+        self.selected_label.setVisible(False)
+        l.addWidget(self.selected_label)
+
+        l.addSpacing(6)
         hdr = QLabel("RECENT CONCEPTS")
         hdr.setStyleSheet(T.muted_style())
         l.addWidget(hdr)
@@ -66,12 +83,11 @@ class KnowledgeGraphSurface(BaseSurface):
         self.cards_container.setSpacing(4)
         l.addLayout(self.cards_container)
 
-        # Populate with real data
         self._refresh_concepts()
 
         l.addStretch()
 
-    def _refresh_concepts(self):
+    def _refresh_concepts(self, highlight=None):
         for i in reversed(range(self.cards_container.count())):
             w = self.cards_container.itemAt(i).widget()
             if w:
@@ -84,13 +100,39 @@ class KnowledgeGraphSurface(BaseSurface):
 
         for c in concepts[:8]:
             card = ConceptCard(c["name"], c["category"], 0)
+            card.clicked.connect(self._on_concept_clicked)
+            if highlight and c["name"] == highlight:
+                card.setStyleSheet(card.styleSheet() + f"ConceptCard {{ border-color: {T.accent}; background: {T.accent_bg}; }}")
             self.cards_container.addWidget(card)
 
+    def _on_concept_clicked(self, name, category):
+        self._selected_concept = name
+        self.selected_label.setText(f"\u25B6 {name} ({category})")
+        self.selected_label.setVisible(True)
+        self._bus.emit(EventBus.CONCEPT_CREATED, {
+            "name": name,
+            "category": category,
+            "source": self._surface_id,
+        })
+        self._bus.emit(EventBus.OBJECTIVE_UPDATE, {
+            "objective": f"Exploring: {name}",
+        })
+
     def _on_tick(self):
-        self._refresh_concepts()
+        self._refresh_concepts(self._selected_concept)
 
     def _setup_events(self):
         self._bus.subscribe(EventBus.KNOWLEDGE_UPDATED, self._on_knowledge)
+        self._bus.subscribe(EventBus.CONCEPT_CREATED, self._on_concept_from_other)
+
+    def _on_concept_from_other(self, event, data):
+        name = data.get("name", "")
+        source = data.get("source", "")
+        if source != self._surface_id:
+            self._selected_concept = name
+            self.selected_label.setText(f"\u25B6 {name} (from {source})")
+            self.selected_label.setVisible(True)
+            self._refresh_concepts(name)
 
     def _on_knowledge(self, event, data):
         stats = self.eco.get_stats()

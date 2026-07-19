@@ -4,6 +4,7 @@ from .agent_network import AgentNetworkSurface
 from .knowledge_graph import KnowledgeGraphSurface
 from .memory_timeline import MemoryTimelineSurface
 from .project_explorer import ProjectExplorerSurface
+from .project_workspace import ProjectWorkspaceSurface
 from .system_health import SystemHealthSurface
 from .event_stream import EventStreamSurface
 from .capability_library import CapabilityLibrarySurface
@@ -16,6 +17,7 @@ __all__ = [
     "KnowledgeGraphSurface",
     "MemoryTimelineSurface",
     "ProjectExplorerSurface",
+    "ProjectWorkspaceSurface",
     "SystemHealthSurface",
     "EventStreamSurface",
     "CapabilityLibrarySurface",

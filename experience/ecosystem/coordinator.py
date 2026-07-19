@@ -177,6 +177,8 @@ class EcosystemCoordinator:
                     "  memories      \u2014 Show recent memories\n"
                     "  generate <t> <n> \u2014 Generate file (script,html,markdown)\n"
                     "  code read/write \u2014 Read/write files\n"
+                    "  analyze <t>   \u2014 Analyze concepts/relations/projects\n"
+                    "  report        \u2014 Generate system report\n"
                     "  research <t>  \u2014 Research a topic\n"
                     "  run <cmd>     \u2014 Run system command\n"
                     "  system info   \u2014 System information\n"
@@ -262,9 +264,25 @@ class EcosystemCoordinator:
         elif cmd == "research":
             topic = " ".join(args)
             if topic:
+                self.agents.send_to("Researcher", {
+                    "type": "command", "content": "research", "payload": {"topic": topic}
+                })
                 tid = self.tasks.submit(f"Research {topic}", "research", {"action": "learn", "topic": topic})
-                return f"\u23F3 Researching: {topic} (task #{tid})"
+                return f"\u23F3 Researcher analyzing: {topic} (task #{tid})"
             return "Usage: research <topic>"
+
+        elif cmd == "analyze":
+            target = args[0] if args else "concepts"
+            self.agents.send_to("Analyst", {
+                "type": "command", "content": "analyze", "payload": {"target": target}
+            })
+            return f"\u23F3 Analyst analyzing: {target}"
+
+        elif cmd == "report":
+            self.agents.send_to("Monitor", {
+                "type": "command", "content": "report", "payload": {}
+            })
+            return "\u23F3 Monitor generating report..."
 
         elif cmd == "system":
             action = args[0] if args else "info"

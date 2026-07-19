@@ -1,3 +1,6 @@
+import time
+from datetime import datetime
+
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QFrame, QScrollArea, QWidget
 from PySide6.QtCore import Qt, QTimer
 
@@ -5,6 +8,9 @@ from ..framework.base import BaseSurface, SurfaceState, SurfaceFlags
 from ..framework.theme import SurfaceTheme as T
 from ..framework.event_bus import EventBus
 from experience.ecosystem import EcosystemCoordinator
+
+
+LIVE_EVENTS = []
 
 
 class EventLine(QFrame):
@@ -26,7 +32,10 @@ class EventLine(QFrame):
         l.addWidget(msg, 1)
 
         kind_lbl = QLabel(kind.upper())
-        color = {"info": T.accent, "error": T.red, "warning": T.amber, "research": T.purple, "analysis": T.cyan, "monitor": T.green}.get(kind, T.text_muted)
+        color = {"info": T.accent, "error": T.red, "warning": T.amber,
+                 "research": T.purple, "analysis": T.cyan, "monitor": T.green,
+                 "agent": T.green, "mission": T.amber, "knowledge": T.cyan,
+                 "system": T.text_muted}.get(kind, T.text_muted)
         kind_lbl.setStyleSheet(T.mono_style() + f"color: {color}; font-size: {T.font_size_xs};")
         l.addWidget(kind_lbl)
 
@@ -35,6 +44,7 @@ class EventStreamSurface(BaseSurface):
     def __init__(self, title, surface_id, flags=SurfaceFlags.ALL):
         super().__init__(title, surface_id, flags)
         self.eco = EcosystemCoordinator()
+        self._live_count = 0
         self.update_interval(2500)
 
     def _init_content(self):
@@ -69,10 +79,15 @@ class EventStreamSurface(BaseSurface):
             if w and hasattr(w, 'deleteLater'):
                 w.deleteLater()
 
+        events = []
+
+        now = datetime.now().strftime("%H:%M:%S")
+        for ev in LIVE_EVENTS[-30:]:
+            events.append((ev["ts"], ev["msg"], ev["kind"]))
+
         msgs = self.eco.get_agent_messages(30)
         memories = self.eco.get_memories(20)
 
-        events = []
         for m in msgs:
             ts = m.get("timestamp", "")[11:19] if m.get("timestamp") else "--:--:--"
             events.append((ts, m.get("content", ""), m.get("type", "info")))
@@ -90,3 +105,33 @@ class EventStreamSurface(BaseSurface):
 
     def _on_tick(self):
         self._refresh_events()
+
+    def _setup_events(self):
+        for event_type in [
+            EventBus.REASONING_UPDATE,
+            EventBus.CAPABILITY_UPDATE,
+            EventBus.OBJECTIVE_UPDATE,
+            EventBus.MISSION_UPDATE,
+            EventBus.MISSION_PROGRESS,
+            EventBus.TASK_UPDATE,
+            EventBus.AGENT_ACTIVATED,
+            EventBus.AGENT_DEACTIVATED,
+            EventBus.AGENT_ACTIVITY,
+            EventBus.KNOWLEDGE_UPDATED,
+            EventBus.CONCEPT_CREATED,
+            EventBus.MEMORY_WRITTEN,
+            EventBus.SYSTEM_EVENT,
+            EventBus.SYSTEM_RESOURCE,
+            EventBus.WORKSPACE_FOCUS,
+            EventBus.SURFACE_STATE_CHANGED,
+        ]:
+            self._bus.subscribe(event_type, self._on_any_event)
+
+    def _on_any_event(self, event, data):
+        now = datetime.now().strftime("%H:%M:%S")
+        kind = event.split(".")[0] if "." in event else "info"
+        msg = data.get("message", data.get("name", str(data)))[:80] if data else str(event)
+        LIVE_EVENTS.append({"ts": now, "msg": f"[{event}] {msg}", "kind": kind})
+        if len(LIVE_EVENTS) > 200:
+            LIVE_EVENTS[:50] = []
+        self._live_count += 1

@@ -62,6 +62,12 @@ class MissionSurface(BaseSurface):
         l.addWidget(self.progress_bar)
 
         l.addSpacing(6)
+        self.concept_hint = QLabel("")
+        self.concept_hint.setStyleSheet(T.label_style() + f"font-size: {T.font_size_sm}; color: {T.purple};")
+        self.concept_hint.setVisible(False)
+        l.addWidget(self.concept_hint)
+
+        l.addSpacing(6)
         hdr = QLabel("PROJECTS")
         hdr.setStyleSheet(T.muted_style())
         l.addWidget(hdr)
@@ -90,7 +96,7 @@ class MissionSurface(BaseSurface):
         self._refresh_projects()
         l.addStretch()
 
-    def _refresh_projects(self):
+    def _refresh_projects(self, highlight=None):
         for i in reversed(range(self.projects_container.count())):
             w = self.projects_container.itemAt(i).widget()
             if w:
@@ -118,7 +124,10 @@ class MissionSurface(BaseSurface):
 
         for proj in projects[:3]:
             lbl = QLabel(f"  {proj['name']}  ({proj['status']})")
-            lbl.setStyleSheet(T.label_style() + f"color: {T.text}; font-size: {T.font_size_sm};")
+            s = T.label_style() + f"color: {T.text}; font-size: {T.font_size_sm};"
+            if highlight and proj["name"].lower() == highlight.lower():
+                s = T.label_style() + f"color: {T.accent}; font-size: {T.font_size_sm}; background: {T.accent_bg};"
+            lbl.setStyleSheet(s)
             self.projects_container.addWidget(lbl)
 
         for task in tasks[:6]:
@@ -135,9 +144,22 @@ class MissionSurface(BaseSurface):
     def _setup_events(self):
         self._bus.subscribe(EventBus.MISSION_UPDATE, self._on_mission)
         self._bus.subscribe(EventBus.TASK_UPDATE, self._on_task)
+        self._bus.subscribe(EventBus.CONCEPT_CREATED, self._on_concept)
+
+    def _on_concept(self, event, data):
+        name = data.get("name", "")
+        self.concept_hint.setText(f"\u25B6 Concept selected: {name}")
+        self.concept_hint.setVisible(True)
+        QTimer.singleShot(5000, lambda: self.concept_hint.setVisible(False))
 
     def _on_mission(self, event, data):
-        self._refresh_projects()
+        name = data.get("name", "")
+        source = data.get("source", "")
+        if source != self._surface_id:
+            self.mission_label.setText(f"Exploring: {name}")
+            self._refresh_projects(name)
+        else:
+            self._refresh_projects()
 
     def _on_task(self, event, data):
         name = data.get("name", "")

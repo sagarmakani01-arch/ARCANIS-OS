@@ -9,6 +9,7 @@ from ..framework.event_bus import EventBus
 class ProjectExplorerSurface(BaseSurface):
     def __init__(self, title, surface_id, flags=SurfaceFlags.ALL):
         super().__init__(title, surface_id, flags)
+        self._selected_item = None
 
     def _init_content(self):
         layout = QVBoxLayout(self.content)
@@ -39,6 +40,7 @@ class ProjectExplorerSurface(BaseSurface):
                 color: {T.accent.name()};
             }}
         """)
+        self.tree.itemClicked.connect(self._on_item_clicked)
 
         missions = QTreeWidgetItem(["MISSIONS"])
         missions.setExpanded(True)
@@ -82,3 +84,23 @@ class ProjectExplorerSurface(BaseSurface):
             font.setBold(True)
             font.setPixelSize(T.font_size_xs)
             item.setFont(0, font)
+
+    def _on_item_clicked(self, item, column):
+        text = item.text(0)
+        parent = item.parent()
+        parent_text = parent.text(0) if parent else "root"
+
+        self._selected_item = text
+        section = parent_text.lower().rstrip("s") if parent_text != "root" else "unknown"
+
+        self._bus.emit(EventBus.MISSION_UPDATE, {
+            "name": text,
+            "section": section,
+            "parent": parent_text,
+            "source": self._surface_id,
+        })
+
+        self._bus.emit(EventBus.SYSTEM_EVENT, {
+            "message": f"Explorer: selected {text} ({parent_text})",
+            "source": self._surface_id,
+        })

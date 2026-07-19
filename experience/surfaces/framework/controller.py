@@ -133,14 +133,24 @@ class SurfaceController:
         self._surfaces = {}
         self._bus = EventBus()
         self._focus_order = []
+        self._dirty_callback = None
 
     def set_workspace(self, workspace):
         self._workspace = workspace
+
+    def set_dirty_callback(self, callback):
+        self._dirty_callback = callback
+
+    def _mark_dirty(self, *args):
+        if self._dirty_callback:
+            self._dirty_callback()
 
     def register(self, surface_cls, title, surface_id, position=DockPosition.FLOAT, flags=SurfaceFlags.ALL):
         surface = surface_cls(title, surface_id, flags)
         surface.state_changed.connect(self._on_surface_state)
         surface.focused.connect(self._on_surface_focused)
+        surface.pinned_changed.connect(self._mark_dirty)
+        surface.state_changed.connect(self._mark_dirty)
         self._surfaces[surface_id] = surface
         return surface
 
@@ -202,24 +212,36 @@ class SurfaceController:
 
 
 class WorkspaceManager:
-    def __init__(self, config_dir=None):
+    def __init__(self, workspace_name="default"):
         self.controller = SurfaceController()
         self._bus = EventBus()
         self._workspace = None
-        self._config_dir = config_dir or os.path.join(os.path.expanduser("~"), ".arcanis", "workspaces")
-        self._auto_save_path = os.path.join(self._config_dir, "default.json")
+        self._workspace_name = workspace_name
+        self._config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", ".workspace")
+        self._fallback_path = os.path.join(self._config_dir, f"{workspace_name}.json")
         self._auto_save_timer = QTimer()
         self._auto_save_timer.setInterval(30000)
         self._auto_save_timer.timeout.connect(self._auto_save)
         self._dirty = False
+        self._db = None
+
+    def _get_db(self):
+        if self._db is None:
+            try:
+                from experience.ecosystem.database import Database
+                self._db = Database()
+            except Exception:
+                pass
+        return self._db
 
     def create_workspace(self, parent=None):
         self._workspace = Workspace(parent)
         self._workspace.set_controller(self.controller)
         self.controller.set_workspace(self._workspace)
+        self.controller.set_dirty_callback(self.mark_dirty)
         os.makedirs(self._config_dir, exist_ok=True)
-        self._auto_save_timer.start()
         self._auto_load()
+        self._auto_save_timer.start()
         return self._workspace
 
     def workspace(self):
@@ -230,11 +252,72 @@ class WorkspaceManager:
 
     def _auto_save(self):
         if self._dirty and self._workspace:
-            self.save_workspace(self._auto_save_path)
+            self.save_to_db()
+            self._save_fallback()
             self._dirty = False
 
     def _auto_load(self):
-        self.load_workspace(self._auto_save_path)
+        self.load_from_db()
+        # If DB had nothing, try fallback JSON
+        if not self.controller._focus_order:
+            self._load_fallback()
+
+    # ── SQLite Persistence ─────────────────────────────────────
+    def save_to_db(self):
+        db = self._get_db()
+        if not db:
+            return
+        surfaces = []
+        for s in self.controller.all_surfaces():
+            surfaces.append({
+                "id": s.surface_id(),
+                "dock": s.get_dock().value,
+                "state": s.get_state().value,
+                "pinned": s.is_pinned(),
+            })
+            s.save_all_state()
+        db.save_layout(self._workspace_name, surfaces)
+
+    def load_from_db(self):
+        db = self._get_db()
+        if not db:
+            return
+        try:
+            layout = db.load_layout(self._workspace_name)
+        except Exception:
+            layout = []
+        for entry in layout:
+            sid = entry.get("surface_id")
+            pos = DockPosition(entry.get("dock_position", "float"))
+            if sid and sid in self.controller._surfaces:
+                self.controller.dock(sid, pos)
+            if sid and sid in self.controller._surfaces:
+                surface = self.controller._surfaces[sid]
+                try:
+                    surface._pinned = bool(entry.get("pinned", False))
+                except Exception:
+                    pass
+                surface.restore_all_state()
+
+    # ── JSON Fallback ──────────────────────────────────────────
+    def save_workspace(self, path):
+        data = {"surfaces": []}
+        for s in self.controller.all_surfaces():
+            data["surfaces"].append({
+                "id": s.surface_id(),
+                "dock": s.get_dock().value,
+                "state": s.get_state().value,
+                "pinned": s.is_pinned(),
+            })
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception:
+            pass
+
+    def _save_fallback(self):
+        self.save_workspace(self._fallback_path)
 
     def load_workspace(self, path):
         try:
@@ -245,20 +328,20 @@ class WorkspaceManager:
                 pos = DockPosition(config.get("dock", "float"))
                 if sid and sid in self.controller._surfaces:
                     self.controller.dock(sid, pos)
+                if sid and sid in self.controller._surfaces:
+                    surface = self.controller._surfaces[sid]
+                    try:
+                        surface._pinned = bool(config.get("pinned", False))
+                    except Exception:
+                        pass
         except Exception:
             pass
 
-    def save_workspace(self, path):
-        data = {"surfaces": []}
-        for s in self.controller.all_surfaces():
-            data["surfaces"].append({
-                "id": s.surface_id(),
-                "dock": s.get_dock().value,
-                "state": s.get_state().value,
-            })
-        try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w") as f:
-                json.dump(data, f, indent=2)
-        except Exception:
-            pass
+    def _load_fallback(self):
+        self.load_workspace(self._fallback_path)
+
+    def save_on_exit(self):
+        self._auto_save_timer.stop()
+        if self._workspace:
+            self.save_to_db()
+            self._save_fallback()

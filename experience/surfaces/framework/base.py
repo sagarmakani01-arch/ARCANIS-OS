@@ -30,7 +30,8 @@ class SurfaceFlags:
     DETACHABLE = 8
     KEYBOARD_NAV = 16
     RESIZABLE = 32
-    ALL = DOCKABLE | COLLAPSIBLE | PINNABLE | DETACHABLE | KEYBOARD_NAV | RESIZABLE
+    PERSIST_STATE = 64
+    ALL = DOCKABLE | COLLAPSIBLE | PINNABLE | DETACHABLE | KEYBOARD_NAV | RESIZABLE | PERSIST_STATE
 
 
 class Header(QFrame):
@@ -65,6 +66,7 @@ class SurfaceContent(QFrame):
 class BaseSurface(QFrame):
     focused = Signal(str)
     state_changed = Signal(str, object)
+    pinned_changed = Signal(str, bool)
 
     def __init__(self, title, surface_id, flags=SurfaceFlags.DOCKABLE, parent=None):
         super().__init__(parent)
@@ -73,6 +75,8 @@ class BaseSurface(QFrame):
         self._flags = flags
         self._state = SurfaceState.STANDARD
         self._dock = DockPosition.FLOAT
+        self._pinned = False
+        self._persisted_state = {}
         self._bus = EventBus()
         self._timer = QTimer(self)
 
@@ -171,6 +175,68 @@ class BaseSurface(QFrame):
             "type": query_type,
             "payload": payload,
         })
+
+    # ── Pinning ─────────────────────────────────────────────────
+    def is_pinned(self):
+        return self._pinned
+
+    def set_pinned(self, pinned):
+        if pinned != self._pinned:
+            self._pinned = pinned
+            self.pinned_changed.emit(self._surface_id, pinned)
+            if self._flags & SurfaceFlags.PERSIST_STATE:
+                from experience.ecosystem.database import Database
+                Database().save_surface_state(self._surface_id, "_pinned", pinned)
+
+    def toggle_pinned(self):
+        self.set_pinned(not self._pinned)
+
+    # ── Content State Persistence ──────────────────────────────
+    def save_content_state(self):
+        """Override in subclasses to return surface-specific state dict."""
+        return {}
+
+    def restore_content_state(self, data):
+        """Override in subclasses to restore from state dict."""
+        pass
+
+    def persist_state(self, key, value):
+        from experience.ecosystem.database import Database
+        Database().save_surface_state(self._surface_id, key, value)
+        self._persisted_state[key] = value
+
+    def load_persisted_state(self, key, default=None):
+        if key not in self._persisted_state:
+            from experience.ecosystem.database import Database
+            self._persisted_state[key] = Database().load_surface_state(self._surface_id, key, default)
+        return self._persisted_state[key]
+
+    def save_all_state(self):
+        if self._flags & SurfaceFlags.PERSIST_STATE:
+            db = None
+            try:
+                from experience.ecosystem.database import Database
+                db = Database()
+            except Exception:
+                return
+            content = self.save_content_state()
+            for key, value in content.items():
+                db.save_surface_state(self._surface_id, key, value)
+            db.save_surface_state(self._surface_id, "_pinned", self._pinned)
+
+    def restore_all_state(self):
+        if self._flags & SurfaceFlags.PERSIST_STATE:
+            try:
+                from experience.ecosystem.database import Database
+                db = Database()
+                pinned = db.load_surface_state(self._surface_id, "_pinned", False)
+                if pinned:
+                    self._pinned = True
+                all_states = db.load_all_surface_states(self._surface_id)
+                if all_states:
+                    self.restore_content_state(all_states)
+            except Exception:
+                pass
 
     def update_interval(self, ms):
         self._timer.setInterval(ms)

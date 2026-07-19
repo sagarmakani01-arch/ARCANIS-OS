@@ -1092,6 +1092,12 @@ class AppWindow(QMainWindow):
         """)
 
     def closeEvent(self, event):
+        content = self.centralWidget()
+        if content and hasattr(content, '_wm'):
+            try:
+                content._wm.save_on_exit()
+            except Exception:
+                pass
         if self._parent_desktop and hasattr(self._parent_desktop, '_on_window_closed'):
             self._parent_desktop._on_window_closed(self)
         super().closeEvent(event)
@@ -1245,6 +1251,21 @@ class PersonalAssistantOverlay(QWidget):
         send_btn.clicked.connect(self._handle_input)
         il.addWidget(send_btn)
 
+        # Mic button for voice input
+        self.mic_btn = QPushButton("\U0001F3A4")
+        self.mic_btn.setFixedSize(28, 28)
+        self.mic_btn.setCursor(Qt.PointingHandCursor)
+        self.mic_btn.setToolTip("Voice input")
+        self.mic_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C['text_sec']}; border: none;
+                border-radius: 5px; font-size: 14px;
+            }}
+            QPushButton:hover {{ background: {C['hover']}; color: {C['text']}; }}
+        """)
+        self.mic_btn.clicked.connect(self._toggle_voice)
+        il.addWidget(self.mic_btn)
+
         layout.addWidget(input_frame)
         layout.addSpacing(8)
 
@@ -1339,6 +1360,91 @@ class PersonalAssistantOverlay(QWidget):
 
     def _open_terminal(self):
         self.desktop._handle_icon_click("terminal")
+
+    # ── Voice Input ──────────────────────────────────────────────
+    def _toggle_voice(self):
+        if getattr(self, '_listening', False):
+            self._listening = False
+            self._reset_mic_ui()
+        else:
+            self._listening = True
+            self.mic_btn.setText("\U0001F534")
+            self.mic_btn.setToolTip("Listening...")
+            self.mic_btn.setStyleSheet(f"""
+                QPushButton {{
+                    background: {C['red']}; color: white; border: none;
+                    border-radius: 5px; font-size: 14px;
+                }}
+                QPushButton:hover {{ background: #dc2626; }}
+            """)
+            self.status_text.setText("Voice input...")
+            self.status_dot.setStyleSheet(f"font-size: 10px; color: {C['red']}; border: none;")
+            threading.Thread(target=self._listen_voice, daemon=True).start()
+
+    def _reset_mic_ui(self):
+        self.mic_btn.setText("\U0001F3A4")
+        self.mic_btn.setToolTip("Voice input" if self.mic_btn.isEnabled() else "Voice not available")
+        self.mic_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent; color: {C['text_sec']}; border: none;
+                border-radius: 5px; font-size: 14px;
+            }}
+            QPushButton:hover {{ background: {C['hover']}; color: {C['text']}; }}
+        """)
+        self.status_text.setText("Listening")
+        self.status_dot.setStyleSheet(f"font-size: 10px; color: {C['green']}; border: none;")
+
+    def _on_voice_result(self, text):
+        if text:
+            self.input.setText(text)
+            self.input.setFocus()
+        self._listening = False
+        QTimer.singleShot(0, self._reset_mic_ui)
+
+    def _voice_not_available(self):
+        self._listening = False
+        QTimer.singleShot(0, lambda: self.mic_btn.setToolTip("Voice not available"))
+        QTimer.singleShot(0, lambda: self.mic_btn.setEnabled(False))
+        QTimer.singleShot(0, self._reset_mic_ui)
+
+    def _listen_voice(self):
+        try:
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            with sr.Microphone() as source:
+                r.adjust_for_ambient_noise(source, duration=0.3)
+                audio = r.listen(source, timeout=5)
+            text = r.recognize_google(audio)
+            QTimer.singleShot(0, lambda: self._on_voice_result(text))
+            return
+        except ImportError:
+            pass
+        except Exception:
+            QTimer.singleShot(0, lambda: self._on_voice_result(""))
+            return
+
+        try:
+            import pythoncom
+            pythoncom.CoInitialize()
+            try:
+                import win32com.client
+                recognizer = win32com.client.Dispatch("SAPI.SpSharedRecognizer")
+                grammar = recognizer.CreateGrammar()
+                grammar.DictationSetState(1)
+                result = recognizer.Recognize()
+                grammar.DictationSetState(0)
+                if result:
+                    text = result.PhraseInfo.GetText()
+                    QTimer.singleShot(0, lambda t=text: self._on_voice_result(t))
+                else:
+                    QTimer.singleShot(0, lambda: self._on_voice_result(""))
+                return
+            finally:
+                pythoncom.CoUninitialize()
+        except Exception:
+            pass
+
+        QTimer.singleShot(0, self._voice_not_available)
 
 
 # ── Premium Status Bar ────────────────────────────────────────────
@@ -1641,13 +1747,13 @@ class DesktopWindow(QMainWindow):
             IntelligenceCoreSurface, MissionSurface, AgentNetworkSurface,
             KnowledgeGraphSurface, MemoryTimelineSurface, ProjectExplorerSurface,
             SystemHealthSurface, EventStreamSurface, CapabilityLibrarySurface,
-            WorkspaceMapSurface,
+            WorkspaceMapSurface, ProjectWorkspaceSurface,
         )
         from experience.surfaces.framework.event_bus import EventBus
+        from experience.surfaces.framework.plugin_loader import discover_plugins
 
         bus = EventBus()
-        config_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".workspace")
-        wm = WorkspaceManager(config_dir=config_dir)
+        wm = WorkspaceManager("default")
         ws = wm.create_workspace()
 
         surfaces_config = [
@@ -1657,17 +1763,31 @@ class DesktopWindow(QMainWindow):
             (MemoryTimelineSurface, "Memory Timeline", "memory", DockPosition.RIGHT),
             (MissionSurface, "Mission", "mission", DockPosition.FULL),
             (ProjectExplorerSurface, "Project Explorer", "projects", DockPosition.BOTTOM),
+            (ProjectWorkspaceSurface, "Project Workspace", "workspace", DockPosition.BOTTOM),
             (SystemHealthSurface, "System Health", "health", DockPosition.BOTTOM),
             (EventStreamSurface, "Event Stream", "events", DockPosition.BOTTOM),
             (CapabilityLibrarySurface, "Capability Library", "capabilities", DockPosition.RIGHT),
             (WorkspaceMapSurface, "Workspace Map", "map", DockPosition.LEFT),
         ]
 
+        # Load plugin surfaces
+        for plugin in discover_plugins():
+            try:
+                cls = plugin["class"]
+                sid = plugin["name"]
+                title = plugin["title"]
+                wm.controller.register(cls, title, sid, DockPosition.RIGHT)
+                wm.controller.dock(sid, DockPosition.RIGHT)
+                bus.emit(EventBus.SYSTEM_EVENT, {"message": f"Plugin loaded: {title}"})
+            except Exception as e:
+                print(f"[Plugin] Failed to load {plugin['file']}: {e}")
+
         for cls, title, sid, pos in surfaces_config:
             s = wm.controller.register(cls, title, sid, pos)
             wm.controller.dock(sid, pos)
 
         content = QWidget()
+        content._wm = wm
         cl = QVBoxLayout(content)
         cl.setContentsMargins(0, 0, 0, 0)
         cl.addWidget(ws)
@@ -1677,6 +1797,8 @@ class DesktopWindow(QMainWindow):
         win.show()
         self.windows.append(win)
         self._update_status_bar()
+
+        bus.subscribe(EventBus.WORKSPACE_FOCUS, self._on_workspace_focus)
 
         QTimer.singleShot(500, lambda: self._simulate_events(bus))
 
@@ -1769,7 +1891,7 @@ class DesktopWindow(QMainWindow):
             return
 
         bus = EventBus()
-        wm = WorkspaceManager()
+        wm = WorkspaceManager(zone_id)
         ws = wm.create_workspace()
 
         for cls_name, pos in config:
@@ -1789,6 +1911,7 @@ class DesktopWindow(QMainWindow):
         }
 
         content = QWidget()
+        content._wm = wm
         cl = QVBoxLayout(content)
         cl.setContentsMargins(0, 0, 0, 0)
         cl.addWidget(ws)
@@ -1824,6 +1947,10 @@ class DesktopWindow(QMainWindow):
         win.show()
         self.windows.append(win)
         self._update_status_bar()
+
+    def _on_workspace_focus(self, event, data):
+        zone = data.get("zone", "")
+        self.open_zone(zone)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:

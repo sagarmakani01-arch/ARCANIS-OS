@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QHBoxLayout, QFrame
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QMouseEvent
 
 from ..framework.base import BaseSurface, SurfaceState, SurfaceFlags
 from ..framework.theme import SurfaceTheme as T
@@ -8,12 +9,17 @@ from experience.ecosystem import EcosystemCoordinator
 
 
 class AgentCard(QFrame):
+    clicked = Signal(str, str)
+
     def __init__(self, name, role, active=True, parent=None):
         super().__init__(parent)
         self._active = active
+        self._agent_name = name
+        self._agent_role = role
+        self.setCursor(Qt.PointingHandCursor)
         self.setStyleSheet(f"""
             AgentCard {{ background: {T.surface}; border: 1px solid {T.border_light}; border-radius: 5px; }}
-            AgentCard:hover {{ border-color: {T.accent}; }}
+            AgentCard:hover {{ border-color: {T.accent}; background: {T.accent_bg}; }}
         """)
         l = QHBoxLayout(self)
         l.setContentsMargins(10, 8, 10, 8)
@@ -37,6 +43,10 @@ class AgentCard(QFrame):
         self.activity.setStyleSheet(T.mono_style() + f"color: {T.text_muted}; font-size: {T.font_size_xs};")
         l.addWidget(self.activity)
 
+    def mousePressEvent(self, event: QMouseEvent):
+        self.clicked.emit(self._agent_name, self._agent_role)
+        super().mousePressEvent(event)
+
     def set_active(self, a):
         self._active = a
         self.dot.setStyleSheet(f"font-size: 8px; color: {T.green if a else T.text_muted}; border: none; background: transparent;")
@@ -50,6 +60,7 @@ class AgentNetworkSurface(BaseSurface):
         super().__init__(title, surface_id, flags)
         self.eco = EcosystemCoordinator()
         self.cards = {}
+        self._selected_agent = None
         self.update_interval(2500)
 
     def _init_content(self):
@@ -60,6 +71,11 @@ class AgentNetworkSurface(BaseSurface):
         self.summary_lbl = QLabel("AGENTS ONLINE: 0 / 0")
         self.summary_lbl.setStyleSheet(T.mono_style() + f"font-size: {T.font_size_sm}; color: {T.accent};")
         l.addWidget(self.summary_lbl)
+
+        self.selected_lbl = QLabel("")
+        self.selected_lbl.setStyleSheet(T.label_style() + f"font-size: {T.font_size_sm}; color: {T.accent};")
+        self.selected_lbl.setVisible(False)
+        l.addWidget(self.selected_lbl)
 
         self.cards_container = QVBoxLayout()
         self.cards_container.setSpacing(4)
@@ -82,7 +98,7 @@ class AgentNetworkSurface(BaseSurface):
 
         l.addStretch()
 
-    def _refresh_agents(self):
+    def _refresh_agents(self, highlight=None):
         for i in reversed(range(self.cards_container.count())):
             w = self.cards_container.itemAt(i).widget()
             if w:
@@ -94,11 +110,27 @@ class AgentNetworkSurface(BaseSurface):
         for a in agents:
             active = status_map.get(a["name"], "idle") == "active"
             card = AgentCard(a["name"], a["role"], active)
+            card.clicked.connect(self._on_agent_clicked)
+            if highlight and a["name"] == highlight:
+                card.setStyleSheet(f"""
+                    AgentCard {{ background: {T.accent_bg}; border: 1px solid {T.accent}; border-radius: 5px; }}
+                    AgentCard:hover {{ border-color: {T.accent}; }}
+                """)
             self.cards[a["name"]] = card
             self.cards_container.addWidget(card)
 
         stats = self.eco.get_stats()
         self.summary_lbl.setText(f"AGENTS ONLINE: {stats.get('agents_active', 0)} / {stats.get('agents', 0)}")
+
+    def _on_agent_clicked(self, name, role):
+        self._selected_agent = name
+        self.selected_lbl.setText(f"\u25B6 {name} ({role})")
+        self.selected_lbl.setVisible(True)
+        self._bus.emit(EventBus.AGENT_ACTIVATED, {
+            "name": name,
+            "role": role,
+            "source": self._surface_id,
+        })
 
     def _refresh_messages(self):
         for i in reversed(range(self.msg_container.count())):
@@ -116,7 +148,7 @@ class AgentNetworkSurface(BaseSurface):
             self.msg_container.addWidget(lbl)
 
     def _on_tick(self):
-        self._refresh_agents()
+        self._refresh_agents(self._selected_agent)
         self._refresh_messages()
 
     def _setup_events(self):
@@ -124,7 +156,13 @@ class AgentNetworkSurface(BaseSurface):
         self._bus.subscribe(EventBus.AGENT_ACTIVITY, self._on_activity)
 
     def _on_activated(self, event, data):
-        self._refresh_agents()
+        name = data.get("name", "")
+        source = data.get("source", "")
+        if source != self._surface_id:
+            self._selected_agent = name
+            self.selected_lbl.setText(f"\u25B6 {name} (selected)")
+            self.selected_lbl.setVisible(True)
+        self._refresh_agents(self._selected_agent)
 
     def _on_activity(self, event, data):
         name = data.get("name", "")

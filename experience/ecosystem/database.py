@@ -103,6 +103,25 @@ class Database:
                 value TEXT NOT NULL,
                 updated_at TEXT DEFAULT (datetime('now'))
             );
+            CREATE TABLE IF NOT EXISTS surface_layout (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace TEXT NOT NULL DEFAULT 'default',
+                surface_id TEXT NOT NULL,
+                dock_position TEXT NOT NULL DEFAULT 'float',
+                surface_state TEXT NOT NULL DEFAULT 'standard',
+                pinned INTEGER NOT NULL DEFAULT 0,
+                order_index INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(workspace, surface_id)
+            );
+            CREATE TABLE IF NOT EXISTS surface_content_state (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                surface_id TEXT NOT NULL,
+                key TEXT NOT NULL,
+                value TEXT NOT NULL DEFAULT '{}',
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(surface_id, key)
+            );
         """)
         self.conn.commit()
 
@@ -334,6 +353,75 @@ class Database:
             c.execute("SELECT value FROM ecosystem_state WHERE key=?", (key,))
             r = c.fetchone()
             return r["value"] if r else default
+
+    # ── Workspace Layout ───────────────────────────────────────
+    def save_layout(self, workspace, surfaces):
+        with self._lock:
+            c = self.conn.cursor()
+            c.execute("DELETE FROM surface_layout WHERE workspace=?", (workspace,))
+            for i, s in enumerate(surfaces):
+                c.execute(
+                    "INSERT OR REPLACE INTO surface_layout "
+                    "(workspace, surface_id, dock_position, surface_state, pinned, order_index) "
+                    "VALUES (?,?,?,?,?,?)",
+                    (workspace, s["id"], s["dock"], s.get("state", "standard"),
+                     int(s.get("pinned", False)), i)
+                )
+            self.conn.commit()
+
+    def load_layout(self, workspace="default"):
+        with self._lock:
+            c = self.conn.cursor()
+            c.execute(
+                "SELECT * FROM surface_layout WHERE workspace=? ORDER BY order_index",
+                (workspace,)
+            )
+            return [dict(r) for r in c.fetchall()]
+
+    # ── Surface Content State ──────────────────────────────────
+    def save_surface_state(self, surface_id, key, value):
+        with self._lock:
+            self.conn.execute(
+                "INSERT OR REPLACE INTO surface_content_state (surface_id, key, value, updated_at) "
+                "VALUES (?,?,?,datetime('now'))",
+                (surface_id, key, json.dumps(value))
+            )
+            self.conn.commit()
+
+    def load_surface_state(self, surface_id, key, default=None):
+        with self._lock:
+            c = self.conn.cursor()
+            c.execute(
+                "SELECT value FROM surface_content_state WHERE surface_id=? AND key=?",
+                (surface_id, key)
+            )
+            r = c.fetchone()
+            if r:
+                try:
+                    return json.loads(r["value"])
+                except Exception:
+                    return r["value"]
+            return default
+
+    def load_all_surface_states(self, surface_id):
+        with self._lock:
+            c = self.conn.cursor()
+            c.execute(
+                "SELECT key, value FROM surface_content_state WHERE surface_id=?",
+                (surface_id,)
+            )
+            result = {}
+            for r in c.fetchall():
+                try:
+                    result[r["key"]] = json.loads(r["value"])
+                except Exception:
+                    result[r["key"]] = r["value"]
+            return result
+
+    def clear_surface_state(self, surface_id):
+        with self._lock:
+            self.conn.execute("DELETE FROM surface_content_state WHERE surface_id=?", (surface_id,))
+            self.conn.commit()
 
     # ── Stats ─────────────────────────────────────────────────
     def get_stats(self):
