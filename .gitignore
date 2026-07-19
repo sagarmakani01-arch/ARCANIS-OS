@@ -12,6 +12,7 @@ build/
 
 # Ecosystem runtime data
 .ecosystem/
+.kernel/
 .pa_active
 .workspace/
 
